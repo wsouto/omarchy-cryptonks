@@ -47,9 +47,25 @@ Read from Bybit's [instruments-info page](https://bybit-exchange.github.io/docs/
 - Keep only `contractType` = `LinearPerpetual` and `status` = `Trading`. Dated
   futures and pre-launch contracts are out.
 - USDT and USDC pairs are both in. Each record carries its own `quoteCoin`,
-  so `BTCUSDT` and `BTCUSDC` are different symbols.
+  so `BTCUSDT` and the USDC one are different symbols. Bybit names the USDC
+  one `BTCPERP` (see "The instrument entry" below).
 - **TradFi perpetuals** (stock-like contracts) are out entirely: crypto only.
   They appear in the same list with a non-empty `marketRegion` or
   `underlyingTicker`, and the adapter rejects any instrument that has either.
 - `fundingInterval` (minutes) is kept on the record, for the funding feature
   later.
+
+## The instrument entry
+
+Search and the quote are built from one entry per symbol, which the adapter
+reads from instruments info:
+
+| Field | Meaning |
+| --- | --- |
+| `symbol`, `name`, `currency`, `priceDigits`, `firstTradeDate`, `fundingInterval` | as in the table above |
+| `pair` | `baseCoin` + `quoteCoin`, such as `BTCUSDC`, for search to match |
+
+Checked on 2026-10-21: Bybit names its USDC perpetuals `BTCPERP`, `ETHPERP`,
+`AAVEPERP`, not `BTCUSDC`. A user who types `btcusdc` therefore finds the
+symbol `BTCPERP` only through `pair`, so search matches both. The list held
+907 contracts, 270 of them TradFi, so the crypto perpetuals number about 600.

@@ -15,7 +15,7 @@ commit. Each step says what you will see. Run `bash test/check.sh` and
       in place and the checks passing. `Settings.js` is not a plain copy: it
       calls the original's `Quote.regularClose` and `History.historyRanges`,
       so it waits for step 6, where lists and ranking are built.
-- [ ] **3. Write `adapters/bybit.js` and `Fetch.js`.** Parse a saved Bybit
+- [x] **3. Write `adapters/bybit.js` and `Fetch.js`.** Parse a saved Bybit
       answer in a test. You see: a test that passes without a network.
 - [ ] **4. A pill with a real price.** One symbol, the price and the change
       since 00:00 UTC, refreshed once a minute. You see: BTCUSDT in the bar.

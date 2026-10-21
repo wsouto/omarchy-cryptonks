@@ -14,23 +14,29 @@ never mention an exchange.
 3. An adapter returns the records in [QUOTE-RECORD.md](QUOTE-RECORD.md). If an
    exchange lacks a field, the adapter returns `null` for it. It never guesses.
 
-**The contract** (draft; names may change when the first adapter is written)
+**The contract** (written with the first adapter; a second exchange may still
+change it)
 
 | Function | Gives |
 | --- | --- |
-| `quotesUrl(symbols)` and `parseQuotes(json)` | the latest price and day figures for many symbols |
-| `candlesUrl(symbol, range)` and `parseCandles(json)` | candles for a chart range |
-| `instrumentsUrl()` and `parseInstruments(json)` | the symbols you can add, for search |
-| `limits` | request limits and what to do on a refusal |
+| `instrumentsUrl()` and `parseInstruments(json)` | the symbols you can add, for search: `{ instruments, truncated }` |
+| `quotesUrl()` and `parseQuotes(json)` | every symbol's latest price in one request: `{ time, prices }` |
+| `dailyUrl(symbol, count)` and `parseDaily(json)` | daily candles, oldest first |
+| `buildQuote(instrument, price, marketTime, candles)` | the record of [QUOTE-RECORD.md](QUOTE-RECORD.md) |
+| `limits` | request limits, and which statuses mean "refused" and for how long |
 
-**First adapter: Bybit** (`adapters/bybit.js`, not written yet), V5 API,
+A reader gives `null` for an answer it can't use, so a refused question is
+never taken for an empty list. Not yet written: `candlesUrl` for the chart
+(step 5).
+
+**First adapter: Bybit** (`adapters/bybit.js`), V5 API,
 USDT and USDC perpetuals (`category=linear`):
 
 | Need | Endpoint |
 | --- | --- |
 | Prices for every symbol in one request | `GET /v5/market/tickers?category=linear` |
 | Chart candles | `GET /v5/market/kline` (up to 1000 per request) |
-| Symbol list, tick size, launch time | `GET /v5/market/instruments-info?category=linear&limit=1000` (follow `nextPageCursor` if it is not empty) |
+| Symbol list, tick size, launch time | `GET /v5/market/instruments-info?category=linear&limit=1000` (907 contracts on 2026-10-21; `truncated` is true if `nextPageCursor` is not empty) |
 
 Limit: 600 requests per 5 seconds per IP. Past it Bybit answers 403 and bans
 the IP for at least 10 minutes.
