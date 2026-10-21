@@ -18,6 +18,7 @@ import { load } from "./load.js"
 
 const B = load("adapters/bybit.js")
 const F = load("Fetch.js")
+const C = load("Change.js")
 
 const fixture = name => JSON.parse(readFileSync(join(import.meta.dir, "fixtures", name), "utf8"))
 const clone = value => JSON.parse(JSON.stringify(value))
@@ -94,11 +95,20 @@ test("a price scale that is not a number is null, not a guess", () => {
 
 // ---- The latest price ----
 
-test("one request asks for every ticker", () => {
-  const url = B.quotesUrl()
-  expect(url).toContain("/v5/market/tickers")
-  expect(url).toContain("category=linear")
-  expect(url).not.toContain("symbol=")
+test("one request asks for every ticker, or for the one symbol wanted", () => {
+  const all = B.quotesUrl([])
+  expect(all).toContain("/v5/market/tickers")
+  expect(all).toContain("category=linear")
+  expect(all).not.toContain("symbol=")
+  expect(B.quotesUrl(["BTCUSDT", "ETHUSDT"])).not.toContain("symbol=")
+  expect(B.quotesUrl(["BTCUSDT"])).toContain("&symbol=BTCUSDT")
+})
+
+test("one instrument is asked for by symbol", () => {
+  const url = B.instrumentUrl("BTCUSDT")
+  expect(url).toContain("/v5/market/instruments-info")
+  expect(url).toContain("symbol=BTCUSDT")
+  expect(url).not.toContain("limit=")
 })
 
 test("the last traded price by symbol, and when Bybit answered in seconds", () => {
@@ -214,10 +224,31 @@ test("the year's range is the last 365 candles, so an older high is not in it", 
   expect(record.low52w).toBe(5)
 })
 
+// ---- The change since 00:00 UTC ----
+
+test("the change is the price against the open of today's UTC candle", () => {
+  const q = quotes()
+  const record = B.buildQuote(btc(), q.prices.BTCUSDT, q.time, candles())
+  const move = C.sinceOpen(record)
+  expect(move.abs).toBeCloseTo(84440.8 - 82991, 6)
+  expect(move.pct).toBeCloseTo((84440.8 - 82991) / 82991 * 100, 6)
+})
+
+test("a fall is a negative change", () => {
+  expect(C.sinceOpen({ price: 90, dayOpen: 100 })).toEqual({ abs: -10, pct: -10 })
+})
+
+test("no change is shown without a price, an open, or an open to divide by", () => {
+  expect(C.sinceOpen(null)).toBeNull()
+  expect(C.sinceOpen({ price: 100, dayOpen: null })).toBeNull()
+  expect(C.sinceOpen({ price: null, dayOpen: 100 })).toBeNull()
+  expect(C.sinceOpen({ price: 100, dayOpen: 0 })).toBeNull()
+})
+
 // ---- The fetch rules ----
 
-const run = (status, exit = 0, retryAfter = "", body = "{}") =>
-  `${body}\n${F.ANSWER_MARK} 1 ${String(status).padStart(3, "0")} ${exit} ${retryAfter}\n`
+const run = (status, exit = 0, retryAfter = "", body = "{}", index = 0) =>
+  `${body}\n${F.ANSWER_MARK} ${index} ${String(status).padStart(3, "0")} ${exit} ${retryAfter}\n`
 
 test("curl is asked for compressed, capped, timed-out answers", () => {
   const cmd = F.curlCommand(["https://a", "https://b"], F.TICKERS_CAP)
@@ -236,6 +267,13 @@ test("a whole 200 answer is ok and its body is the sole body", () => {
   const text = run(200, 0, "", '{"retCode":0}')
   expect(F.answers(text)[0].kind).toBe("ok")
   expect(F.soleBody(text)).toBe('{"retCode":0}')
+})
+
+test("answers are numbered from 0, in the order of the URLs sent", () => {
+  const text = run(200, 0, "", '{"a":1}', 0) + run(200, 0, "", '{"b":2}', 1)
+  const all = F.answers(text)
+  expect(all.map(a => a.index)).toEqual([0, 1])
+  expect(all.map(a => a.body)).toEqual(['{"a":1}', '{"b":2}'])
 })
 
 test("no answer at all is none", () => {

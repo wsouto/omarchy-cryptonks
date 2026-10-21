@@ -19,8 +19,8 @@ change it)
 
 | Function | Gives |
 | --- | --- |
-| `instrumentsUrl()` and `parseInstruments(json)` | the symbols you can add, for search: `{ instruments, truncated }` |
-| `quotesUrl()` and `parseQuotes(json)` | every symbol's latest price in one request: `{ time, prices }` |
+| `instrumentsUrl()`, `instrumentUrl(symbol)` and `parseInstruments(json)` | the symbols you can add, for search, or one of them: `{ instruments, truncated }` |
+| `quotesUrl(symbols)` and `parseQuotes(json)` | the latest price of the symbols asked for (every symbol if not one): `{ time, prices }` |
 | `dailyUrl(symbol, count)` and `parseDaily(json)` | daily candles, oldest first |
 | `buildQuote(instrument, price, marketTime, candles)` | the record of [QUOTE-RECORD.md](QUOTE-RECORD.md) |
 | `limits` | request limits, and which statuses mean "refused" and for how long |

@@ -5,7 +5,7 @@
   "version": "0.0.1",
   "author": "Walter Souto",
   "license": "MIT",
-  "description": "A crypto futures watchlist for your Omarchy bar. Work in progress: today it only shows a placeholder pill.",
+  "description": "A crypto futures watchlist for your Omarchy bar. Work in progress: today the pill shows the price of BTCUSDT and its change since 00:00 UTC.",
   "kinds": ["bar-widget"],
   "entryPoints": {
     "barWidget": "BarWidget.qml"

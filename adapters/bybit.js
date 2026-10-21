@@ -70,6 +70,11 @@ function inScope(x) {
     && !x.underlyingTicker
 }
 
+// One contract, such as BTCUSDT: the same answer as the list, with one item.
+function instrumentUrl(symbol) {
+  return HOST + "/v5/market/instruments-info?category=linear&symbol=" + encodeURIComponent(symbol)
+}
+
 // The instruments in scope, one entry each, as { instruments, truncated }.
 // A symbol is the base coin and USDT, such as BTCUSDT, which is what a person
 // types. `truncated` is true when Bybit says more instruments exist than it
@@ -97,10 +102,14 @@ function parseInstruments(json) {
 
 // ---- The latest price --------------------------------------------------
 
-// Every symbol's ticker in one request: omit `symbol` and Bybit sends all of
-// them, so a long list costs one request, not one per row.
-function quotesUrl() {
-  return HOST + "/v5/market/tickers?category=linear"
+// The tickers of `symbols` in one request. Omit `symbol` and Bybit sends all
+// of them (900 tickers, 680 KB), so a long list costs one request, not one
+// per row. For a single symbol that is wasteful, and Bybit answers for just
+// that one (under 1 KB).
+function quotesUrl(symbols) {
+  var url = HOST + "/v5/market/tickers?category=linear"
+  if (symbols && symbols.length === 1) url += "&symbol=" + encodeURIComponent(symbols[0])
+  return url
 }
 
 // { time, prices }: when Bybit answered, in seconds, and the last traded

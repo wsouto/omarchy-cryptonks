@@ -51,8 +51,10 @@ function answerKind(status, exit, refusedStatuses) {
 }
 
 // A run's output as its answers, by the URL's place in the run: { index,
-// status, kind, body, retryAfter } (seconds, 0 when none was sent). A URL the
-// run never reached, stopped first, has none.
+// status, kind, body, retryAfter } (seconds, 0 when none was sent). `index`
+// counts from 0, as curl's %{urlnum} does: the first URL's answer is 0, so it
+// is the place in the array of URLs given to `curlCommand`. A URL the run
+// never reached, stopped first, has none.
 //
 // `limits` is the adapter's: its `refusedStatuses` also count as a refusal,
 // and its `refusedPauseSeconds` is the wait of a refusal that sent no

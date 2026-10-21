@@ -24,6 +24,9 @@ trap 'rm -rf "$tmp"' EXIT
 ln -s /usr/share/omarchy/shell "$tmp/qs"
 # --block-scope-var-declaration disable: Qt 6.12 warns about `var` inside
 # blocks, a style this project keeps.
+# A warning that a member is "not found on type QObject" (such as
+# Commons.Color.bar.background) is qmllint not seeing inside the installed
+# shell; the original Stonks accepts it too.
 /usr/lib/qt6/bin/qmllint --block-scope-var-declaration disable -I "$tmp" *.qml || failed=1
 
 echo "== bun test"
