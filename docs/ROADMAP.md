@@ -17,7 +17,7 @@ commit. Each step says what you will see. Run `bash test/check.sh` and
       so it waits for step 6, where lists and ranking are built.
 - [x] **3. Write `adapters/bybit.js` and `Fetch.js`.** Parse a saved Bybit
       answer in a test. You see: a test that passes without a network.
-- [ ] **4. A pill with a real price.** One symbol, the price and the change
+- [x] **4. A pill with a real price.** One symbol, the price and the change
       since 00:00 UTC, refreshed once a minute. You see: BTCUSDT in the bar.
 - [ ] **5. The popup.** The chart for one symbol, scrub with the pointer.
 - [ ] **6. The list.** Rows, adding a symbol through search, removing, undo.
