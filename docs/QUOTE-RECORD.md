@@ -21,6 +21,7 @@ supply is `null`, never a guess.
 | `turnover` | quote-currency volume since 00:00 UTC | same candle |
 | `high52w`, `low52w` | high and low of the last 365 daily candles | kline `D` |
 | `firstTradeDate` | when the symbol launched, so a young symbol's ranges are honest | instruments info `launchTime` (ms; divide by 1000) |
+| `fundingInterval` | minutes between funding payments, such as `480` | instruments info `fundingInterval` |
 | `points` | the chart: a list of `{ t, p }`, seconds and price | kline |
 
 **Change since 00:00 UTC** = `price - dayOpen`, and as a percent of `dayOpen`.
@@ -34,16 +35,19 @@ rolling 24-hour figure.
 
 Read from Bybit's [instruments-info page](https://bybit-exchange.github.io/docs/v5/market/instrument) on 2026-10-21:
 
-- `category=linear` holds more than 500 symbols and the endpoint returns 500
-  by default. Ask for `limit=1000` or follow `nextPageCursor`.
-- Keep only `contractType` = `LinearPerpetual` and `status` = `Trading`. The
-  list also holds dated futures and pre-launch contracts.
-- `category=linear` also holds USDC contracts. Each record carries its own
-  `quoteCoin`, so `BTCUSDT` and a USDC pair stay different symbols.
-- **TradFi perpetuals** (stock-like contracts) appear in the same list, with
-  a non-empty `marketRegion` and `underlyingTicker`. Bybit says they have
-  reduced liquidity outside the underlying market's hours. They bring back
-  the market-hours logic this project removed, so the adapter leaves them out
-  for now.
-- `fundingInterval` (minutes) is on each instrument, for the funding feature
+- `category=linear` holds more than 500 symbols. We never download the whole
+  list and never paginate. Every request sets `limit=100`, and the user
+  finds a pair by searching for it (see below).
+- **Search:** the user types the pair they want, such as `btcusdt` or
+  `btcusdc`. The adapter upper-cases it and asks instruments-info for that
+  one `symbol`. No match means the pair is not in scope, and the screen says
+  so. (To verify: that the `symbol` filter behaves this way on `linear`.)
+- Keep only `contractType` = `LinearPerpetual` and `status` = `Trading`. Dated
+  futures and pre-launch contracts are out.
+- USDT and USDC pairs are both in. Each record carries its own `quoteCoin`,
+  so `BTCUSDT` and `BTCUSDC` are different symbols.
+- **TradFi perpetuals** (stock-like contracts) are out entirely: crypto only.
+  They appear in the same list with a non-empty `marketRegion` or
+  `underlyingTicker`, and the adapter rejects any instrument that has either.
+- `fundingInterval` (minutes) is kept on the record, for the funding feature
   later.
