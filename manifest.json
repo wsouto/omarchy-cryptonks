@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "wsouto.crypto-stonks",
+  "name": "Crypto Stonks",
+  "version": "0.0.1",
+  "author": "Walter Souto",
+  "license": "MIT",
+  "description": "A crypto futures watchlist for your Omarchy bar. Work in progress: today it only shows a placeholder pill.",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Crypto Stonks",
+    "description": "Crypto futures prices in your bar.",
+    "category": "Info",
+    "aliases": ["crypto", "stonks", "ticker"],
+    "allowMultiple": false,
+    "defaultSection": "center"
+  }
+}
