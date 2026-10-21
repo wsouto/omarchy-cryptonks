@@ -35,13 +35,15 @@ rolling 24-hour figure.
 
 Read from Bybit's [instruments-info page](https://bybit-exchange.github.io/docs/v5/market/instrument) on 2026-10-21:
 
-- `category=linear` holds more than 500 symbols. We never download the whole
-  list and never paginate. Every request sets `limit=100`, and the user
-  finds a pair by searching for it (see below).
-- **Search:** the user types the pair they want, such as `btcusdt` or
-  `btcusdc`. The adapter upper-cases it and asks instruments-info for that
-  one `symbol`. No match means the pair is not in scope, and the screen says
-  so. (To verify: that the `symbol` filter behaves this way on `linear`.)
+- `category=linear` holds more than 500 symbols and the endpoint returns 500
+  by default. Ask for `limit=1000` so one request returns the whole list, and
+  do not paginate. (To verify: that the list stays under 1000 symbols. If it
+  ever reaches 1000, the adapter must say so instead of silently truncating.)
+- **Search with autocomplete:** the adapter fetches the list once, keeps only
+  the symbols in scope (below), and caches it. As the user types, such as
+  `btcusdt` or `btcusdc`, the screen filters that cached list locally, so
+  typing costs no requests. The cache is refreshed rarely, for example once
+  a day, because new listings are infrequent.
 - Keep only `contractType` = `LinearPerpetual` and `status` = `Trading`. Dated
   futures and pre-launch contracts are out.
 - USDT and USDC pairs are both in. Each record carries its own `quoteCoin`,
