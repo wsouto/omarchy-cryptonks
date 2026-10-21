@@ -14,6 +14,8 @@
 //       https://bybit-exchange.github.io/docs/v5/rate-limit
 
 var NAME = "Bybit"
+// The one quote currency shown: every symbol is then BASE + USDT.
+var QUOTE_COIN = "USDT"
 var HOST = "https://api.bybit.com"
 var DAY = 86400
 
@@ -51,13 +53,16 @@ function instrumentsUrl() {
   return HOST + "/v5/market/instruments-info?category=linear&limit=1000"
 }
 
-// A contract this project shows: a perpetual that is trading now, and a
-// crypto one. Bybit also lists dated futures (contractType LinearFutures),
-// contracts not yet open (a status other than Trading, or isPreListing), and
-// stock-like "TradFi" perpetuals, which carry a marketRegion and an
-// underlyingTicker (both "" on a crypto contract). Crypto only.
+// A contract this project shows: a perpetual that is trading now, a crypto
+// one, and quoted in USDT. Bybit also lists dated futures (contractType
+// LinearFutures), contracts not yet open (a status other than Trading, or
+// isPreListing), stock-like "TradFi" perpetuals, which carry a marketRegion
+// and an underlyingTicker (both "" on a crypto contract), and USDC
+// perpetuals. Those are named BTCPERP, not BTCUSDC, and would put a second
+// quote currency in the list, for about 7% of the contracts: left out.
 function inScope(x) {
-  return !!x && !!x.symbol && !!x.baseCoin && !!x.quoteCoin
+  return !!x && !!x.symbol && !!x.baseCoin
+    && x.quoteCoin === QUOTE_COIN
     && x.contractType === "LinearPerpetual"
     && x.status === "Trading"
     && !x.isPreListing
@@ -66,9 +71,8 @@ function inScope(x) {
 }
 
 // The instruments in scope, one entry each, as { instruments, truncated }.
-// `pair` is the base coin and the quote coin as a person writes them: Bybit's
-// USDC perpetuals are named BTCPERP, not BTCUSDC, so search must also match
-// this. `truncated` is true when Bybit says more instruments exist than it
+// A symbol is the base coin and USDT, such as BTCUSDT, which is what a person
+// types. `truncated` is true when Bybit says more instruments exist than it
 // sent (a non-empty nextPageCursor): the list is then incomplete, and whoever
 // shows it must say so rather than pass it off as whole.
 function parseInstruments(json) {
@@ -83,7 +87,6 @@ function parseInstruments(json) {
       symbol: x.symbol,
       name: x.baseCoin,
       currency: x.quoteCoin,
-      pair: x.baseCoin + x.quoteCoin,
       priceDigits: num(x.priceScale),
       firstTradeDate: launched === null ? null : Math.floor(launched / 1000),
       fundingInterval: num(x.fundingInterval)

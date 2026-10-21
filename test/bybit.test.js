@@ -4,8 +4,8 @@
 // number of records is cut to a few chosen ones:
 //
 //   instruments.json   BTCUSDT, ETHUSDT (crypto, USDT), BTCPERP (crypto,
-//                      USDC), BTCUSDT-06NOV26 (a dated future) and AAPLUSDT
-//                      (a stock-like "TradFi" contract)
+//                      USDC, left out), BTCUSDT-06NOV26 (a dated future) and
+//                      AAPLUSDT (a stock-like "TradFi" contract)
 //   tickers.json       the same five, and OPENAIUSDT, a ticker with no
 //                      instrument entry
 //   kline-btcusdt-d.json   three daily candles of BTCUSDT, newest first
@@ -35,9 +35,9 @@ test("the instruments list is one request for every linear contract", () => {
   expect(url).toContain("limit=1000")
 })
 
-test("only crypto perpetuals that trade are in scope", () => {
+test("only crypto USDT perpetuals that trade are in scope", () => {
   const parsed = B.parseInstruments(fixture("instruments.json"))
-  expect(symbolsOf(parsed)).toEqual(["BTCPERP", "BTCUSDT", "ETHUSDT"])
+  expect(symbolsOf(parsed)).toEqual(["BTCUSDT", "ETHUSDT"])
   expect(parsed.truncated).toBe(false)
 })
 
@@ -47,13 +47,13 @@ test("a stock-like TradFi contract and a dated future are left out", () => {
   expect(symbols).not.toContain("BTCUSDT-06NOV26")
 })
 
-test("a contract not yet open is left out", () => {
-  const json = clone(fixture("instruments.json"))
-  const eth = json.result.list.find(x => x.symbol === "ETHUSDT")
-  eth.status = "PreLaunch"
-  const btc = json.result.list.find(x => x.symbol === "BTCUSDT")
-  btc.isPreListing = true
-  expect(symbolsOf(B.parseInstruments(json))).toEqual(["BTCPERP"])
+test("a contract not yet open is left out, by its status or by isPreListing", () => {
+  const byStatus = clone(fixture("instruments.json"))
+  byStatus.result.list.find(x => x.symbol === "ETHUSDT").status = "PreLaunch"
+  expect(symbolsOf(B.parseInstruments(byStatus))).toEqual(["BTCUSDT"])
+  const byFlag = clone(fixture("instruments.json"))
+  byFlag.result.list.find(x => x.symbol === "BTCUSDT").isPreListing = true
+  expect(symbolsOf(B.parseInstruments(byFlag))).toEqual(["ETHUSDT"])
 })
 
 test("an instrument carries what search and the record need", () => {
@@ -62,17 +62,16 @@ test("an instrument carries what search and the record need", () => {
     symbol: "BTCUSDT",
     name: "BTC",
     currency: "USDT",
-    pair: "BTCUSDT",
     priceDigits: 2,
     firstTradeDate: 1584230400,
     fundingInterval: 480
   })
 })
 
-test("a USDC perpetual is found by its pair, though Bybit names it BTCPERP", () => {
-  const perp = instrument(B.parseInstruments(fixture("instruments.json")), "BTCPERP")
-  expect(perp.pair).toBe("BTCUSDC")
-  expect(perp.currency).toBe("USDC")
+test("a USDC perpetual is left out, so every symbol is a base coin and USDT", () => {
+  const parsed = B.parseInstruments(fixture("instruments.json"))
+  expect(symbolsOf(parsed)).not.toContain("BTCPERP")
+  expect(parsed.instruments.every(i => i.symbol === i.name + "USDT" && i.currency === "USDT")).toBe(true)
 })
 
 test("a list Bybit says is incomplete is marked truncated", () => {

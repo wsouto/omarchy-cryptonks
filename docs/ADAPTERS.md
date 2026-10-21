@@ -30,7 +30,7 @@ never taken for an empty list. Not yet written: `candlesUrl` for the chart
 (step 5).
 
 **First adapter: Bybit** (`adapters/bybit.js`), V5 API,
-USDT and USDC perpetuals (`category=linear`):
+USDT perpetuals (`category=linear`):
 
 | Need | Endpoint |
 | --- | --- |
