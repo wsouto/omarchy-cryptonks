@@ -6,9 +6,9 @@ commit. Each step says what you will see. Run `bash test/check.sh` and
 
 - [x] **0. Scaffold.** Repo, licence with credit, manifest, a placeholder pill.
       You see: "CRYPTO" in the bar after following [HOWTO.md](HOWTO.md).
-- [ ] **1. Define the quote record.** Finish [QUOTE-RECORD.md](QUOTE-RECORD.md)
-      after reading Bybit's instruments-info page. You see: a reviewed contract,
-      no code.
+- [x] **1. Define the quote record.** [QUOTE-RECORD.md](QUOTE-RECORD.md) is
+      complete after reading Bybit's instruments-info page. You see: a
+      contract, no code. Review it and change anything you disagree with.
 - [ ] **2. Copy the files that need no changes.** `Format.js`, `Tones.js`,
       `Cells.js` and `Settings.js` from the original, each with its header
       comment. You see: the same pill, with the files in place and the checks

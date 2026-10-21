@@ -30,7 +30,7 @@ USDT perpetuals (`category=linear`):
 | --- | --- |
 | Prices for every symbol in one request | `GET /v5/market/tickers?category=linear` |
 | Chart candles | `GET /v5/market/kline` (up to 1000 per request) |
-| Symbol list | instruments info (not read yet) |
+| Symbol list, tick size, launch time | `GET /v5/market/instruments-info?category=linear&limit=1000` (follow `nextPageCursor` if it is not empty) |
 
 Limit: 600 requests per 5 seconds per IP. Past it Bybit answers 403 and bans
 the IP for at least 10 minutes.
