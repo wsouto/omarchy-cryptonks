@@ -24,7 +24,7 @@ never mention an exchange.
 | `limits` | request limits and what to do on a refusal |
 
 **First adapter: Bybit** (`adapters/bybit.js`, not written yet), V5 API,
-USDT perpetuals (`category=linear`):
+USDT and USDC perpetuals (`category=linear`):
 
 | Need | Endpoint |
 | --- | --- |

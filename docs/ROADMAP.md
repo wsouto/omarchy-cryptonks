@@ -9,10 +9,12 @@ commit. Each step says what you will see. Run `bash test/check.sh` and
 - [x] **1. Define the quote record.** [QUOTE-RECORD.md](QUOTE-RECORD.md) is
       complete after reading Bybit's instruments-info page. You see: a
       contract, no code. Review it and change anything you disagree with.
-- [ ] **2. Copy the files that need no changes.** `Format.js`, `Tones.js`,
-      `Cells.js` and `Settings.js` from the original, each with its header
-      comment. You see: the same pill, with the files in place and the checks
-      passing.
+- [x] **2. Copy the files that need no changes.** `Format.js`, `Tones.js`
+      and `Cells.js` from the original, each with its header comment and a
+      line saying where it came from. You see: the same pill, with the files
+      in place and the checks passing. `Settings.js` is not a plain copy: it
+      calls the original's `Quote.regularClose` and `History.historyRanges`,
+      so it waits for step 6, where lists and ranking are built.
 - [ ] **3. Write `adapters/bybit.js` and `Fetch.js`.** Parse a saved Bybit
       answer in a test. You see: a test that passes without a network.
 - [ ] **4. A pill with a real price.** One symbol, the price and the change
