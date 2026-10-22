@@ -1,6 +1,5 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
-// Panel.qml. Changes: the body is `Body.qml`, shared with the window; the
-// statuses come in roadmap step 11.
+// Panel.qml. Changes: the body is `Body.qml`, shared with the window.
 
 import QtQuick
 import qs.Commons

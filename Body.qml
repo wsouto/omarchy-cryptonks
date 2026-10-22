@@ -2,8 +2,7 @@
 // StonksBody.qml and Watchlist.qml. Changes: the body is the header, the
 // hero, the day chart, the list line and its menu, the rows, search and the
 // footer, built here, and the key sheet in their place, and the range row;
-// the statuses come in roadmap step 11, with the keys that drive them; a new
-// list's name is not kept through a close. The rows are a ListView whose rows
+// a new list's name is not kept through a close. The rows are a ListView whose rows
 // a drag shifts in place, so the row under the pointer is never rebuilt
 // mid-drag. An add is featured at once, so there is no landing to wait for.
 // The change has two modes, percent and amount, both since 00:00 UTC. The
@@ -450,10 +449,16 @@ Item {
     root.offered = null
   }
 
+  // A standing word in the footer's place, under a note, until what it says
+  // is fixed: the data file can't be read.
+  readonly property bool settingsUnreadable: !!service && service.settingsUnreadable
+  readonly property string notice: settingsUnreadable
+    ? "Can't read the data file · fix or remove it to save" : ""
   // The footer's click acts on what it shows: an undo offer undoes, else it
   // opens search.
   function footerClicked() {
     if (root.offered !== null) root.undoRemoval()
+    else if (root.settingsUnreadable) return
     else root.startAdding()
   }
 
@@ -935,6 +940,8 @@ Item {
       note: root.note
       noteAction: root.offered !== null ? " · click to undo" : ""
       noteOpacity: root.noteShown
+      notice: root.notice
+      acts: root.offered !== null || !root.settingsUnreadable
       onClicked: root.footerClicked()
       onHoveredChanged: if (root.note !== "") root.holdNote()
     }

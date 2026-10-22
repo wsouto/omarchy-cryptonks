@@ -103,3 +103,6 @@ code, and move it here with a one-line pitch.
   ("As of 14 Nov 22:13 UTC"); times are UTC. `crypto`
 - **The header keeps Bybit's own reason** ("! No network") beside the words on
   the hero's line and the rows' name lines. `crypto`
+- **The data-file notice is shorter** ("Can't read the data file · fix or
+  remove it to save"), since the file's name is longer here than in the
+  popup's width. The footer has no hint and no update notices. `crypto`
