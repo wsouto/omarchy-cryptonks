@@ -1,10 +1,10 @@
-# Crypto Stonks
+# Cryptonks
 
-Crypto Stonks puts a crypto watchlist in your Omarchy 4 bar. A small pill
+Cryptonks puts a crypto watchlist in your Omarchy 4 bar. A small pill
 shows how a coin is doing today. Click it for that coin's chart and your
 lists, and step through the chart to see the price at any moment on it.
 
-<img src="media/popup.png" width="480" alt="The Crypto Stonks popup: BTCUSDT at 81,507.80, down 1.13%, over a week's chart, the ranges, the low and high lines, and a list of five symbols">
+<img src="media/popup.png" width="480" alt="The Cryptonks popup: BTCUSDT at 81,507.80, down 1.13%, over a week's chart, the ranges, the low and high lines, and a list of five symbols">
 
 - Bybit USDT perpetual futures, such as BTCUSDT, ETHUSDT, and SOLUSDT.
 - Charts from one day to all time.
@@ -23,17 +23,17 @@ Gaurav Chande, which does the same for stocks. See [Credits](#credits).
 Needs Omarchy 4 and `curl` 7.84 or later, which Omarchy ships.
 
 ```sh
-ln -s ~/Projects/omarchy-crypto-stonks ~/.config/omarchy/plugins/wsouto.crypto-stonks
+ln -s ~/Projects/cryptonks ~/.config/omarchy/plugins/wsouto.cryptonks
 omarchy-shell shell rescanPlugins
-omarchy plugin enable wsouto.crypto-stonks center
+omarchy plugin enable wsouto.cryptonks center
 ```
 
 That links a checkout of this folder into the shell's plugins and asks where in
-the bar to put `wsouto.crypto-stonks`, which is Crypto Stonks' id. The centre
+the bar to put `wsouto.cryptonks`, which is Cryptonks' id. The centre
 is the default. [docs/HOWTO.md](docs/HOWTO.md) has the details, and how to
 update and remove it.
 
-Crypto Stonks starts with five symbols so the pill has something to show:
+Cryptonks starts with five symbols so the pill has something to show:
 BTCUSDT, ETHUSDT, SOLUSDT, XRPUSDT, and DOGEUSDT. Add your own and remove any
 you don't follow.
 
@@ -105,35 +105,35 @@ click its arrow to reverse the sort. In manual order, drag a row or press
 
 ## The window
 
-<img src="media/window.png" width="720" alt="Crypto Stonks' window: the popup's chart and rows at the window's width">
+<img src="media/window.png" width="720" alt="Cryptonks' window: the popup's chart and rows at the window's width">
 
-Crypto Stonks also opens in a tiled window: the popup's chart and rows at the
+Cryptonks also opens in a tiled window: the popup's chart and rows at the
 window's width. To open it, right-click the pill or run
-`omarchy-shell wsouto.crypto-stonks openWindow`. It shares the popup's lists,
+`omarchy-shell wsouto.cryptonks openWindow`. It shares the popup's lists,
 range, and quotes. To float it, match class `org.quickshell` and title
-`Crypto Stonks` in a window rule.
+`Cryptonks` in a window rule.
 
 The window also works with no pill. Run
-`omarchy plugin disable wsouto.crypto-stonks`, then add
-`{ "id": "wsouto.crypto-stonks" }` to `plugins` in
+`omarchy plugin disable wsouto.cryptonks`, then add
+`{ "id": "wsouto.cryptonks" }` to `plugins` in
 `~/.config/omarchy/shell.json` to keep the plugin loaded. To bring the pill
 back, remove that entry first, then run
-`omarchy plugin enable wsouto.crypto-stonks center`.
+`omarchy plugin enable wsouto.cryptonks center`.
 
 For keys that open and close the popup and the window, add these lines to
 `~/.config/hypr/bindings.lua`. Omarchy doesn't use either key by default:
 
 ```lua
-o.bind("SUPER + ALT + C", "Crypto Stonks popup", "omarchy-shell shell toggle wsouto.crypto-stonks")
-o.bind("SUPER + SHIFT + C", "Crypto Stonks window", "omarchy-shell wsouto.crypto-stonks toggleWindow")
+o.bind("SUPER + ALT + C", "Cryptonks popup", "omarchy-shell shell toggle wsouto.cryptonks")
+o.bind("SUPER + SHIFT + C", "Cryptonks window", "omarchy-shell wsouto.cryptonks toggleWindow")
 ```
 
-For Crypto Stonks in the app launcher:
+For Cryptonks in the app launcher:
 
 ```sh
-cp ~/.config/omarchy/plugins/wsouto.crypto-stonks/share/crypto-stonks.desktop ~/.local/share/applications/
+cp ~/.config/omarchy/plugins/wsouto.cryptonks/share/cryptonks.desktop ~/.local/share/applications/
 mkdir -p ~/.local/share/icons/hicolor/scalable/apps
-cp ~/.config/omarchy/plugins/wsouto.crypto-stonks/share/wsouto.crypto-stonks.svg ~/.local/share/icons/hicolor/scalable/apps/
+cp ~/.config/omarchy/plugins/wsouto.cryptonks/share/wsouto.cryptonks.svg ~/.local/share/icons/hicolor/scalable/apps/
 ```
 
 ## Smooth or retro
@@ -145,7 +145,7 @@ way Omarchy draws its logo. Click the small chart icon at the top right, or
 press `s`, to switch between smooth and retro.
 
 Both looks draw in your theme's colours, light themes too: up in its green
-and down in its red, or in Crypto Stonks' own pair where the theme's are
+and down in its red, or in Cryptonks' own pair where the theme's are
 missing, too alike, or too faint.
 
 ## Keys
@@ -189,7 +189,7 @@ same.
   then press `r`. A symbol Bybit has delisted stays this way: remove it.
 - **Everything fails with "too many requests… or Bybit is not available where
   you are".** Bybit answered 403. It does that when an IP sends too many
-  requests, and to places it doesn't serve, such as the US. Crypto Stonks
+  requests, and to places it doesn't serve, such as the US. Cryptonks
   leaves Bybit alone for 10 minutes after one, and `r` won't hurry it. If you
   are somewhere Bybit doesn't serve, there is nothing to do.
 - **A price looks wrong.** It is Bybit's last traded price for the USDT
@@ -199,13 +199,13 @@ same.
   way.
 - **The header says "1W unavailable", with RETRY beside it.** Bybit didn't
   send that range's chart. Click RETRY, or press `r`. While Bybit is turning
-  Crypto Stonks away, a range fails at once.
+  Cryptonks away, a range fails at once.
 - **Search says "The symbol list didn't load", with RETRY beside it.** The
   list of Bybit's contracts, which search reads, didn't come. Click RETRY, or
   press Enter. Once it has come, search needs no network until the saved list
   is a day old.
 - **The footer says "Can't read the data file".** The file holding your lists
-  can't be opened or isn't valid JSON, often after a hand edit. Crypto Stonks
+  can't be opened or isn't valid JSON, often after a hand edit. Cryptonks
   keeps the lists it has and writes nothing over the file until it can read it
   again. Fix the file and it reads it as you save, or remove it to start over
   with the five starter symbols.
@@ -217,11 +217,11 @@ same.
 - **Sites:** `api.bybit.com`, for prices, candles, and the list of contracts.
   Nothing else.
 - **Data:** Bybit's public market API, which needs no key. It may change or
-  stop without notice. Crypto Stonks isn't investment advice, and isn't
+  stop without notice. Cryptonks isn't investment advice, and isn't
   affiliated with Bybit.
 - **Files it writes:** your lists and settings in
-  `~/.config/omarchy/wsouto.crypto-stonks.json`, and the last quotes and the
-  list of contracts in `~/.cache/wsouto.crypto-stonks/`. The shell keeps the
+  `~/.config/omarchy/wsouto.cryptonks.json`, and the last quotes and the
+  list of contracts in `~/.cache/wsouto.cryptonks/`. The shell keeps the
   pill's form on its bar entry in `~/.config/omarchy/shell.json`.
 - **Limits:** every request has a time limit of 10 seconds and a size cap.
   Prices refresh every minute. A row's day line comes every 5 minutes, and the
@@ -238,20 +238,20 @@ allowed them. It runs with the other checks in `bash test/check.sh`.
 ## Remove
 
 ```sh
-omarchy plugin disable wsouto.crypto-stonks
-rm ~/.config/omarchy/plugins/wsouto.crypto-stonks    # removes the link only
+omarchy plugin disable wsouto.cryptonks
+rm ~/.config/omarchy/plugins/wsouto.cryptonks    # removes the link only
 ```
 
 Your lists, the saved quotes, and the launcher files, if you added them, stay.
 Delete what you no longer want:
 
 ```sh
-rm ~/.config/omarchy/wsouto.crypto-stonks.json   # your lists; keep it to reinstall later
-rm -r ~/.cache/wsouto.crypto-stonks
-rm -f ~/.local/share/applications/crypto-stonks.desktop ~/.local/share/icons/hicolor/scalable/apps/wsouto.crypto-stonks.svg
+rm ~/.config/omarchy/wsouto.cryptonks.json   # your lists; keep it to reinstall later
+rm -r ~/.cache/wsouto.cryptonks
+rm -f ~/.local/share/applications/cryptonks.desktop ~/.local/share/icons/hicolor/scalable/apps/wsouto.cryptonks.svg
 ```
 
-If you added them, also delete the `{ "id": "wsouto.crypto-stonks" }` entry in
+If you added them, also delete the `{ "id": "wsouto.cryptonks" }` entry in
 `plugins` in `~/.config/omarchy/shell.json`, and the `o.bind` lines in
 `~/.config/hypr/bindings.lua`.
 

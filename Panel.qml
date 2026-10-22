@@ -10,8 +10,8 @@ import qs.Ui
 // shown, and the service the data and the saved look and change mode.
 Panel {
   id: root
-  moduleName: "wsouto.crypto-stonks"
-  ipcTarget: "wsouto.crypto-stonks"
+  moduleName: "wsouto.cryptonks"
+  ipcTarget: "wsouto.cryptonks"
   manageIpc: false
 
   property var anchorItem: null

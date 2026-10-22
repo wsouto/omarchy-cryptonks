@@ -29,7 +29,7 @@ import "Tones.js" as Tones
 // the id in manifest.json; the shell uses it to find this widget's settings.
 BarWidget {
   id: root
-  moduleName: "wsouto.crypto-stonks"
+  moduleName: "wsouto.cryptonks"
 
   // The service and the theme's up and down, shared with the popup; null
   // until the shell has loaded the service.

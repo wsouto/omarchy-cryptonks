@@ -3,7 +3,7 @@
 import QtQuick
 import Quickshell.Io
 
-// The plugin's one IPC target, `omarchy-shell wsouto.crypto-stonks <function>`,
+// The plugin's one IPC target, `omarchy-shell wsouto.cryptonks <function>`,
 // with or without a pill on the bar. The popup's verbs go through the shell,
 // which opens the popup on the focused screen's pill.
 Item {
@@ -17,13 +17,13 @@ Item {
   // it is wired to lives on the item around it.
   IpcHandler {
     id: handler
-    target: "wsouto.crypto-stonks"
+    target: "wsouto.cryptonks"
 
     function refresh(): void { if (root.service) root.service.refresh() }
 
-    function open(): void { if (root.shell) root.shell.summon("wsouto.crypto-stonks", "{}") }
-    function close(): void { if (root.shell) root.shell.hide("wsouto.crypto-stonks") }
-    function toggle(): void { if (root.shell) root.shell.toggle("wsouto.crypto-stonks", "{}") }
+    function open(): void { if (root.shell) root.shell.summon("wsouto.cryptonks", "{}") }
+    function close(): void { if (root.shell) root.shell.hide("wsouto.cryptonks") }
+    function toggle(): void { if (root.shell) root.shell.toggle("wsouto.cryptonks", "{}") }
 
     function toggleWindow(): void { if (root.windowHost) root.windowHost.toggle() }
     function openWindow(): void { if (root.windowHost) root.windowHost.open() }

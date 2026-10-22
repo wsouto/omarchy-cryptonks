@@ -1,6 +1,6 @@
-# Feature map: Stonks to Crypto Stonks
+# Feature map: Stonks to Cryptonks
 
-The goal is fidelity: Crypto Stonks should look and behave as the author's
+The goal is fidelity: Cryptonks should look and behave as the author's
 Stonks does, so a person who knows one knows the other. This page walks the
 original, feature by feature, and says what happens to each one here.
 
@@ -118,7 +118,7 @@ on 2026-10-21.
 | All, and named lists; the list menu; Manage lists (rename, reorder, delete) | yes | **Keep** |
 | Ctrl-click a row to choose its lists (`m`); `,` and `.` for previous and next list | yes | **Keep** |
 | The line beside the list's name: how many rows are up and down | yes | **Keep** |
-| Data file with version-1 keys, unknown keys kept on write, an unreadable file never overwritten | `grvc.stonks.json` | **Keep**, as `wsouto.crypto-stonks.json` |
+| Data file with version-1 keys, unknown keys kept on write, an unreadable file never overwritten | `grvc.stonks.json` | **Keep**, as `wsouto.cryptonks.json` |
 | Last quotes saved, so a restart shows prices marked "As of" | `~/.cache/grvc.stonks/quotes.json` | **Keep**, own path |
 | Starter symbols | NVDA, AAPL, MSFT, SPY, TSLA | **Adapt**, see the questions |
 | `Settings.js` | copied | Waits for this step (it needs the original's `Quote.regularClose`, which becomes "since 00:00 UTC", and `History.historyRanges`) |
@@ -139,7 +139,7 @@ on 2026-10-21.
 | Works with the pill turned off | yes | **Keep** |
 | IPC: `openWindow`, `toggleWindow`, `omarchy-shell ... toggle`, for Hyprland bindings | yes | **Keep**, own id |
 | Launcher entry and icon in `share/` | the Stonks icon | **Adapt**: the same pixel bull, recoloured, so the two launcher entries differ |
-| Window class `org.quickshell`, title `Stonks` for a floating rule | yes | **Adapt**: title `Crypto Stonks` |
+| Window class `org.quickshell`, title `Stonks` for a floating rule | yes | **Adapt**: title `Cryptonks` |
 
 ## Looks, keys and character
 
@@ -148,7 +148,7 @@ on 2026-10-21.
 | Smooth and retro looks, in the theme's colours, light or dark | yes | **Keep** |
 | Click the look icon, or `s`, to switch | yes | **Keep** |
 | The key sheet (`?`) and every key in the original table | yes | **Keep** (drop only a key whose feature is dropped) |
-| Stonks' own name on screen: the pill's "STONKS" with no symbol, the window title | the author's brand | **Adapt**: "CRYPTO" and `Crypto Stonks`; the README wordmark is only in its picture |
+| Stonks' own name on screen: the pill's "STONKS" with no symbol, the window title | the author's brand | **Adapt**: "CRYPTO" and `Cryptonks`; the README wordmark is only in its picture |
 | Bull and bear sprites, the live dot | yes | **Keep** |
 | Calm: nothing moves when look, range, list or order changes | yes | **Keep** |
 | Every character drawn is one JetBrainsMono Nerd Font has | yes | **Keep** |
@@ -205,7 +205,7 @@ on 2026-10-21.
 
 - **Help me with this one, I need more info.** Answered after the review: the
   app draws "STONKS" only as the pill's text with no symbol and as the window
-  title. Here they read "CRYPTO" and `Crypto Stonks`. The bull and bear stay;
+  title. Here they read "CRYPTO" and `Cryptonks`. The bull and bear stay;
   the launcher icon is the same bull, recoloured. **Agreed.**
 
 5. **"Overdue" and "As of".** The original says "overdue" after 90 seconds

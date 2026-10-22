@@ -1,4 +1,4 @@
-# Contributing to Crypto Stonks
+# Contributing to Cryptonks
 
 A crypto futures watchlist for the Omarchy shell bar. It is QML and plain
 JavaScript, with no build step: shell plugins must be QML, and the shell
@@ -54,9 +54,9 @@ plugin. In short:
   replay and draw-in.
 - `Plugin.qml`: the manifest's service entry, which the pill and the popup
   share through `serviceFor`. Its `Service.qml` is the one data owner: the
-  data file `~/.config/omarchy/wsouto.crypto-stonks.json` (its keys and
+  data file `~/.config/omarchy/wsouto.cryptonks.json` (its keys and
   defaults are `Settings.js`'s), the saved quotes in
-  `~/.cache/wsouto.crypto-stonks/quotes.json`, and the feed.
+  `~/.cache/wsouto.cryptonks/quotes.json`, and the feed.
 - `AppWindow.qml`, `WindowHost.qml`, `IpcTarget.qml`: the tiled window, what a request for it does with the popup, and the plugin's IPC target.
 - `PriceFeed.qml`: fetches the featured symbol once a minute, and every
   symbol while the popup is open, and holds their quotes, while a screen is

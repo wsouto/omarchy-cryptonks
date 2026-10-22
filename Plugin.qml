@@ -4,7 +4,7 @@ import QtQuick
 
 // The manifest's service entry: the data service, the theme's up and down,
 // the window's host, and the IPC target, side by side, each on its own. The
-// pill and the popup reach them through `serviceFor("wsouto.crypto-stonks")`:
+// pill and the popup reach them through `serviceFor("wsouto.cryptonks")`:
 // the data as `service`, the colours as `trendColors`, the window as
 // `windowHost`, and the IPC target as `ipc`.
 Item {

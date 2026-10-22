@@ -24,11 +24,11 @@ Item {
   readonly property bool elsewhere: !!toplevel && !!toplevel.workspace && toplevel.workspace !== Hyprland.focusedWorkspace
 
   function isWindow(t) {
-    return t.title === "Crypto Stonks" && !!t.wayland && t.wayland.appId === "org.quickshell"
+    return t.title === "Cryptonks" && !!t.wayland && t.wayland.appId === "org.quickshell"
   }
 
   function popupOpen() {
-    return !!shell && typeof shell.isPluginOpen === "function" && shell.isPluginOpen("wsouto.crypto-stonks")
+    return !!shell && typeof shell.isPluginOpen === "function" && shell.isPluginOpen("wsouto.cryptonks")
   }
 
   // The pill's right-click and IPC toggleWindow: the window open on this
@@ -41,7 +41,7 @@ Item {
   // Opens the window, or brings it forward where it is, closing the popup.
   function open() {
     var shown = win.opened
-    if (popupOpen()) shell.hide("wsouto.crypto-stonks")
+    if (popupOpen()) shell.hide("wsouto.cryptonks")
     win.open()
     if (shown) focusWindow()
   }

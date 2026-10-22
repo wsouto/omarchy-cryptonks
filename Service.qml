@@ -11,7 +11,7 @@ import Quickshell.Io
 import "Figures.js" as Figures
 import "Settings.js" as Settings
 
-// The one data owner. The data settings live in wsouto.crypto-stonks.json
+// The one data owner. The data settings live in wsouto.cryptonks.json
 // and are written only here: the symbols, the featured one, the change mode
 // and the look, which the pill and the popup share. The last good quotes are
 // saved, so a restart shows a price at once, until its first answer.
@@ -32,9 +32,9 @@ Item {
   // file reads again, so a typo in it never costs the user's symbols.
   property bool settingsUnreadable: false
 
-  readonly property string dataPath: Quickshell.env("HOME") + "/.config/omarchy/wsouto.crypto-stonks.json"
+  readonly property string dataPath: Quickshell.env("HOME") + "/.config/omarchy/wsouto.cryptonks.json"
   readonly property string cacheDir: (Quickshell.env("XDG_CACHE_HOME") || Quickshell.env("HOME") + "/.cache")
-    + "/wsouto.crypto-stonks"
+    + "/wsouto.cryptonks"
   readonly property string quotesPath: cacheDir + "/quotes.json"
 
   readonly property var library: dataSettings.symbols
@@ -231,7 +231,7 @@ Item {
     // A write drops a read in flight unheard: neither loaded nor failed.
     onSaved: root.dataReadEnded(null)
     onSaveFailed: function(error) {
-      console.warn("crypto-stonks: failed to write " + root.dataPath + ": " + error)
+      console.warn("cryptonks: failed to write " + root.dataPath + ": " + error)
       root.dataReadEnded(null)
     }
   }
@@ -293,7 +293,7 @@ Item {
   // nothing is written until the file reads again.
   function takeUnreadableFile() {
     if (!root.settingsUnreadable)
-      console.warn("crypto-stonks: " + root.dataPath + " can't be read; saving nothing until it can")
+      console.warn("cryptonks: " + root.dataPath + " can't be read; saving nothing until it can")
     root.settingsUnreadable = true
     if (!root.ready) root.adopt(root.dataSettings)
   }

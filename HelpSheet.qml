@@ -36,7 +36,7 @@ Flickable {
   // The version, as the version watch reads it from the manifest; ""
   // leaves it off the credit line rather than show a blank.
   property string version: ""
-  readonly property string credit: (version !== "" ? "Crypto Stonks " + version + " · " : "")
+  readonly property string credit: (version !== "" ? "Cryptonks " + version + " · " : "")
     + "Prices from Bybit"
 
   signal closeRequested()

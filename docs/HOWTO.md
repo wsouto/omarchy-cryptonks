@@ -1,8 +1,8 @@
 # How to run, install, change and remove it
 
 Everything here uses the commands that ship with Omarchy 4. Run them in a
-terminal. The plugin lives in this folder, `~/Projects/omarchy-crypto-stonks`,
-and the shell loads it from `~/.config/omarchy/plugins/wsouto.crypto-stonks`.
+terminal. The plugin lives in this folder, `~/Projects/cryptonks`,
+and the shell loads it from `~/.config/omarchy/plugins/wsouto.cryptonks`.
 
 ## What it needs
 
@@ -15,28 +15,28 @@ and the shell loads it from `~/.config/omarchy/plugins/wsouto.crypto-stonks`.
 ## Install for development (a link, not a copy)
 
 ```sh
-ln -s ~/Projects/omarchy-crypto-stonks ~/.config/omarchy/plugins/wsouto.crypto-stonks
+ln -s ~/Projects/cryptonks ~/.config/omarchy/plugins/wsouto.cryptonks
 omarchy-shell shell rescanPlugins
-omarchy plugin enable wsouto.crypto-stonks center
+omarchy plugin enable wsouto.cryptonks center
 ```
 
 - The first line links the plugin folder into the shell's plugin folder, so
   every edit you make here is the code the shell runs.
 - The last line asks where in the bar to put it. `center` is the default.
 - If the shell does not list the plugin, it may not follow links. Replace the
-  link with a copy: `rm ~/.config/omarchy/plugins/wsouto.crypto-stonks`, then
-  `cp -r ~/Projects/omarchy-crypto-stonks ~/.config/omarchy/plugins/wsouto.crypto-stonks`,
+  link with a copy: `rm ~/.config/omarchy/plugins/wsouto.cryptonks`, then
+  `cp -r ~/Projects/cryptonks ~/.config/omarchy/plugins/wsouto.cryptonks`,
   and copy again after each edit. (Not yet tested on this machine.)
 
 ## The launcher entry (optional)
 
 ```sh
-cp share/crypto-stonks.desktop ~/.local/share/applications/
+cp share/cryptonks.desktop ~/.local/share/applications/
 mkdir -p ~/.local/share/icons/hicolor/scalable/apps
-cp share/wsouto.crypto-stonks.svg ~/.local/share/icons/hicolor/scalable/apps/
+cp share/wsouto.cryptonks.svg ~/.local/share/icons/hicolor/scalable/apps/
 ```
 
-The window also opens with `omarchy-shell wsouto.crypto-stonks openWindow`
+The window also opens with `omarchy-shell wsouto.cryptonks openWindow`
 (or `toggleWindow`), which a Hyprland binding can call.
 
 ## After you change code
@@ -55,8 +55,8 @@ journalctl --user -t omarchy-shell -f
 ## Remove it
 
 ```sh
-omarchy plugin disable wsouto.crypto-stonks
-rm ~/.config/omarchy/plugins/wsouto.crypto-stonks    # removes the link only
+omarchy plugin disable wsouto.cryptonks
+rm ~/.config/omarchy/plugins/wsouto.cryptonks    # removes the link only
 ```
 
 Your repo folder stays. Once the plugin saves settings, they will live in a

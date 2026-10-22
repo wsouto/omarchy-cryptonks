@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "id": "wsouto.crypto-stonks",
-  "name": "Crypto Stonks",
+  "id": "wsouto.cryptonks",
+  "name": "Cryptonks",
   "version": "0.0.1",
   "author": "Walter Souto",
   "license": "MIT",
@@ -13,7 +13,7 @@
     "barWidget": "BarWidget.qml"
   },
   "barWidget": {
-    "displayName": "Crypto Stonks",
+    "displayName": "Cryptonks",
     "description": "Crypto futures prices in your bar.",
     "category": "Info",
     "aliases": ["crypto", "stonks", "ticker"],

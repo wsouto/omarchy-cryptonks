@@ -1,6 +1,6 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2, App.qml.
 // Changes: no request payload (a symbol and a range to show), no version
-// watch, no fundamentals; the window's title is "Crypto Stonks".
+// watch, no fundamentals; the window's title is "Cryptonks".
 pragma ComponentBehavior: Bound
 
 import QtQuick
@@ -43,7 +43,7 @@ Item {
 
   FloatingWindow {
     id: window
-    title: "Crypto Stonks"
+    title: "Cryptonks"
     color: Commons.Color.background
     implicitWidth: Style.space(720)
     implicitHeight: Style.space(760)

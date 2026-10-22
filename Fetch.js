@@ -10,12 +10,12 @@
 // connection, compressed, each answer capped and followed by a line that
 // says what came back. Knows nothing of what it fetches.
 
-var USER_AGENT = "Mozilla/5.0 (Omarchy Crypto Stonks)"
+var USER_AGENT = "Mozilla/5.0 (Omarchy Cryptonks)"
 
 // The line curl writes after each answer: the URL's place in the run, the
 // HTTP status (000 when nothing answered), curl's exit code for it, and any
 // Retry-After. A JSON body never holds a newline followed by this.
-var ANSWER_MARK = "@@cryptostonks"
+var ANSWER_MARK = "@@cryptonks"
 
 // The cap of every run, above the largest answer it asks for even
 // uncompressed: a year of daily candles, about 40 KB as Bybit sent them on

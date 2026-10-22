@@ -1,10 +1,10 @@
 [Desktop Entry]
 Version=1.0
-Name=Crypto Stonks
+Name=Cryptonks
 GenericName=Crypto Watchlist
 Comment=Watchlist and day chart
-Exec=omarchy-shell wsouto.crypto-stonks openWindow
-Icon=wsouto.crypto-stonks
+Exec=omarchy-shell wsouto.cryptonks openWindow
+Icon=wsouto.cryptonks
 Terminal=false
 Type=Application
 Categories=Office;Finance;
