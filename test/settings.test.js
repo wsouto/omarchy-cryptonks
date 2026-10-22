@@ -227,6 +227,23 @@ test("deleting a list takes its symbols out of All, except those another list ho
   expect(S.withListDeleted(base, "Nope")).toEqual(base)
 })
 
+test("removing a row from a named list takes it out of All unless another list holds it", () => {
+  const base = S.fileSettings({ symbols: ["BTCUSDT", "ETHUSDT", "SOLUSDT"], featured: "BTCUSDT",
+    lists: [{ name: "A", symbols: ["ETHUSDT", "SOLUSDT"] }, { name: "B", symbols: ["SOLUSDT"] }], list: "A" })
+  const shown = ["ETHUSDT", "SOLUSDT"]
+  const eth = S.withSymbolRemoved(base, "ETHUSDT", "A", shown)
+  expect(eth.symbols).toEqual(["BTCUSDT", "SOLUSDT"])
+  expect(eth.lists[0].symbols).toEqual(["SOLUSDT"])
+  const sol = S.withSymbolRemoved(base, "SOLUSDT", "A", shown)
+  expect(sol.symbols).toEqual(["BTCUSDT", "ETHUSDT", "SOLUSDT"])
+  expect(sol.lists.map(l => l.symbols)).toEqual([["ETHUSDT"], ["SOLUSDT"]])
+  // From All it is the old removal, and All's last symbol only leaves the list.
+  expect(S.withSymbolRemoved(base, "BTCUSDT", "", base.symbols).symbols).toEqual(["ETHUSDT", "SOLUSDT"])
+  const one = S.fileSettings({ symbols: ["BTCUSDT"], lists: [{ name: "A", symbols: ["BTCUSDT"] }] })
+  const kept = S.withSymbolRemoved(one, "BTCUSDT", "A", ["BTCUSDT"])
+  expect([kept.symbols, kept.lists[0].symbols]).toEqual([["BTCUSDT"], []])
+})
+
 test("a list holding all of All leaves them: All keeps a symbol", () => {
   const base = S.fileSettings({ symbols: ["BTCUSDT"], lists: [{ name: "A", symbols: ["BTCUSDT"] }] })
   expect(S.withListDeleted(base, "A").symbols).toEqual(["BTCUSDT"])

@@ -107,7 +107,7 @@ Item {
   // list with it. A featured symbol that leaves All hands the hero to its
   // neighbour in `shown`, the rows as the popup shows them.
   function removeSymbol(symbol, shown) {
-    root.remove(symbol, Settings.withMembership(root.dataSettings, symbol, root.listName, false, shown))
+    root.remove(symbol, Settings.withSymbolRemoved(root.dataSettings, symbol, root.listName, shown))
   }
 
   // A tick or untick in a symbol's checklist; "" is All. Unticking All is a

@@ -55,6 +55,10 @@ Each entry: **what**, **why**, and a tag.
   list holds, and never the last symbol of All. The original leaves them in
   All. The question in Manage lists says so (`ManageLists.qml` changed one
   line). Your choice, not the market's. `PR?`
+- **Removing a row from a named list does the same**: out of All too unless
+  another list holds it, and the footer's undo puts it back. The original
+  only leaves the list. The checklist's untick (`m`) still leaves just the
+  list. `PR?`
 
 ## Left out of step 8c
 

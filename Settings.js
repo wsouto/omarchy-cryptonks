@@ -266,6 +266,19 @@ function withMembership(settings, symbol, name, member, shown) {
   return fileSettings(next)
 }
 
+// A row's removal from the list on show (`name`, "" for All). From a named
+// list it takes the symbol out of All too unless another list holds it, as
+// deleting a list does; All keeps one symbol, so the last stays and only
+// leaves the list.
+function withSymbolRemoved(settings, symbol, name, shown) {
+  var next = fileSettings(settings)
+  var elsewhere = next.lists.some(function(list) {
+    return listName(list.name).toUpperCase() !== listName(name).toUpperCase() && list.symbols.indexOf(symbol) >= 0
+  })
+  var all = listIndex(next.lists, name) < 0 || (!elsewhere && canRemove(next.symbols))
+  return withMembership(next, symbol, all ? "" : name, false, shown)
+}
+
 // A removal taken back: the symbol returns to the place it had in All and in
 // every list that held it, as `before` recorded them, and to the hero only if
 // the removal moved it off and the hero is still the one it `left`. Anything
