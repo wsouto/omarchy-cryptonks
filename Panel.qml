@@ -1,8 +1,9 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
 // Panel.qml and the hero and rows of StonksBody.qml and Watchlist.qml.
 // Changes: the body is the header, the hero, the day chart and the rows of
-// All, built here; the lists, search, order, ranges, key sheet and footer
-// come in roadmap steps 8 to 11, with the keys that drive them. The change has two
+// All, built here, and the key sheet in their place; the lists, search,
+// order, ranges and footer come in roadmap steps 8 to 11, with the keys
+// that drive them. The change has two
 // modes, percent and amount, both since 00:00 UTC.
 pragma ComponentBehavior: Bound
 
@@ -12,6 +13,7 @@ import qs.Commons as Commons
 import qs.Ui
 import "Figures.js" as Figures
 import "Format.js" as Format
+import "KeySheet.js" as KeySheet
 import "Tones.js" as Tones
 
 // The popup. Owns its lifecycle, keys, the rows' cursor, and what the hero
@@ -46,6 +48,8 @@ Panel {
   // The one cursor the keys and the pointer both move, as in the shell's own
   // panels: the row you put it on, else the featured row.
   property string cursorSymbol: ""
+  // The key sheet shows in the place of the hero, the chart and the rows.
+  property bool showingHelp: false
   readonly property string cursorRow: library.indexOf(cursorSymbol) >= 0 ? cursorSymbol : symbol
   // The change's unit: "pct" or "abs", which c or a click on it switches.
   readonly property string changeMode: service ? service.changeMode : "pct"
@@ -91,6 +95,7 @@ Panel {
     if (opening) {
       if (!fading) heldAnchor.hold()
       root.cursorSymbol = ""
+      root.showingHelp = false
       rows.positionViewAtIndex(Math.max(0, root.library.indexOf(root.symbol)), ListView.Contain)
       motion.reset()
       header.settle()
@@ -126,6 +131,11 @@ Panel {
     if (root.service) root.service.persist({ style: style })
   }
 
+  function toggleHelp() {
+    root.showingHelp = !root.showingHelp
+    if (root.showingHelp) helpSheet.contentY = 0
+  }
+
   function moveCursor(delta) {
     var at = root.library.indexOf(root.cursorRow)
     root.cursorSymbol = root.library[Math.max(0, Math.min(root.library.length - 1, at + delta))] || ""
@@ -156,24 +166,36 @@ Panel {
     contentWidth: panel.fittedContentWidth(root.panelWidth)
     contentHeight: panel.fittedContentHeight(body.implicitHeight)
 
-    // Escape lets go of a scrub first, then closes. The letters are read
-    // whatever Caps Lock says: no key here tells a capital from its letter.
+    // Escape hides the key sheet first, then lets go of a scrub, then
+    // closes; any other key acts, and hides the sheet so what it does
+    // shows. The letters are read whatever Caps Lock says: no key here
+    // tells a capital from its letter.
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
       clip: true
       onMoveRequested: function(dx, dy) {
+        root.showingHelp = false
         if (dy !== 0) root.moveCursor(dy)
         if (dx !== 0) motion.nudgeScrub(dx)
       }
-      onActivateRequested: root.feature(root.cursorRow)
+      onActivateRequested: {
+        root.showingHelp = false
+        root.feature(root.cursorRow)
+      }
       onCloseRequested: {
-        if (motion.scrubT) motion.clearScrub()
+        if (root.showingHelp) root.showingHelp = false
+        else if (motion.scrubT) motion.clearScrub()
         else root.close()
       }
       onTabRequested: function(direction) { root.switchPanel(direction) }
       onTextKey: function(text) {
         var t = text.toLowerCase()
+        if (t === "?") {
+          root.toggleHelp()
+          return
+        }
+        root.showingHelp = false
         if (t === "c") root.cycleChangeMode()
         else if (t === "p") motion.replay()
         else if (t === "s") root.setStyle(root.retro ? "smooth" : "retro")
@@ -207,9 +229,11 @@ Panel {
             fontFamily: root.fontFamily
             onReplayRequested: motion.replay()
             onStyleRequested: function(style) { root.setStyle(style) }
+            onHelpRequested: root.toggleHelp()
           }
 
           Hero {
+            visible: !root.showingHelp
             width: parent.width
             symbol: root.symbol
             quote: root.quote
@@ -226,9 +250,24 @@ Panel {
             fontFamily: root.fontFamily
             onChangeClicked: root.cycleChangeMode()
           }
+
+          HelpSheet {
+            id: helpSheet
+            visible: root.showingHelp
+            width: parent.width
+            height: contentHeight
+            sheet: KeySheet.sheet()
+            retro: root.retro
+            foreground: root.foreground
+            dim: root.dim
+            fontFamily: root.fontFamily
+            edge: Style.space(6)
+            onCloseRequested: root.showingHelp = false
+          }
         }
 
         Item {
+          visible: !root.showingHelp
           width: parent.width
           height: root.chartHeight
 
@@ -294,6 +333,7 @@ Panel {
         // with the hero.
         ListView {
           id: rows
+          visible: !root.showingHelp
           width: parent.width
           height: Math.min(root.library.length, root.maxRows) * (Style.space(40) + root.rowGap) - root.rowGap
           clip: true

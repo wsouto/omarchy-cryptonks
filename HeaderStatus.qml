@@ -1,21 +1,20 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
 // HeaderStatus.qml. Changes: the animal never sleeps, since a perpetual
-// never rests; the help mark and the retry come with the key sheet and the
-// statuses (roadmap steps 8 and 11), so the look icon stands at the right
-// edge until then.
+// never rests; the retry comes with the statuses (roadmap step 11).
 import QtQuick
 import qs.Commons
 import qs.Commons as Commons
 import "Cells.js" as Cells
 import "Tones.js" as Tones
 
-// The animal, the status words, and the look. Surfaces own the actions;
+// The animal, the status words, the look, and the help mark. Surfaces own the actions;
 // this only draws and signals. The animal is the day's bull or bear in
 // cells (`Cells.spriteFor`), the same in both looks, in one slot the status
 // words start after, drawn or not, so neither the look nor a flat day moves
 // them. The height is the slot's in both looks, and the look is one small
-// icon in both, so toggling moves nothing. Neither has a tooltip: under the
-// header one covered the line naming the symbol.
+// icon in both, so toggling moves nothing. None of the three has a tooltip:
+// under the header one covered the line naming the symbol, and what a click
+// does is on the ? sheet with the keys.
 Item {
   id: root
 
@@ -43,6 +42,7 @@ Item {
 
   signal replayRequested()
   signal styleRequested(string style)
+  signal helpRequested()
 
   // At rest as a surface opens: the icon on the look, the animal on what
   // it reads.
@@ -134,13 +134,11 @@ Item {
   // The look a click switches to, as s does, about a word tall: the chart
   // already shows the current one. The target is the header's full height,
   // so a click above or below the icon still lands. It hovers in brighter
-  // ink, and takes the pressed fill while the button is down. Inset by its
-  // fill's margin, so the fill ends on the header's edge: the popup clips
-  // anything past it.
+  // ink, and takes the pressed fill while the button is down.
   LookIcon {
     id: lookIcon
-    anchors.right: parent.right
-    anchors.rightMargin: Style.space(6)
+    anchors.right: helpMark.left
+    anchors.rightMargin: Style.space(14)
     anchors.verticalCenter: parent.verticalCenter
     retro: root.retro
     still: root.still
@@ -164,6 +162,40 @@ Item {
       hoverEnabled: true
       cursorShape: Qt.PointingHandCursor
       onClicked: root.styleRequested(root.retro ? "smooth" : "retro")
+    }
+  }
+
+  // Inset by its fill's margin, so the pressed fill ends on the header's
+  // edge: the popup clips anything past it.
+  Text {
+    id: helpMark
+    anchors.right: parent.right
+    anchors.rightMargin: Style.space(6)
+    anchors.verticalCenter: parent.verticalCenter
+    textFormat: Text.PlainText
+    text: "?"
+    color: helpMouse.containsMouse ? root.foreground : root.dim
+    font.family: root.fontFamily
+    font.pixelSize: Style.font.caption
+    font.bold: true
+    Behavior on color { ColorAnimation { duration: 160; easing.type: Easing.OutCubic } }
+    Rectangle {
+      z: -1
+      anchors.centerIn: parent
+      width: parent.implicitWidth + Style.space(12)
+      height: parent.implicitHeight + Style.space(4)
+      radius: root.retro ? 0 : Style.cornerRadius
+      color: helpMouse.pressed ? Style.pressedFillFor(root.foreground, Commons.Color.accent) : "transparent"
+    }
+    MouseArea {
+      id: helpMouse
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.verticalCenter: parent.verticalCenter
+      width: Math.max(Style.space(24), parent.width + Style.space(12))
+      height: root.height
+      hoverEnabled: true
+      cursorShape: Qt.PointingHandCursor
+      onClicked: root.helpRequested()
     }
   }
 }

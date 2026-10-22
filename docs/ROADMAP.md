@@ -57,7 +57,9 @@ The steps from 5 on follow the original's layers, as drawn in
         the feed's own pause on a refusal does its work. You see: a list of
         rows.
 - [ ] **8. Lists and search.** Lists, search, order, undo, the key sheet.
-      You see: add a symbol by typing `eth`.
+      You see: add a symbol by typing `eth`. The key sheet came early, after
+      step 7: the header's `?` (or the `?` key) shows the keys that work so
+      far, and each step adds its own keys to `KeySheet.js`.
 - [ ] **9. Ranges.** You see: 1W to All.
 - [ ] **10. The window.** The window, IPC, the launcher. You see:
       right-click opens the window.
