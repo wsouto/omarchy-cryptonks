@@ -1,5 +1,6 @@
 // Copied from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2, InfoTable.qml.
-// Changes: none.
+// Changes: the labels of a fact column pad to the widest of the two lines on
+// show, so OPEN's value and VOL's start together.
 pragma ComponentBehavior: Bound
 
 import QtQuick
@@ -52,9 +53,11 @@ Item {
 
   function valueWidth(text) { return text ? Math.ceil(metrics.advanceWidth(text)) : 0 }
   function labelWidth(text) { return text ? Math.ceil(metrics.advanceWidth(text) + text.length * root.labelFont.letterSpacing) : 0 }
-  function factWidth(f) {
+  // A fact's width, its label as wide as its column's (`labelW`), so the
+  // values of a column start together.
+  function factWidth(f, labelW) {
     var value = Math.max(valueWidth(f.widest), valueWidth(f.value))
-    return labelWidth(f.label) + (f.label ? innerGap : 0) + value + (f.after ? innerGap + labelWidth(f.after) : 0)
+    return labelW + (f.label ? innerGap : 0) + value + (f.after ? innerGap + labelWidth(f.after) : 0)
   }
   function toneColor(tone) { return tone === "up" ? upColor : tone === "down" ? downColor : foreground }
 
@@ -67,16 +70,25 @@ Item {
   readonly property var layout: {
     var price = 0
     var facts = []
-    var widen = function(list) {
-      for (var f = 0; f < list.length; f++) facts[f] = Math.max(facts[f] || 0, factWidth(list[f]))
-    }
+    var labels = []
+    var shownLists = []
+    var lists = []
     for (var i = 0; i < 2; i++) {
       var line = lines ? lines[i] : null
       if (!line) continue
       price = Math.max(price, valueWidth(line.range.widest), valueWidth(line.range.lowText), valueWidth(line.range.highText))
-      widen(line.facts)
+      shownLists.push(line.facts)
     }
-    for (var l = 0; l < factLists.length; l++) widen(factLists[l])
+    lists = shownLists.concat(factLists)
+    // The labels pad to the widest of the two lines on show; a column keeps
+    // the room every list could ask, so a range change moves nothing.
+    for (var a = 0; a < shownLists.length; a++)
+      for (var b = 0; b < shownLists[a].length; b++) labels[b] = Math.max(labels[b] || 0, labelWidth(shownLists[a][b].label))
+    for (var c = 0; c < lists.length; c++)
+      for (var d = 0; d < lists[c].length; d++) {
+        var own = c < shownLists.length ? labels[d] : labelWidth(lists[c][d].label)
+        facts[d] = Math.max(facts[d] || 0, factWidth(lists[c][d], own))
+      }
     var fixed = function(n) {
       var t = titleWidth + gap + price * 2 + innerGap * 2
       for (var k = 0; k < n; k++) t += gap + facts[k]
@@ -100,7 +112,7 @@ Item {
       xs.push(x + gap)
       x += gap + facts[j]
     }
-    return { price: price, rule: rule, lowX: lowX, ruleX: ruleX, highX: highX, factXs: xs }
+    return { price: price, rule: rule, lowX: lowX, ruleX: ruleX, highX: highX, factXs: xs, labelWs: labels }
   }
 
   implicitHeight: lineHeight * 2 + rowGap
@@ -169,6 +181,7 @@ Item {
 
           Text {
             visible: text !== ""
+            width: root.layout.labelWs[fact.index]
             textFormat: Text.PlainText
             text: fact.f.label
             color: root.dim
