@@ -23,12 +23,19 @@ Gaurav Chande, which does the same for stocks. See [Credits](#credits).
 Needs Omarchy 4 and `curl` 7.84 or later, which Omarchy ships.
 
 ```sh
-ln -s ~/Projects/cryptonks ~/.config/omarchy/plugins/wsouto.cryptonks
+omarchy plugin add https://github.com/wsouto/omarchy-cryptonks
+omarchy plugin enable wsouto.cryptonks center
+```
+
+To work on it instead, link a checkout:
+
+```sh
+ln -s ~/Projects/omarchy-cryptonks ~/.config/omarchy/plugins/wsouto.cryptonks
 omarchy-shell shell rescanPlugins
 omarchy plugin enable wsouto.cryptonks center
 ```
 
-That links a checkout of this folder into the shell's plugins and asks where in
+That puts the plugin in the shell's plugins and asks where in
 the bar to put `wsouto.cryptonks`, which is Cryptonks' id. The centre
 is the default. [docs/HOWTO.md](docs/HOWTO.md) has the details, and how to
 update and remove it.

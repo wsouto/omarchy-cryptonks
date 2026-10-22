@@ -1,0 +1,40 @@
+name: Something's wrong
+description: Cryptonks did something it shouldn't, or didn't do something it should.
+labels: [bug]
+body:
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened
+      description: What you did, and what Cryptonks did. A picture helps if it's about how something looks. For a wrong price, give the symbol, the range, the time, and what Bybit showed then.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Cryptonks' version
+      description: "In a terminal: `jq -r .version ~/.config/omarchy/plugins/wsouto.cryptonks/manifest.json`"
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: omarchy-version
+    attributes:
+      label: Omarchy's version
+      description: "In a terminal: `omarchy version`"
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: The shell's log (optional)
+      description: |
+        In a terminal: `journalctl --user -t omarchy-shell -b --no-pager | grep -i cryptonks | tail -n 50`
+        Read it before you paste it: it can name the symbols you follow.
+      render: text

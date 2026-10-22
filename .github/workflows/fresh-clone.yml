@@ -1,0 +1,24 @@
+# What a clean checkout can run: the tests and the boundaries. The manifest
+# validator and qmllint need an Omarchy install, so `bash test/check.sh` on a
+# desktop stays the full check.
+name: Checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+      - run: sudo apt-get install -y ripgrep jq
+      - run: bun test
+      - run: bash test/boundaries.sh
+      - run: jq -e . manifest.json > /dev/null
