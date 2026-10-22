@@ -39,7 +39,7 @@ you don't follow.
 
 ## The pill
 
-<img src="media/pill.png" width="260" alt="The pill's four forms: a sparkline, an arrow, the symbol with its change, and the day's bear">
+<img src="media/pill.png" width="240" alt="The pill's four forms: a sparkline, an arrow, the symbol with its change, and the day's bear">
 
 The pill shows today's move for the coin you last looked at, in one of four
 forms: a sparkline, an arrow, the price as text, or the day's animal, the
