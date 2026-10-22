@@ -1,6 +1,6 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
 // HeaderStatus.qml. Changes: the animal never sleeps, since a perpetual
-// never rests; the retry comes with the statuses (roadmap step 11).
+// never rests.
 import QtQuick
 import qs.Commons
 import qs.Commons as Commons
@@ -19,6 +19,8 @@ Item {
   id: root
 
   property string statusText: ""
+  // The words say a range failed, and its button asks again, as r does.
+  property bool offersRetry: false
   property bool retro: false
   // The animal, as the body decides it: `kind` "bull", "bear", or "" (a
   // flat day, or no direction yet), and `chart`, what it reads. A turn of
@@ -43,6 +45,7 @@ Item {
   signal replayRequested()
   signal styleRequested(string style)
   signal helpRequested()
+  signal retryRequested()
 
   // At rest as a surface opens: the icon on the look, the animal on what
   // it reads.
@@ -114,12 +117,14 @@ Item {
 
   // Live is said by the chart's breathing dot and by these words in the
   // foreground; a mark in front of them would push them over each time it
-  // came and went.
+  // came and went, with every range change and every scrub. A failed range's
+  // retry follows them.
   Text {
+    id: statusWords
     anchors.left: slot.right
     anchors.leftMargin: Style.space(14)
-    anchors.right: lookIcon.left
-    anchors.rightMargin: Style.space(8)
+    width: Math.max(0, Math.min(implicitWidth, lookIcon.x - Style.space(8) - x
+      - (root.offersRetry ? retry.implicitWidth + Style.space(16) : 0)))
     anchors.verticalCenter: parent.verticalCenter
     textFormat: Text.PlainText
     text: root.statusText.toUpperCase()
@@ -129,6 +134,17 @@ Item {
     font.bold: true
     font.letterSpacing: 1
     elide: Text.ElideRight
+  }
+
+  ListAction {
+    id: retry
+    view: root
+    visible: root.offersRetry
+    anchors.left: statusWords.right
+    anchors.leftMargin: Style.space(16)
+    anchors.verticalCenter: parent.verticalCenter
+    text: "RETRY"
+    onActivated: root.retryRequested()
   }
 
   // The look a click switches to, as s does, about a word tall: the chart

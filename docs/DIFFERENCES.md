@@ -41,8 +41,9 @@ Each entry: **what**, **why**, and a tag.
 - **A range is asked again by age alone**, 15 minutes for 1W and 1M, an hour
   for the rest; the market never closes, so there is no session rule. `crypto`
 - **No charts fetched ahead for rows**, and no held chart that dims while the
-  next range loads: the chart is empty, then draws in. The loading look comes
-  with step 11. `left out`
+  next range loads: the chart is empty and the header says "Loading BTCUSDT
+  1W", then it draws in. A range that failed says "1W unavailable" with
+  RETRY, which asks again as `r` does. `left out`
 - **The info block has no market cap or P/E**: VOL stands in their place, on
   the 52-week line under OPEN, where the original has MKT CAP and P/E. Funding
   rate or open interest could take the other slot later. `crypto`

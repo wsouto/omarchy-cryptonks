@@ -112,8 +112,9 @@ The steps from 5 on follow the original's layers, as drawn in
         hero's listing line and on each row's name line: REFRESH FAILED, NO
         DATA FOR THIS SYMBOL, and AS OF for a saved or aged quote; LIVE goes
         out when the quote ages. Rules in `Figures.js`, tested.
-  - [ ] **11b. A range's loading look and RETRY.** The chart dims while a
-        range loads, and a range that failed offers RETRY in the header.
+  - [x] **11b. A range's loading look and RETRY.** The chart dims while a
+        range loads (left out: the header says "Loading", the chart is empty), and a
+        range that failed offers RETRY in the header.
   - [ ] **11c. The data file.** "Can't read the data file" in the footer,
         and the file left alone.
 - [ ] **12. Polish and release.** The boundary check that only `adapters/`

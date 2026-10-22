@@ -129,8 +129,14 @@ Item {
   readonly property var yearLine: Figures.yearLine(quote)
   readonly property var infoFactLists: [Figures.dayLine(quote || {}).facts]
     .concat(History.rangeFactLists(History.youngRoom(quote)))
+  // A range that failed, which r, or the header's button, asks for again;
+  // and one still on its way, named.
+  readonly property bool rangeMissing: !onDay && !history
+  readonly property bool offersRetry: rangeMissing && problem !== ""
   readonly property string statusText: scrubT && view && view.time !== null
       ? (onDay ? "At " + Format.utcClock(view.time) + " UTC" : History.momentText(history, view.time))
+    : offersRetry ? range.toUpperCase() + " unavailable"
+    : rangeMissing && quote ? "Loading " + symbol + " " + range
     : problem !== "" ? "! " + problem
     : quote ? "Live" : ""
   readonly property string baselineText: !quote ? ""
@@ -603,6 +609,7 @@ Item {
         id: header
         width: parent.width
         statusText: root.statusText
+        offersRetry: root.offersRetry
         retro: root.retro
         animal: ({ kind: root.view ? Figures.animalKind(root.view.daySign) : "", chart: root.symbol })
         scrubbing: root.scrubT !== 0
@@ -615,6 +622,7 @@ Item {
         fontFamily: root.fontFamily
         onReplayRequested: motion.replay()
         onStyleRequested: function(style) { root.setStyle(style) }
+        onRetryRequested: if (root.service) root.service.refresh()
         onHelpRequested: root.toggleHelp()
       }
 

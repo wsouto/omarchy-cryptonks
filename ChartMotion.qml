@@ -1,7 +1,7 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
 // ChartMotion.qml. Changes: the chart is the UTC day of the quote on show,
 // or a range's history (`History.js`), so there is no held chart dimming
-// while the next one loads (roadmap step 11); the retro look's five-minute
+// while the next one loads; the retro look's five-minute
 // grain is the candles' own.
 import QtQuick
 import "Chart.js" as Chart
