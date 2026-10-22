@@ -56,7 +56,7 @@ The steps from 5 on follow the original's layers, as drawn in
         open. `Gate.qml` was left out: with one feed and one run a minute,
         the feed's own pause on a refusal does its work. You see: a list of
         rows.
-- [ ] **8. Lists and search.** Lists, search, order, undo, the key sheet.
+- [x] **8. Lists and search.** Lists, search, order, undo, the key sheet.
       You see: add a symbol by typing `eth`. The key sheet came early, after
       step 7: the header's `?` (or the `?` key) shows the keys that work so
       far, and each step adds its own keys to `KeySheet.js`. In three parts:
@@ -76,8 +76,13 @@ The steps from 5 on follow the original's layers, as drawn in
         order a row moves by drag, Shift+J/K or Ctrl+J/K and Ctrl+↑/↓; in a
         sorted one the footer says to switch. A sort never rewrites the
         order arranged by hand. You see: sort the rows by % change.
-  - [ ] **8c. Lists.** Named lists, the list menu, Manage lists, `m`, `,`
-        and `.`, and the line of how many rows are up and down.
+  - [x] **8c. Lists.** Named lists, each with its own order: the list
+        menu (`w` or the list's name), `,` and `.` to step, Manage lists
+        (`W` or the menu) to rename, move and delete, a symbol's lists (`m`
+        or Ctrl-click), and the breadth rule beside the list's name. The
+        original's `ListMenu`, `ManageLists`, `SymbolLists`, `BreadthRule`,
+        `RowPointer` and `KeyText` are copied unchanged. A new list's name
+        is not kept through a close. You see: make a list and fill it.
 - [ ] **9. Ranges.** You see: 1W to All.
 - [ ] **10. The window.** The window, IPC, the launcher. You see:
       right-click opens the window.

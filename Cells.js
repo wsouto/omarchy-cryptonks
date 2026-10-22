@@ -7,8 +7,12 @@
 //
 // The cell drawings. Knows no data.
 
-// The thin rules. 2 px is the thinnest at which a colour reads.
+// The thin rules. 2 px is the thinnest at which a colour reads. A plain
+// rule is the foreground at RULE_INK; retro draws a rule as cells on the
+// pixel chart's grain, RULE_PITCH apart.
 var RULE_THICKNESS = 2
+var RULE_PITCH = 3
+var RULE_INK = 0.12
 
 // 3x5 bitmap digits, drawn in square cells the way Omarchy draws its own
 // logo in blocks. Rows 0–4 stand on the baseline; row 5 is below it, where

@@ -1,14 +1,14 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2, the
-// list line of HeroBand.qml. Changes: its own file; the breadth rule comes
-// in its own commit of roadmap step 8c, and "TODAY", which says the rows
-// keep the day on every range, with the ranges in step 9.
+// list line of HeroBand.qml. Changes: its own file; "TODAY", which says the
+// rows keep the day on every range, comes with the ranges in roadmap step 9.
+// The breadth rule rests while the popup is closed.
 import QtQuick
 import qs.Commons
 import qs.Commons as Commons
 import "Settings.js" as Settings
 
 // The line over the rows: the list's name on the left, which opens the list
-// menu, its order on the right.
+// menu, its order on the right, and the list's breadth between them.
 Item {
   id: root
 
@@ -19,6 +19,11 @@ Item {
   property color foreground: Commons.Color.foreground
   property color dim: Commons.Color.foreground
   property string fontFamily: Style.font.family
+  property color upColor: Commons.Color.foreground
+  property color downColor: Commons.Color.urgent
+  property var breadth: ({ list: "", up: 0, flat: 0, down: 0, none: 0 })
+  property bool still: false
+  function settle() { breadthRule.settle() }
 
   signal listClicked()
   signal orderClicked()
@@ -63,6 +68,25 @@ Item {
     hoverEnabled: true
     cursorShape: Qt.PointingHandCursor
     onClicked: root.listClicked()
+  }
+
+  // The rule between the name and the order is the list's breadth.
+  BreadthRule {
+    id: breadthRule
+    anchors.left: listChevron.right
+    anchors.leftMargin: Style.space(12)
+    anchors.right: orderText.left
+    anchors.rightMargin: Style.space(16)
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    breadth: root.breadth
+    retro: root.retro
+    still: root.still
+    foreground: root.foreground
+    dim: root.dim
+    upColor: root.upColor
+    downColor: root.downColor
+    fontFamily: root.fontFamily
   }
 
   // The order control hovers the way a button does: the fill and the

@@ -137,6 +137,7 @@ Panel {
       root.closeListViews()
       root.clearNote()
       footer.settle()
+      listLine.settle()
       root.cancelDrag()
       rowPointer.rest()
       rows.positionViewAtIndex(Math.max(0, root.shownRows.indexOf(root.featured)), ListView.Contain)
@@ -708,6 +709,12 @@ Panel {
             id: listLine
             width: parent.width
             listLabel: root.listLabel
+            // The rows' figures at the moment on screen, the scrub's too.
+            breadth: Object.assign({ list: root.listName },
+              Figures.listBreadth(root.shownRows, root.service ? root.service.quotes : {}, root.scrubT, root.changeMode))
+            still: !root.opened
+            upColor: root.upColor
+            downColor: root.downColor
             onListClicked: root.listMenuOpen ? root.closeListMenu() : root.openListMenu()
             order: root.order
             reversed: root.reversed

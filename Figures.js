@@ -24,6 +24,20 @@ function animalKind(sign) {
   return sign > 0 ? "bull" : sign < 0 ? "bear" : ""
 }
 
+// How the list reads on the figures its rows show: up, flat, and down, and
+// the rows with no figure yet. The rows' own rule (`heroView`), so the rule
+// beside the list's name never disagrees with them.
+function listBreadth(symbols, quotes, scrubT, mode) {
+  var out = { up: 0, flat: 0, down: 0, none: 0 }
+  for (var i = 0; i < symbols.length; i++) {
+    var quote = quotes[symbols[i]]
+    var view = quote && Change.sinceOpen(quote) ? heroView(quote, scrubT, mode) : null
+    if (!view) out.none++
+    else out[view.sign > 0 ? "up" : view.sign < 0 ? "down" : "flat"]++
+  }
+  return out
+}
+
 // The hero's figures at the moment shown: now with `scrubT` 0, else the
 // candle the scrub reads (`Chart.readingAt`). `mode` is "pct" or "abs", the
 // change's unit; both are measured from the day's open. `sign` is the
