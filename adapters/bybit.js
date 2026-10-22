@@ -172,6 +172,56 @@ function parseCandles(json) {
   return out
 }
 
+// ---- A range's candles -------------------------------------------------
+
+// What each range asks for: Bybit's interval code, that interval in
+// seconds, and how far back the first candle may be, in days. Every range
+// is under 1000 candles, Bybit's most, so one request holds it, and a symbol
+// younger than the range simply gets the candles it has. YTD starts at
+// 00:00 UTC on 1 January and All has no start: monthly candles, the newest
+// 1000 of them, are older than any perpetual. A range's name is the
+// project's, in `History.js`; the day is `candlesUrl`'s.
+var RANGES = {
+  "1W": { interval: "15", step: 900, days: 7 },
+  "1M": { interval: "60", step: 3600, days: 30 },
+  "3M": { interval: "D", step: DAY, days: 90 },
+  "6M": { interval: "D", step: DAY, days: 180 },
+  "YTD": { interval: "D", step: DAY },
+  "1Y": { interval: "D", step: DAY, days: 365 },
+  "2Y": { interval: "D", step: DAY, days: 730 },
+  "5Y": { interval: "W", step: 7 * DAY, days: 1826 },
+  "10Y": { interval: "W", step: 7 * DAY, days: 3652 },
+  "All": { interval: "M", step: 31 * DAY }
+}
+
+// The candles of `range` for one symbol at `now` (seconds), or null for a
+// range this adapter does not serve (the day).
+function historyUrl(symbol, range, now) {
+  var spec = RANGES[range]
+  if (!spec) return null
+  var start = range === "YTD" ? Date.UTC(new Date(now * 1000).getUTCFullYear(), 0, 1) / 1000
+    : spec.days ? now - spec.days * DAY : null
+  return HOST + "/v5/market/kline?category=linear&symbol=" + encodeURIComponent(symbol)
+    + "&interval=" + spec.interval + (start === null ? "" : "&start=" + Math.floor(start) * 1000) + "&limit=1000"
+}
+
+// A range's line as the chart reads it: { symbol, range, step, bars,
+// baseline }. A bar is a candle's start and close; `step` is the seconds one
+// candle spans. The baseline is the first candle's open, the price at the
+// range's start, which the change is measured from; the first close would
+// leave that candle's own move out. Null with no candles.
+function buildHistory(symbol, range, candles) {
+  var spec = RANGES[range]
+  if (!spec || !candles || candles.length === 0) return null
+  return {
+    symbol: symbol,
+    range: range,
+    step: spec.step,
+    bars: candles.map(function (c) { return { t: c.t, p: c.close } }),
+    baseline: candles[0].open
+  }
+}
+
 // ---- The quote record --------------------------------------------------
 
 // The record of docs/QUOTE-RECORD.md for one symbol: its instrument entry

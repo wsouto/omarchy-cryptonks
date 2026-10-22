@@ -1,4 +1,5 @@
 .pragma library
+.import "History.js" as History
 // One refresh of one symbol, and a run of several in one curl
 // (`planRun`, `readRun`): what to ask the exchange, and what its answers
 // mean for the feed: the quote to show, what to keep for the next refresh,
@@ -8,10 +9,11 @@
 // turns `wait` into a time. It names no exchange.
 //
 // What the feed keeps between refreshes is { symbol, instrument, candles,
-// year, day, candlesAt }: the instrument, up to a year of daily candles,
-// whether a whole year was asked for, and the 5-minute candles of the UTC
-// day the exchange last answered in, each oldest first, and the exchange's
-// time when the candles last came. All of it
+// year, day, candlesAt, histories }: the instrument, up to a year of daily
+// candles, whether a whole year was asked for, and the 5-minute candles of
+// the UTC day the exchange last answered in, each oldest first, the
+// exchange's time when the candles last came, and the candles of each range
+// asked for, with the time they came ({ range: { candles, at } }). All of it
 // belongs to `symbol`, and is dropped whole when the symbol changes, so one
 // symbol's decimals or year never dress another's price.
 
@@ -22,7 +24,7 @@ var YEAR = 365
 // What is kept for `symbol`: `kept` when it is that symbol's, else nothing.
 function keptFor(kept, symbol) {
   if (kept && kept.symbol === symbol) return kept
-  return { symbol: symbol, instrument: null, candles: null, year: false, day: null, candlesAt: 0 }
+  return { symbol: symbol, instrument: null, candles: null, year: false, day: null, candlesAt: 0, histories: {} }
 }
 
 // How many daily candles to ask for at `now` (seconds). With `year` and no
@@ -65,8 +67,10 @@ function candlesDue(kept, symbol, now, every) {
 // The candles are asked for only with `candles`, a year of them with `year`
 // (`dailyCount`), and the instrument only when none is kept for this
 // symbol: it does not change by the minute. A year's daily candles are asked
-// as "year", the rest as "daily".
-function plan(adapter, symbol, kept, now, candles, year) {
+// as "year", the rest as "daily". A `range` other than the day is asked for
+// as "history:<range>" when none is kept or the kept one is due again
+// (`History.due`), or with `force`, a refresh you asked for.
+function plan(adapter, symbol, kept, now, candles, year, range, force) {
   var mine = keptFor(kept, symbol)
   var urls = [adapter.quotesUrl([symbol])]
   var asked = ["quotes"]
@@ -74,6 +78,10 @@ function plan(adapter, symbol, kept, now, candles, year) {
     var count = dailyCount(mine, now, year)
     urls.push(adapter.dailyUrl(symbol, count), adapter.candlesUrl(symbol, dayStart(mine.day, now)))
     asked.push(year && !mine.year ? "year" : "daily", "day")
+  }
+  if (range && range !== "1D" && (force || History.due(range, mine.histories[range] && mine.histories[range].at, now))) {
+    urls.push(adapter.historyUrl(symbol, range, now))
+    asked.push("history:" + range)
   }
   if (mine.instrument === null) {
     urls.push(adapter.instrumentUrl(symbol))
@@ -128,8 +136,8 @@ function refusedWords(adapter, status) {
 // exchange said about each question, and last a price it did not send.
 function read(all, asked, symbol, kept, adapter) {
   var mine = keptFor(kept, symbol)
-  var out = { kept: { symbol: symbol, instrument: mine.instrument, candles: mine.candles, year: mine.year, day: mine.day, candlesAt: mine.candlesAt },
-    quote: null, problem: "", wait: 0 }
+  var out = { kept: { symbol: symbol, instrument: mine.instrument, candles: mine.candles, year: mine.year, day: mine.day, candlesAt: mine.candlesAt, histories: mine.histories },
+    quote: null, problem: "", wait: 0, history: null }
   // No answer at all, not even "no network", means curl never ran or died
   // before its first URL: the exchange was never asked.
   if (all.length === 0) {
@@ -139,7 +147,14 @@ function read(all, asked, symbol, kept, adapter) {
 
   var json = {}
   var trouble = ""
+  // A range's candles failing leaves the price and the day as they are, but
+  // says so.
+  var slip = ""
   var refusal = ""
+  var note = function (role, words) {
+    if (role.indexOf("history:") === 0) slip = words
+    else trouble = words
+  }
   for (var i = 0; i < all.length; i++) {
     var answer = all[i]
     var role = asked[answer.index]
@@ -151,12 +166,12 @@ function read(all, asked, symbol, kept, adapter) {
         refusal = refusedWords(adapter, answer.status)
       }
     } else if (answer.kind === "none") {
-      trouble = "No network"
+      note(role, "No network")
     } else if (answer.kind !== "ok") {
-      trouble = adapter.NAME + " sent an error (HTTP " + answer.status + ")"
+      note(role, adapter.NAME + " sent an error (HTTP " + answer.status + ")")
     } else {
       try { json[role] = JSON.parse(answer.body) }
-      catch (e) { trouble = adapter.NAME + " sent an answer that cannot be read" }
+      catch (e) { note(role, adapter.NAME + " sent an answer that cannot be read") }
     }
   }
 
@@ -174,6 +189,20 @@ function read(all, asked, symbol, kept, adapter) {
   }
   var quotes = json.quotes ? adapter.parseQuotes(json.quotes) : null
   if (json.quotes && quotes === null) trouble = trouble || said(adapter, json.quotes)
+  var wanted = asked.filter(function (role) { return role.indexOf("history:") === 0 })[0]
+  if (wanted && !json[wanted] && !slip) slip = "The refresh stopped before every answer came"
+  if (wanted && json[wanted]) {
+    var range = wanted.slice("history:".length)
+    var ranged = adapter.parseCandles(json[wanted])
+    if (ranged === null) slip = slip || said(adapter, json[wanted])
+    else if (ranged.length === 0) slip = slip || adapter.NAME + " sent no candles for " + symbol + " over " + range
+    else {
+      var histories = Object.assign({}, mine.histories)
+      histories[range] = { candles: ranged, at: quotes ? quotes.time : 0 }
+      out.kept.histories = histories
+      out.history = adapter.buildHistory(symbol, range, ranged)
+    }
+  }
   var daily = json.daily || json.year
   var candles = daily ? adapter.parseCandles(daily) : null
   if (daily && candles === null) trouble = trouble || said(adapter, daily)
@@ -197,6 +226,7 @@ function read(all, asked, symbol, kept, adapter) {
   }
 
   out.quote = adapter.buildQuote(out.kept.instrument, quotes.prices[symbol], quotes.time, out.kept.candles, out.kept.day)
+  out.problem = slip
   return out
 }
 
@@ -220,15 +250,17 @@ function runSymbols(watched, owed, whole) {
 // { urls, asked }: every symbol's URLs in one run, the featured one first so
 // the pill hears first; `asked` holds each URL's { symbol, role }. A
 // symbol's candles come every `rowEvery` seconds, the featured one's every
-// minute (`candlesDue`), and only the featured one asks for a year.
-function planRun(adapter, symbols, featured, kept, now, rowEvery) {
+// minute (`candlesDue`), and only the featured one asks for a year. `want`
+// is the chart on show, { symbol, range }: only its symbol asks for a range.
+function planRun(adapter, symbols, featured, kept, now, rowEvery, want, force) {
   var order = symbols.indexOf(featured) >= 0 ? [featured].concat(symbols.filter(function (s) { return s !== featured })) : symbols
   var urls = []
   var asked = []
   for (var i = 0; i < order.length; i++) {
     var symbol = order[i]
     var mine = kept[symbol] || null
-    var one = plan(adapter, symbol, mine, now, candlesDue(mine, symbol, now, symbol === featured ? 60 : rowEvery), symbol === featured)
+    var one = plan(adapter, symbol, mine, now, candlesDue(mine, symbol, now, symbol === featured ? 60 : rowEvery), symbol === featured,
+      want && want.symbol === symbol ? want.range : "", force)
     for (var j = 0; j < one.urls.length; j++) {
       urls.push(one.urls[j])
       asked.push({ symbol: symbol, role: one.asked[j] })
@@ -238,11 +270,12 @@ function planRun(adapter, symbols, featured, kept, now, rowEvery) {
 }
 
 // A run's answers read symbol by symbol (`read`): { kept, quotes, problems,
-// wait, waitProblem }, each of the first three by symbol, and the longest
+// histories, wait, waitProblem }, each of the first three by symbol,
+// `histories` the ranges that came, by "SYMBOL|RANGE", and the longest
 // wait any refusal asked for, with its words. A symbol the run never reached, as it stopped short,
 // says so; with no answer at all, every symbol blames curl, as `read` does.
 function readRun(all, asked, kept, adapter) {
-  var out = { kept: Object.assign({}, kept), quotes: {}, problems: {}, wait: 0, waitProblem: "" }
+  var out = { kept: Object.assign({}, kept), quotes: {}, problems: {}, histories: {}, wait: 0, waitProblem: "" }
   var mine = {}
   for (var i = 0; i < asked.length; i++) {
     var symbol = asked[i].symbol
@@ -262,6 +295,7 @@ function readRun(all, asked, kept, adapter) {
     out.kept[s] = got.kept
     out.quotes[s] = got.quote
     out.problems[s] = got.problem
+    if (got.history) out.histories[s + "|" + got.history.range] = got.history
     if (got.wait > out.wait) {
       out.wait = got.wait
       out.waitProblem = got.problem

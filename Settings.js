@@ -1,10 +1,10 @@
 .pragma library
 .import "Change.js" as Change
+.import "History.js" as History
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
 // Settings.js. Changes: this project's starter symbols and its two change
-// modes; the featured symbol is always one of All; the ranges and refresh
-// interval come back with the screens that change them (roadmap step 9),
-// and the first-run hint is gone with the hint; the change sorted by is
+// modes; the featured symbol is always one of All; the refresh interval
+// comes back with the screen that changes it, and the first-run hint is gone with the hint; the change sorted by is
 // since 00:00 UTC; there is no order by the amount; nothing is read from the
 // bar entry, which never held this project's symbols.
 //
@@ -125,6 +125,7 @@ function fileSettings(src) {
     order: normalizeOrder(from.order),
     reversed: normalizeReversed(from.order, from.reversed),
     changeMode: from.changeMode === "abs" ? "abs" : "pct",
+    range: History.normalizeRange(from.range),
     style: from.style === "retro" ? "retro" : "smooth",
     lists: lists,
     list: listIndex(lists, from.list) >= 0 ? lists[listIndex(lists, from.list)].name : ""

@@ -1,7 +1,7 @@
 .pragma library
 // Copied from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2, Format.js.
 // Changes: only what this project uses is kept, writing a price, a percent, a
-// move in money and a UTC clock, the retro look's signs, and stacking a
+// move in money, the month names and a UTC clock, the retro look's signs, and stacking a
 // symbol, a percent and a move in money for a side bar; the local
 // clock times, durations and range texts were removed until a screen needs
 // them. A stacked symbol
@@ -70,6 +70,8 @@ function signedMoney(value, digits) {
   var shown = moveDigits(Math.abs(value), digits)
   return signText(shownSign(value, shown)) + money(Math.abs(value), shown)
 }
+
+var MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
 
 function pad2(n) {
   return n < 10 ? "0" + n : String(n)

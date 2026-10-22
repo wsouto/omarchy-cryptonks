@@ -29,7 +29,7 @@ const later = () =>
 const whole = () => later() + answer(3, 200, body("instruments.json"))
 
 // What the feed kept: an instrument, and no candles yet.
-const keep = instrument => instrument ? { symbol: instrument.symbol, instrument, candles: null, day: null } : null
+const keep = instrument => instrument ? { symbol: instrument.symbol, instrument, candles: null, day: null, histories: {} } : null
 const read = (text, asked = FIRST, instrument = null, symbol = "BTCUSDT") =>
   R.read(F.answers(text, B.limits), asked, symbol, keep(instrument), B)
 
@@ -303,4 +303,66 @@ test("a symbol joining the feed is asked for alone, and the rows wait for their 
   expect(R.runSymbols(rows, ["LINKUSDT"], false)).toEqual([])
   // The minute's run asks for every one.
   expect(R.runSymbols(rows, [], true)).toEqual(rows)
+})
+
+// ---- Ranges ----
+
+const wanted = (range, kept = keep(btc()), force = false) =>
+  R.plan(B, "BTCUSDT", kept, NOW, false, false, range, force)
+
+test("a range is asked for once, as its own role, and the day never is", () => {
+  const got = wanted("1W")
+  expect(got.asked).toEqual(["quotes", "history:1W"])
+  expect(got.urls[1]).toBe(B.historyUrl("BTCUSDT", "1W", NOW))
+  expect(wanted("1D").asked).toEqual(["quotes"])
+  expect(wanted("").asked).toEqual(["quotes"])
+})
+
+test("a kept range is asked again when due, or when you ask for a refresh", () => {
+  const kept = range => ({ ...keep(btc()), histories: { [range]: { candles: [], at: NOW - 100 } } })
+  expect(wanted("1W", kept("1W")).asked).toEqual(["quotes"])
+  expect(wanted("1W", kept("1W"), true).asked).toEqual(["quotes", "history:1W"])
+  expect(wanted("1W", { ...kept("1W"), histories: { "1W": { candles: [], at: NOW - 900 } } }).asked).toContain("history:1W")
+  expect(wanted("1Y", kept("1W")).asked).toContain("history:1Y")
+})
+
+test("only the symbol on show asks for its range in a run", () => {
+  const run = R.planRun(B, ["ETHUSDT", "BTCUSDT"], "BTCUSDT", {}, NOW, 300, { symbol: "ETHUSDT", range: "1M" })
+  expect(run.asked.filter(a => a.role.startsWith("history:"))).toEqual([{ symbol: "ETHUSDT", role: "history:1M" }])
+})
+
+test("a range that comes is kept and handed over as a history, with the day untouched", () => {
+  const text = later() + answer(3, 200, body("kline-btcusdt-w.json"))
+  const got = read(text, [...LATER, "history:5Y"], btc())
+  expect(got.problem).toBe("")
+  expect(got.quote.price).toBe(84440.8)
+  expect(got.history.range).toBe("5Y")
+  expect(got.history.bars).toHaveLength(4)
+  expect(got.kept.histories["5Y"].candles).toHaveLength(4)
+  expect(got.kept.histories["5Y"].at).toBe(B.parseQuotes(JSON.parse(body("tickers.json"))).time)
+})
+
+test("a range that fails keeps the price and says why, and keeps the last good range", () => {
+  const before = { ...keep(btc()), histories: { "5Y": { candles: [{ t: 1 }], at: 5 } } }
+  const text = later() + answer(3, 500)
+  const got = read(text, [...LATER, "history:5Y"], btc())
+  expect(got.quote.price).toBe(84440.8)
+  expect(got.problem).toBe("Bybit sent an error (HTTP 500)")
+  expect(got.history).toBeNull()
+  const kept = R.read(F.answers(text, B.limits), [...LATER, "history:5Y"], "BTCUSDT", before, B)
+  expect(kept.kept.histories["5Y"].candles).toEqual([{ t: 1 }])
+  expect(kept.quote.price).toBe(84440.8)
+})
+
+test("a run cut short before its range says so, and a range alone needs no day", () => {
+  const cut = read(later(), [...LATER, "history:1W"], btc())
+  expect(cut.quote.price).toBe(84440.8)
+  expect(cut.problem).toBe("The refresh stopped before every answer came")
+})
+
+test("a run reports each symbol's range by symbol and range", () => {
+  const asked = [{ symbol: "BTCUSDT", role: "quotes" }, { symbol: "BTCUSDT", role: "history:5Y" }]
+  const text = answer(0, 200, body("tickers.json")) + answer(1, 200, body("kline-btcusdt-w.json"))
+  const got = R.readRun(F.answers(text, B.limits), asked, { BTCUSDT: { ...keep(btc()), candles: [], day: [] } }, B)
+  expect(Object.keys(got.histories)).toEqual(["BTCUSDT|5Y"])
 })

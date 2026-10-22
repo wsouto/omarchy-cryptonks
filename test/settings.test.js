@@ -16,6 +16,7 @@ test("a first start shows the five starters, BTCUSDT featured, smooth and in per
     order: "manual",
     reversed: false,
     changeMode: "pct",
+    range: "1D",
     style: "smooth",
     lists: [],
     list: ""
@@ -37,7 +38,14 @@ test("an unknown look or change mode reads as the default, a known one is kept",
 })
 
 test("a key this version does not know is kept on write", () => {
+  expect(S.fileSettings({ shape: "round" }).shape).toBe("round")
+})
+
+test("the range is one of the row, else the day", () => {
   expect(S.fileSettings({ range: "1W" }).range).toBe("1W")
+  expect(S.fileSettings({ range: "All" }).range).toBe("All")
+  expect(S.fileSettings({ range: "7D" }).range).toBe("1D")
+  expect(S.fileSettings({}).range).toBe("1D")
 })
 
 // ---- Adding, removing, undoing ----
