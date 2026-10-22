@@ -14,21 +14,36 @@ commit. Each step says what you will see. Run `bash test/check.sh` and
       line saying where it came from. You see: the same pill, with the files
       in place and the checks passing. `Settings.js` is not a plain copy: it
       calls the original's `Quote.regularClose` and `History.historyRanges`,
-      so it waits for step 6, where lists and ranking are built.
+      so it waits for step 7, where rows and ranking are built.
       Later trimmed to what the pill uses: `Cells.js` and the rest of
       `Format.js` and `Tones.js` come back with the screens that need them.
 - [x] **3. Write `adapters/bybit.js` and `Fetch.js`.** Parse a saved Bybit
       answer in a test. You see: a test that passes without a network.
 - [x] **4. A pill with a real price.** One symbol, the price and the change
       since 00:00 UTC, refreshed once a minute. You see: BTCUSDT in the bar.
-- [ ] **5. The popup.** The chart for one symbol, scrub with the pointer.
-- [ ] **6. The list.** Rows, adding a symbol through search, removing, undo.
-- [ ] **7. Named lists, ranges and the retro look.**
-- [ ] **8. Polish and tests.** The boundary check that only `adapters/`
-      names an exchange. (The fixtures recorded from Bybit came with step 3.)
+The steps from 5 on follow the original's layers, as drawn in
+[FEATURE-MAP.md](FEATURE-MAP.md), which says what each feature becomes here.
+
+- [ ] **5. The pill's forms.** The day's 5-minute candles (`candlesUrl`;
+      check that Bybit's kline accepts a `start` at 00:00 UTC), the
+      sparkline, arrow and icon forms, middle-click to cycle. You see: the
+      pill in its default sparkline form.
+- [ ] **6. The popup.** Hero, day chart, scrub, the retro and smooth looks.
+      You see: click the pill and scrub BTCUSDT's day.
+- [ ] **7. Rows.** The shared service, `Gate.qml`, the saved quotes,
+      `Settings.js`, rows. You see: a list of rows.
+- [ ] **8. Lists and search.** Lists, search, order, undo, the key sheet.
+      You see: add a symbol by typing `eth`.
+- [ ] **9. Ranges.** You see: 1W to All.
+- [ ] **10. The window.** The window, IPC, the launcher. You see:
+      right-click opens the window.
+- [ ] **11. Statuses.** Errors, retry, the look at every state. You see:
+      unplug the network and read it.
+- [ ] **12. Polish and release.** The boundary check that only `adapters/`
+      names an exchange, flow tests, README, publishing. You see: a release.
 
 Not planned yet: portfolio, API keys, a second exchange, WebSocket, funding
-rate. They are in the design notes and can come after step 8.
+rate. They are in the design notes and can come after step 12.
 
 ## Rules for the code
 

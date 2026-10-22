@@ -134,7 +134,7 @@ minute from the single all-tickers request. (To verify: that kline accepts a
 | Tiled window with the popup's chart and rows; shares lists, range and quotes | yes | **Keep** |
 | Works with the pill turned off | yes | **Keep** |
 | IPC: `openWindow`, `toggleWindow`, `omarchy-shell ... toggle`, for Hyprland bindings | yes | **Keep**, own id |
-| Launcher entry and icon in `share/` | the Stonks icon | **Adapt**: needs our own icon art |
+| Launcher entry and icon in `share/` | the Stonks icon | **Adapt**: the same pixel bull, recoloured, so the two launcher entries differ |
 | Window class `org.quickshell`, title `Stonks` for a floating rule | yes | **Adapt**: title `Crypto Stonks` |
 
 ## Looks, keys and character
@@ -144,7 +144,7 @@ minute from the single all-tickers request. (To verify: that kline accepts a
 | Smooth and retro looks, in the theme's colours, light or dark | yes | **Keep** |
 | Click the look icon, or `s`, to switch | yes | **Keep** |
 | The key sheet (`?`) and every key in the original table | yes | **Keep** (drop only a key whose feature is dropped) |
-| Stonks' own mark and wordmark ("STONKS") | the author's brand | **Adapt**: see the questions |
+| Stonks' own name on screen: the pill's "STONKS" with no symbol, the window title | the author's brand | **Adapt**: "CRYPTO" and `Crypto Stonks`; the README wordmark is only in its picture |
 | Bull and bear sprites, the live dot | yes | **Keep** |
 | Calm: nothing moves when look, range, list or order changes | yes | **Keep** |
 | Every character drawn is one JetBrainsMono Nerd Font has | yes | **Keep** |
@@ -199,7 +199,10 @@ minute from the single all-tickers request. (To verify: that kline accepts a
    for the copyright notice, not the branding), or draw a mark of our own
    later?
 
-- **Help me with this one, I need more info.**
+- **Help me with this one, I need more info.** Answered after the review: the
+  app draws "STONKS" only as the pill's text with no symbol and as the window
+  title. Here they read "CRYPTO" and `Crypto Stonks`. The bull and bear stay;
+  the launcher icon is the same bull, recoloured. **Agreed.**
 
 5. **"Overdue" and "As of".** The original says "overdue" after 90 seconds
    with a refresh every minute or so. Keep 90 seconds?
@@ -233,6 +236,6 @@ original's layers, they could be:
 | 11 | Statuses, errors, retry, the look at every state | unplug the network and read it |
 | 12 | Boundary check, flow tests, README, publishing | a release |
 
-Nothing changes in `ROADMAP.md` until you have reviewed this.
+`ROADMAP.md` follows this order since the review on 2026-10-21.
 
 - **If there is something to change to improve our workflow, I'm open to suggestions, otherwise we can follow it as-is.**
