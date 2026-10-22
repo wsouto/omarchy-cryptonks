@@ -51,6 +51,9 @@ Item {
   readonly property int bandGap: Style.space(16)
   readonly property int groupGap: Style.space(8)
   readonly property int edge: Style.space(8)
+  // The room round the content: the popup's card has its own at the top.
+  property int margins: edge
+  property int topMargin: 0
 
   // The hero's symbol: search's choice while search is open, else the
   // featured one, which the pill shows whatever the popup previews.
@@ -478,7 +481,7 @@ Item {
 
   // The height the body wants: its column, or the list menu and the footer
   // under it when the menu hangs lower.
-  readonly property real wantedHeight: Math.max(body.implicitHeight,
+  readonly property real wantedHeight: Math.max(body.implicitHeight + topMargin,
     listMenuOpen ? listMenu.y + listMenu.height + groupGap + footer.height : 0)
   // What the column holds besides the rows, while the rows show: the window
   // gives the rest of its height to the rows (`rowsRoom`).
@@ -585,8 +588,9 @@ Item {
   // The Column and the list menu.
   Column {
     id: body
-    x: root.edge
-    width: parent.width - 2 * root.edge
+    x: root.margins
+    y: root.topMargin
+    width: parent.width - 2 * root.margins
     spacing: root.bandGap
 
     // The header stands a group's gap over the hero it heads.
@@ -948,7 +952,7 @@ Item {
     visible: root.listMenuOpen
     active: root.listMenuOpen && root.surfaceOpen
     z: 10
-    x: root.edge
+    x: root.margins
     y: rowsBlock.y + listLine.y + listLine.height + Style.space(4)
     choices: root.service ? root.service.lists : []
     current: root.listName

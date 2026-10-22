@@ -45,8 +45,9 @@ Item {
     id: window
     title: "Crypto Stonks"
     color: Commons.Color.background
-    implicitWidth: Style.space(520)
+    implicitWidth: Style.space(720)
     implicitHeight: Style.space(760)
+    minimumSize: Qt.size(Style.space(560), Style.space(480))
     visible: false
 
     // A close by the compositor freezes the body as one of ours does.
@@ -78,13 +79,16 @@ Item {
       Loader {
         id: bodyLoader
         active: false
-        width: Math.min(parent.width, Style.space(520))
+        width: Math.min(parent.width, Style.space(720))
         height: parent.height
         anchors.horizontalCenter: parent.horizontalCenter
         sourceComponent: Body {
           anchors.fill: parent
           // The rows have what the fixed content leaves.
-          rowsRoom: Math.max(0, height - chromeHeight - Style.space(8))
+          margins: Style.space(16)
+          topMargin: Style.space(16)
+          chartHeight: Style.space(220)
+          rowsRoom: Math.max(0, height - chromeHeight - topMargin - margins)
           service: root.service
           trendColors: root.trendColors
           surfaceOpen: window.visible
