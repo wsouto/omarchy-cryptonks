@@ -1,7 +1,8 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
-// Service.qml. Changes: one feed for every symbol; no lists, ranges,
-// previews, fundamentals or overnight feeds; the files are this project's
-// own.
+// Service.qml. Changes: one feed for every symbol, a search preview among
+// them; the symbols to add come from a list fetched once a day, not a
+// lookup per query; no lists, ranges, fundamentals or overnight feeds; an
+// add features its symbol at once; the files are this project's own.
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -13,7 +14,8 @@ import "Settings.js" as Settings
 // saved, so a restart shows a price at once, until its first answer.
 //
 // The featured symbol is kept fresh always, for the pill; every symbol of
-// All while the popup is open, for its rows.
+// All while the popup is open, for its rows, and search's choice, for the
+// hero's preview.
 Item {
   id: root
 
@@ -28,8 +30,9 @@ Item {
   property bool settingsUnreadable: false
 
   readonly property string dataPath: Quickshell.env("HOME") + "/.config/omarchy/wsouto.crypto-stonks.json"
-  readonly property string quotesPath: (Quickshell.env("XDG_CACHE_HOME") || Quickshell.env("HOME") + "/.cache")
-    + "/wsouto.crypto-stonks/quotes.json"
+  readonly property string cacheDir: (Quickshell.env("XDG_CACHE_HOME") || Quickshell.env("HOME") + "/.cache")
+    + "/wsouto.crypto-stonks"
+  readonly property string quotesPath: cacheDir + "/quotes.json"
 
   readonly property var library: dataSettings.symbols
   readonly property string featured: ready ? dataSettings.featured : ""
@@ -37,6 +40,11 @@ Item {
   readonly property bool retro: dataSettings.style === "retro"
   // The popup says when it opens and closes.
   property bool popupOpen: false
+  // Search's choice, which the popup's hero shows unadded: "" for none.
+  property string previewSymbol: ""
+  // The last removal, which `undoRemoval` can take back until the next add:
+  // { symbol, before, left }, the settings before it and the hero it left.
+  property var lastRemoval: null
 
   // Every symbol's quote and problem, as `PriceFeed` holds them, and the
   // featured one's on their own.
@@ -45,18 +53,64 @@ Item {
   readonly property var quote: feed.quotes[featured] || null
   readonly property string problem: feed.problems[featured] || ""
   readonly property bool fresh: !!feed.fresh[featured]
+  // By symbol, whether its quote is this session's own (`PriceFeed.fresh`).
+  readonly property var freshness: feed.fresh
   function refresh() { feed.refresh() }
+
+  // The symbols you can add (`SymbolList`).
+  readonly property alias symbolList: symbols
 
   // A row clicked, a number key: the symbol the pill and the hero show.
   function feature(symbol) {
     if (root.library.indexOf(symbol) >= 0) root.persist({ featured: symbol })
   }
 
+  function preview(symbol) {
+    root.previewSymbol = symbol
+  }
+
+  // An add is featured at once: the hero already shows it as the preview,
+  // so the chart on show never changes. It ends the offer to undo.
+  function addSymbol(symbol) {
+    var next = Settings.withSymbolAdded(root.dataSettings, symbol)
+    next.featured = symbol
+    root.lastRemoval = null
+    root.previewSymbol = ""
+    root.persist(next)
+  }
+
+  // A featured symbol that leaves hands the hero to its neighbour in
+  // `shown`, the rows as the popup shows them. The removal remembers the
+  // settings before it and the hero it left, so it can be taken back as it
+  // was without undoing anything chosen since. Its quote stays in the feed,
+  // so an undo shows it at once.
+  function removeSymbol(symbol, shown) {
+    var before = root.dataSettings
+    root.persist(Settings.withSymbolRemoved(before, symbol, shown))
+    root.lastRemoval = { symbol: symbol, before: before, left: root.dataSettings.featured }
+  }
+
+  // The last removal, put back where it was. Only once.
+  function undoRemoval() {
+    var removal = root.lastRemoval
+    if (!removal) return
+    root.lastRemoval = null
+    root.persist(Settings.withRemovalUndone(root.dataSettings, removal.before, removal.symbol, removal.left))
+  }
+
   Screens { id: screenWatch }
+
+  SymbolList {
+    id: symbols
+    cachePath: root.cacheDir + "/instruments.json"
+  }
 
   PriceFeed {
     id: feed
-    symbols: !root.ready ? [] : root.popupOpen ? root.library : [root.featured]
+    // shortcut: a new preview starts a whole run, every row's price with it;
+    // fine for a typed query's few, worth a run of its own for long lists.
+    symbols: !root.ready ? [] : !root.popupOpen ? [root.featured]
+      : root.previewSymbol !== "" && root.library.indexOf(root.previewSymbol) < 0 ? root.library.concat([root.previewSymbol]) : root.library
     featured: root.featured
     screens: screenWatch
     onAnswered: root.saveQuotes()

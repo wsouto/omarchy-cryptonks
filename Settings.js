@@ -3,8 +3,9 @@
 // Settings.js. Changes: only the data file's keys are kept, with this
 // project's starter symbols and its two change modes; the lists, orders,
 // ranges and refresh interval come back with the screens that change them
-// (roadmap steps 8 and 9), and nothing is read from the bar entry, which
-// never held this project's symbols.
+// (roadmap steps 8b, 8c and 9), so adding, removing and undoing touch All
+// alone; and nothing is read from the bar entry, which never held this
+// project's symbols.
 //
 // The data file's settings: settings in, settings out. Knows nothing of
 // quotes.
@@ -22,6 +23,13 @@ function normalizeSymbols(value) {
     if (s && out.indexOf(s) < 0) out.push(s)
   }
   return out
+}
+
+// All always keeps one symbol: the pill, the hero, and the window all need
+// one to show. The popup refuses All's last removal and says why, from this
+// one rule.
+function canRemove(symbols) {
+  return !!symbols && symbols.length > 1
 }
 
 // The data file. `symbols` is All, the library, in its manual order, and
@@ -45,4 +53,41 @@ function fileSettings(src) {
 
 function settingsEqual(left, right) {
   return JSON.stringify(fileSettings(left)) === JSON.stringify(fileSettings(right))
+}
+
+// An added symbol goes to the end of All.
+function withSymbolAdded(settings, symbol) {
+  var next = fileSettings(settings)
+  next.symbols = normalizeSymbols(next.symbols.concat([symbol]))
+  return next
+}
+
+// A symbol out of All, which keeps one. A featured symbol that leaves hands
+// the hero to its neighbour in `shown`, the rows as the popup shows them:
+// the next, or the one before when it was the last.
+function withSymbolRemoved(settings, symbol, shown) {
+  var next = fileSettings(settings)
+  if (!canRemove(next.symbols) || next.symbols.indexOf(symbol) < 0) return next
+  next.symbols = next.symbols.filter(function(s) { return s !== symbol })
+  if (next.featured === symbol) {
+    var at = (shown || []).indexOf(symbol)
+    next.featured = at < 0 ? next.symbols[0] : shown[at === shown.length - 1 ? at - 1 : at + 1]
+  }
+  return fileSettings(next)
+}
+
+// A removal taken back: the symbol returns to the place it had in All, as
+// `before` recorded it, and to the hero only if the removal moved it off and
+// the hero is still the one it `left`. Anything else changed since stays as
+// it is now.
+function withRemovalUndone(settings, before, symbol, left) {
+  var next = fileSettings(settings)
+  var then = fileSettings(before)
+  var at = then.symbols.indexOf(symbol)
+  if (at >= 0 && next.symbols.indexOf(symbol) < 0) {
+    next.symbols = next.symbols.slice()
+    next.symbols.splice(Math.min(at, next.symbols.length), 0, symbol)
+  }
+  if (then.featured === symbol && left !== symbol && next.featured === left) next.featured = symbol
+  return fileSettings(next)
 }

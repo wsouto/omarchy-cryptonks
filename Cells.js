@@ -1,8 +1,8 @@
 .pragma library
 // Copied from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2, Cells.js.
 // Changes: only what the pill and the popup draw is kept, the block digits,
-// the mark, the bull, the bear and the thin rule; the remove cross comes
-// back with the rows, and the closing eyes are gone, since a perpetual never
+// the mark, the bull, the bear, the thin rule and the remove cross; the
+// closing eyes are gone, since a perpetual never
 // rests. `spriteFor` takes no lids.
 //
 // The cell drawings. Knows no data.
@@ -105,6 +105,16 @@ var BEAR_SPRITE = [
   "..################..",
   "...##############...",
   ".....##########....."
+]
+
+// A row's remove button in retro: an × in the rows' 2 px cells, one cell
+// thick and the height of the symbol's capitals beside it.
+var REMOVE_SPRITE = [
+  "#...#",
+  ".#.#.",
+  "..#..",
+  ".#.#.",
+  "#...#"
 ]
 
 // Flattened lit pixels for a Repeater: [{x, y}, ...].

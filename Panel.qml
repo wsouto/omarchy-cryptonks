@@ -1,10 +1,11 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
 // Panel.qml and the hero and rows of StonksBody.qml and Watchlist.qml.
-// Changes: the body is the header, the hero, the day chart and the rows of
-// All, built here, and the key sheet in their place; the lists, search,
-// order, ranges and footer come in roadmap steps 8 to 11, with the keys
-// that drive them. The change has two
-// modes, percent and amount, both since 00:00 UTC.
+// Changes: the body is the header, the hero, the day chart, the rows of
+// All, search and the footer, built here, and the key sheet in their place;
+// the order, lists, ranges and statuses come in roadmap steps 8b to 11,
+// with the keys that drive them. An add is featured at once, so there is no
+// landing to wait for. The change has two modes, percent and amount, both
+// since 00:00 UTC.
 pragma ComponentBehavior: Bound
 
 import QtQuick
@@ -12,9 +13,11 @@ import qs.Commons
 import qs.Commons as Commons
 import qs.Ui
 import "Figures.js" as Figures
+import "Settings.js" as Settings
 import "Format.js" as Format
 import "KeySheet.js" as KeySheet
 import "Tones.js" as Tones
+import "adapters/bybit.js" as Bybit
 
 // The popup. Owns its lifecycle, keys, the rows' cursor, and what the hero
 // and the rows show at the moment on screen; the chart's motion is `ChartMotion`'s, the data and the saved
@@ -37,9 +40,12 @@ Panel {
   readonly property int bandGap: Style.space(16)
   readonly property int groupGap: Style.space(8)
 
-  readonly property var quote: service ? service.quote : null
-  readonly property string symbol: service ? service.featured : ""
-  readonly property string problem: service ? service.problem : ""
+  // The hero's symbol: search's choice while search is open, else the
+  // featured one, which the pill shows whatever the popup previews.
+  readonly property string symbol: service ? service.previewSymbol || service.featured : ""
+  readonly property var quote: service ? service.quotes[symbol] || null : null
+  readonly property string problem: service ? service.problems[symbol] || "" : ""
+  readonly property string featured: service ? service.featured : ""
   // All, in its manual order: the rows.
   readonly property var library: service ? service.library : []
   // The rows show up to six whole rows; more scroll.
@@ -50,7 +56,16 @@ Panel {
   property string cursorSymbol: ""
   // The key sheet shows in the place of the hero, the chart and the rows.
   property bool showingHelp: false
-  readonly property string cursorRow: library.indexOf(cursorSymbol) >= 0 ? cursorSymbol : symbol
+  readonly property string cursorRow: library.indexOf(cursorSymbol) >= 0 ? cursorSymbol : featured
+  // Search is open in the rows' place, with the hero on its choice.
+  property bool adding: false
+  // Why a key did nothing, or what a removal took, in the footer for a
+  // moment (`say`, `offerUndo`); `offered` is the removal it offers back,
+  // while it is still the service's one on offer.
+  property string note: ""
+  property var offered: null
+  readonly property var removal: service ? service.lastRemoval : null
+  onRemovalChanged: if (offered !== null && removal !== offered) clearNote()
   // The change's unit: "pct" or "abs", which c or a click on it switches.
   readonly property string changeMode: service ? service.changeMode : "pct"
   // The look, smooth or retro, which s or the look icon switches.
@@ -59,7 +74,7 @@ Panel {
   readonly property var view: quote ? Figures.heroView(quote, scrubT, changeMode) : null
   // Live is honest only while refreshes land, the quote is this session's
   // own, and the moment shown is now.
-  readonly property bool live: !!quote && !!service && service.fresh && problem === "" && !scrubT
+  readonly property bool live: !!quote && !!service && !!service.freshness[symbol] && problem === "" && !scrubT
   readonly property string statusText: scrubT && view && view.time !== null ? "At " + Format.utcClock(view.time) + " UTC"
     : problem !== "" ? "! " + problem
     : quote ? "Live" : ""
@@ -96,7 +111,10 @@ Panel {
       if (!fading) heldAnchor.hold()
       root.cursorSymbol = ""
       root.showingHelp = false
-      rows.positionViewAtIndex(Math.max(0, root.library.indexOf(root.symbol)), ListView.Contain)
+      root.cancelAdding()
+      root.clearNote()
+      footer.settle()
+      rows.positionViewAtIndex(Math.max(0, root.library.indexOf(root.featured)), ListView.Contain)
       motion.reset()
       header.settle()
       motion.revealChart()
@@ -107,6 +125,8 @@ Panel {
   function close() {
     setCenterHoverRevealSuppressed(false)
     motion.freeze()
+    root.cancelAdding()
+    noteTimer.stop()
     if (root.service) root.service.popupOpen = false
     root.controller.hide()
   }
@@ -143,7 +163,146 @@ Panel {
   }
 
   function feature(symbol) {
+    root.cancelAdding()
     if (root.service && symbol) root.service.feature(symbol)
+  }
+
+  // ---- Search, removal and undo ----
+
+  // The list to search is asked for as search opens, unless one is fresh.
+  function startAdding() {
+    root.showingHelp = false
+    root.clearNote()
+    root.adding = true
+    if (root.service) root.service.symbolList.want()
+  }
+
+  // The keys go back to the popup's own handler: the field held them.
+  function cancelAdding() {
+    var was = root.adding
+    root.adding = false
+    previewWait.stop()
+    if (root.service) root.service.preview("")
+    if (was) Qt.callLater(function() { if (root.opened) keyCatcher.forceActiveFocus() })
+  }
+
+  // The hero follows search's choice after a moment's pause, so typing and
+  // the arrows ask for a quote only for the choice they stop on.
+  property string chosen: ""
+  function previewTo(symbol) {
+    root.chosen = symbol
+    previewWait.restart()
+  }
+  Timer {
+    id: previewWait
+    interval: 250
+    onTriggered: if (root.adding && root.service) root.service.preview(root.chosen)
+  }
+
+  // A result already in All is shown, as a click on its row shows it; a new
+  // one is added and featured, and the rows bring it into view.
+  function acceptSymbol(symbol) {
+    if (!root.service || !symbol) return
+    var member = root.library.indexOf(symbol) >= 0
+    root.cancelAdding()
+    if (member) root.service.feature(symbol)
+    else root.service.addSymbol(symbol)
+    root.cursorSymbol = ""
+    Qt.callLater(function() { rows.positionViewAtIndex(root.library.indexOf(symbol), ListView.Contain) })
+  }
+
+  // Every removal comes through here, from a key or a click, so All's last
+  // row's refusal is said once, in the footer. Removing the row the cursor
+  // is on hands the cursor to the row that takes its place, as Mail and
+  // Finder do: the next row, or the one before when it was the last.
+  function removeRow(symbol) {
+    root.showingHelp = false
+    if (!root.service || !symbol) return
+    if (!Settings.canRemove(root.library)) {
+      root.say("Keep at least one symbol")
+      return
+    }
+    var shown = root.library
+    var at = shown.indexOf(symbol)
+    var successor = symbol === root.cursorSymbol && at >= 0 ? (shown[at + 1] || shown[at - 1] || "") : ""
+    root.service.removeSymbol(symbol, shown)
+    root.cursorSymbol = successor
+    root.offerUndo(symbol)
+  }
+
+  function say(text) {
+    root.offered = null
+    root.note = text
+    root.holdNote()
+  }
+
+  // A removal is instant and needs no confirm, and the row may be off
+  // screen, so the footer names what went and offers it back. `u` takes it
+  // back until the next add, long after the note has gone.
+  function offerUndo(symbol) {
+    root.offered = root.removal
+    root.note = "Removed " + symbol
+    root.holdNote()
+  }
+
+  function undoRemoval() {
+    root.showingHelp = false
+    if (!root.removal) {
+      root.say("Nothing to undo")
+      return
+    }
+    var symbol = root.removal.symbol
+    root.clearNote()
+    root.service.undoRemoval()
+    root.cursorSymbol = symbol
+    rows.positionViewAtIndex(root.library.indexOf(symbol), ListView.Contain)
+  }
+
+  // The note's moment starts again, and waits while the pointer is on it,
+  // so it never turns into the add under a click on its way.
+  function holdNote() {
+    noteFade.stop()
+    root.noteShown = 1
+    if (root.note !== "" && root.opened && !footer.hovered) noteTimer.restart()
+    else noteTimer.stop()
+  }
+
+  function clearNote() {
+    noteTimer.stop()
+    noteFade.stop()
+    root.noteShown = 1
+    root.note = ""
+    root.offered = null
+  }
+
+  // The footer's click acts on what it shows: an undo offer undoes, else it
+  // opens search.
+  function footerClicked() {
+    if (root.offered !== null) root.undoRemoval()
+    else root.startAdding()
+  }
+
+  // A refusal stays a moment; an offer to undo long enough to act on it.
+  // Its last 600 ms it fades, still taking a click while any of it shows,
+  // and what it covered fades in after it, so the change under a click is
+  // seen coming.
+  property real noteShown: 1
+  Timer {
+    id: noteTimer
+    interval: (root.offered !== null ? 5000 : 2500) - noteFade.duration
+    onTriggered: noteFade.start()
+  }
+  NumberAnimation {
+    id: noteFade
+    target: root
+    property: "noteShown"
+    from: 1
+    to: 0
+    duration: 600
+    onFinished: {
+      root.clearNote()
+      footer.fadeIn()
+    }
   }
 
   function cycleChangeMode() {
@@ -183,11 +342,15 @@ Panel {
         root.showingHelp = false
         root.feature(root.cursorRow)
       }
+      // Search takes its own keys, Escape among them, while its field has
+      // the keyboard.
       onCloseRequested: {
         if (root.showingHelp) root.showingHelp = false
+        else if (root.adding) root.cancelAdding()
         else if (motion.scrubT) motion.clearScrub()
         else root.close()
       }
+      onDeleteRequested: root.removeRow(root.cursorRow)
       onTabRequested: function(direction) { root.switchPanel(direction) }
       onTextKey: function(text) {
         var t = text.toLowerCase()
@@ -200,6 +363,9 @@ Panel {
         else if (t === "p") motion.replay()
         else if (t === "s") root.setStyle(root.retro ? "smooth" : "retro")
         else if (t === "r" && root.service) root.service.refresh()
+        else if (t === "a" || t === "+") root.startAdding()
+        else if (t === "x") root.removeRow(root.cursorRow)
+        else if (t === "u") root.undoRemoval()
         else if (t >= "1" && t <= "9") root.feature(root.library[Number(t) - 1])
       }
 
@@ -333,7 +499,7 @@ Panel {
         // with the hero.
         ListView {
           id: rows
-          visible: !root.showingHelp
+          visible: !root.showingHelp && !root.adding
           width: parent.width
           height: Math.min(root.library.length, root.maxRows) * (Style.space(40) + root.rowGap) - root.rowGap
           clip: true
@@ -348,8 +514,9 @@ Panel {
             quote: root.service ? root.service.quotes[modelData] || null : null
             view: quote ? Figures.heroView(quote, root.scrubT, root.changeMode) : null
             problem: root.service ? root.service.problems[modelData] || "" : ""
-            featuredRow: modelData === root.symbol
+            featuredRow: modelData === root.featured
             cursor: modelData === root.cursorRow
+            removable: modelData === root.cursorSymbol
             retro: root.retro
             scrubX: motion.scrubX
             ground: root.ground
@@ -361,7 +528,45 @@ Panel {
             fontFamily: root.fontFamily
             onPointed: if (root.opened) root.cursorSymbol = modelData
             onFeatureRequested: root.feature(modelData)
+            onRemoveRequested: root.removeRow(modelData)
           }
+        }
+
+        // Search, in the rows' and the footer's place, with the room for a
+        // full answer.
+        SymbolSearch {
+          id: search
+          visible: root.adding && !root.showingHelp
+          active: root.adding && root.opened
+          width: parent.width
+          height: desiredHeight
+          instruments: root.service ? root.service.symbolList.instruments : []
+          listStatus: root.service ? root.service.symbolList.status : ""
+          quoteCoin: Bybit.QUOTE_COIN
+          members: root.library
+          retro: root.retro
+          foreground: root.foreground
+          dim: root.dim
+          fontFamily: root.fontFamily
+          onChose: function(symbol) { root.previewTo(symbol) }
+          onPicked: function(symbol) { root.acceptSymbol(symbol) }
+          onCancelled: root.cancelAdding()
+          onRetryRequested: if (root.service) root.service.symbolList.retry()
+        }
+
+        AddFooter {
+          id: footer
+          visible: !root.showingHelp && !root.adding
+          width: parent.width
+          retro: root.retro
+          foreground: root.foreground
+          dim: root.dim
+          fontFamily: root.fontFamily
+          note: root.note
+          noteAction: root.offered !== null ? " · click to undo" : ""
+          noteOpacity: root.noteShown
+          onClicked: root.footerClicked()
+          onHoveredChanged: if (root.note !== "") root.holdNote()
         }
       }
     }

@@ -8,9 +8,10 @@
 // turns `wait` into a time. It names no exchange.
 //
 // What the feed keeps between refreshes is { symbol, instrument, candles,
-// day, candlesAt }: the instrument, up to a year of daily candles, and the
-// 5-minute candles of the UTC day the exchange last answered in, each oldest
-// first, and the exchange's time when the candles last came. All of it
+// year, day, candlesAt }: the instrument, up to a year of daily candles,
+// whether a whole year was asked for, and the 5-minute candles of the UTC
+// day the exchange last answered in, each oldest first, and the exchange's
+// time when the candles last came. All of it
 // belongs to `symbol`, and is dropped whole when the symbol changes, so one
 // symbol's decimals or year never dress another's price.
 
@@ -21,17 +22,21 @@ var YEAR = 365
 // What is kept for `symbol`: `kept` when it is that symbol's, else nothing.
 function keptFor(kept, symbol) {
   if (kept && kept.symbol === symbol) return kept
-  return { symbol: symbol, instrument: null, candles: null, day: null, candlesAt: 0 }
+  return { symbol: symbol, instrument: null, candles: null, year: false, day: null, candlesAt: 0 }
 }
 
-// How many daily candles to ask for at `now` (seconds). With none kept, a
-// year. Else every day since the newest kept candle and today, and never
-// fewer than 2: yesterday's candle is final only after midnight, and the
-// machine's clock and the exchange's may disagree about when that was, so
-// asking for it again is how its last high and low are never missed. This is
-// a few hundred bytes a minute, not the year's 40 KB.
-function dailyCount(candles, now) {
-  if (!candles || candles.length === 0) return YEAR
+// How many daily candles to ask for at `now` (seconds). With `year` and no
+// year asked for yet, a year: only the featured symbol needs `high52w` and
+// `low52w`, and a year is 40 KB, too much for each of a long list's rows.
+// With none kept, 2. Else every day since the newest kept candle and today,
+// and never fewer than 2: yesterday's candle is final only after midnight,
+// and the machine's clock and the exchange's may disagree about when that
+// was, so asking for it again is how its last high and low are never missed.
+// This is a few hundred bytes a minute.
+function dailyCount(mine, now, year) {
+  if (year && !mine.year) return YEAR
+  var candles = mine.candles
+  if (!candles || candles.length === 0) return 2
   var newest = candles[candles.length - 1].t
   var missed = Math.floor(now / DAY) - Math.floor(newest / DAY)
   return Math.min(YEAR, Math.max(2, missed + 1))
@@ -57,15 +62,18 @@ function candlesDue(kept, symbol, now, every) {
 }
 
 // { urls, asked }: the URLs of the next run and the role of each, in order.
-// The candles are asked for only with `candles`, and the instrument only
-// when none is kept for this symbol: it does not change by the minute.
-function plan(adapter, symbol, kept, now, candles) {
+// The candles are asked for only with `candles`, a year of them with `year`
+// (`dailyCount`), and the instrument only when none is kept for this
+// symbol: it does not change by the minute. A year's daily candles are asked
+// as "year", the rest as "daily".
+function plan(adapter, symbol, kept, now, candles, year) {
   var mine = keptFor(kept, symbol)
   var urls = [adapter.quotesUrl([symbol])]
   var asked = ["quotes"]
   if (candles !== false) {
-    urls.push(adapter.dailyUrl(symbol, dailyCount(mine.candles, now)), adapter.candlesUrl(symbol, dayStart(mine.day, now)))
-    asked.push("daily", "day")
+    var count = dailyCount(mine, now, year)
+    urls.push(adapter.dailyUrl(symbol, count), adapter.candlesUrl(symbol, dayStart(mine.day, now)))
+    asked.push(year && !mine.year ? "year" : "daily", "day")
   }
   if (mine.instrument === null) {
     urls.push(adapter.instrumentUrl(symbol))
@@ -120,7 +128,7 @@ function refusedWords(adapter, status) {
 // exchange said about each question, and last a price it did not send.
 function read(all, asked, symbol, kept, adapter) {
   var mine = keptFor(kept, symbol)
-  var out = { kept: { symbol: symbol, instrument: mine.instrument, candles: mine.candles, day: mine.day, candlesAt: mine.candlesAt },
+  var out = { kept: { symbol: symbol, instrument: mine.instrument, candles: mine.candles, year: mine.year, day: mine.day, candlesAt: mine.candlesAt },
     quote: null, problem: "", wait: 0 }
   // No answer at all, not even "no network", means curl never ran or died
   // before its first URL: the exchange was never asked.
@@ -166,9 +174,11 @@ function read(all, asked, symbol, kept, adapter) {
   }
   var quotes = json.quotes ? adapter.parseQuotes(json.quotes) : null
   if (json.quotes && quotes === null) trouble = trouble || said(adapter, json.quotes)
-  var candles = json.daily ? adapter.parseCandles(json.daily) : null
-  if (json.daily && candles === null) trouble = trouble || said(adapter, json.daily)
+  var daily = json.daily || json.year
+  var candles = daily ? adapter.parseCandles(daily) : null
+  if (daily && candles === null) trouble = trouble || said(adapter, daily)
   if (candles !== null) out.kept.candles = mergeCandles(out.kept.candles, candles).slice(-YEAR)
+  if (candles !== null && json.year) out.kept.year = true
   var day = json.day ? adapter.parseCandles(json.day) : null
   if (json.day && day === null) trouble = trouble || said(adapter, json.day)
   // Only the day the exchange answered in is kept: at midnight the line
@@ -178,7 +188,7 @@ function read(all, asked, symbol, kept, adapter) {
     out.kept.day = mergeCandles(out.kept.day, day).filter(function (c) { return c.t >= today })
   }
   // A run that asked for the price alone builds on the candles kept.
-  var askedCandles = asked.indexOf("daily") >= 0
+  var askedCandles = asked.indexOf("daily") >= 0 || asked.indexOf("year") >= 0
   var haveCandles = askedCandles ? candles !== null && day !== null : !!out.kept.candles && !!out.kept.day
   if (askedCandles && haveCandles && quotes !== null) out.kept.candlesAt = quotes.time
   if (out.kept.instrument === null || quotes === null || !haveCandles || !(symbol in quotes.prices)) {
@@ -195,7 +205,7 @@ function read(all, asked, symbol, kept, adapter) {
 // { urls, asked }: every symbol's URLs in one run, the featured one first so
 // the pill hears first; `asked` holds each URL's { symbol, role }. A
 // symbol's candles come every `rowEvery` seconds, the featured one's every
-// minute (`candlesDue`).
+// minute (`candlesDue`), and only the featured one asks for a year.
 function planRun(adapter, symbols, featured, kept, now, rowEvery) {
   var order = symbols.indexOf(featured) >= 0 ? [featured].concat(symbols.filter(function (s) { return s !== featured })) : symbols
   var urls = []
@@ -203,7 +213,7 @@ function planRun(adapter, symbols, featured, kept, now, rowEvery) {
   for (var i = 0; i < order.length; i++) {
     var symbol = order[i]
     var mine = kept[symbol] || null
-    var one = plan(adapter, symbol, mine, now, candlesDue(mine, symbol, now, symbol === featured ? 60 : rowEvery))
+    var one = plan(adapter, symbol, mine, now, candlesDue(mine, symbol, now, symbol === featured ? 60 : rowEvery), symbol === featured)
     for (var j = 0; j < one.urls.length; j++) {
       urls.push(one.urls[j])
       asked.push({ symbol: symbol, role: one.asked[j] })

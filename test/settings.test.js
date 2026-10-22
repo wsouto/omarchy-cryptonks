@@ -35,3 +35,37 @@ test("an unknown look or change mode reads as the default, a known one is kept",
 test("a key this version does not know is kept on write", () => {
   expect(S.fileSettings({ lists: [{ name: "Majors" }] }).lists).toEqual([{ name: "Majors" }])
 })
+
+// ---- Adding, removing, undoing ----
+
+const four = () => S.fileSettings({ symbols: ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT"], featured: "ETHUSDT" })
+
+test("an added symbol goes to the end of All, once", () => {
+  expect(S.withSymbolAdded(four(), "DOGEUSDT").symbols.slice(-1)).toEqual(["DOGEUSDT"])
+  expect(S.withSymbolAdded(four(), "BTCUSDT").symbols).toEqual(four().symbols)
+})
+
+test("All keeps its last symbol", () => {
+  const one = S.fileSettings({ symbols: ["BTCUSDT"] })
+  expect(S.canRemove(one.symbols)).toBe(false)
+  expect(S.withSymbolRemoved(one, "BTCUSDT", ["BTCUSDT"]).symbols).toEqual(["BTCUSDT"])
+})
+
+test("removing the featured row hands the hero to the next row, or the one before at the end", () => {
+  const shown = four().symbols
+  expect(S.withSymbolRemoved(four(), "ETHUSDT", shown).featured).toBe("SOLUSDT")
+  const last = S.fileSettings({ ...four(), featured: "XRPUSDT" })
+  expect(S.withSymbolRemoved(last, "XRPUSDT", shown).featured).toBe("SOLUSDT")
+  expect(S.withSymbolRemoved(four(), "BTCUSDT", shown).featured).toBe("ETHUSDT")
+})
+
+test("an undo puts the symbol back at its place, and the hero back if nothing moved it since", () => {
+  const before = four()
+  const removed = S.withSymbolRemoved(before, "ETHUSDT", before.symbols)
+  const back = S.withRemovalUndone(removed, before, "ETHUSDT", removed.featured)
+  expect(back.symbols).toEqual(before.symbols)
+  expect(back.featured).toBe("ETHUSDT")
+  // A hero chosen since stays.
+  const chosen = S.fileSettings({ ...removed, featured: "XRPUSDT" })
+  expect(S.withRemovalUndone(chosen, before, "ETHUSDT", removed.featured).featured).toBe("XRPUSDT")
+})

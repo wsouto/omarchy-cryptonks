@@ -59,7 +59,20 @@ The steps from 5 on follow the original's layers, as drawn in
 - [ ] **8. Lists and search.** Lists, search, order, undo, the key sheet.
       You see: add a symbol by typing `eth`. The key sheet came early, after
       step 7: the header's `?` (or the `?` key) shows the keys that work so
-      far, and each step adds its own keys to `KeySheet.js`.
+      far, and each step adds its own keys to `KeySheet.js`. In three parts:
+  - [x] **8a. Search, remove, undo.** `a`, `+` or the footer's "+ Add a
+        symbol" opens search over Bybit's list of contracts, fetched as
+        search opens when the saved one is missing or a day old (850 KB, 98
+        KB compressed), so nothing goes out while you type; "The symbol list
+        didn't load" with RETRY. The hero previews the choice, Enter or a
+        click adds and features it, or shows a row already in All. `x`,
+        Delete, the row's × or a right-click removes; `u` or a click on the
+        footer's note undoes. Rows now ask for 2 daily candles, and only the
+        featured symbol for a year, the one that `high52w` and `low52w`
+        need. You see: add LINKUSDT by typing `link`.
+  - [ ] **8b. Order.** Drag, Shift+J/K, sort by symbol, name or change.
+  - [ ] **8c. Lists.** Named lists, the list menu, Manage lists, `m`, `,`
+        and `.`, and the line of how many rows are up and down.
 - [ ] **9. Ranges.** You see: 1W to All.
 - [ ] **10. The window.** The window, IPC, the launcher. You see:
       right-click opens the window.

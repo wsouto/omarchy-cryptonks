@@ -65,17 +65,26 @@ function inScope(x) {
     && !x.underlyingTicker
 }
 
+// Every linear contract, 1000 to a page, the most Bybit sends: in October
+// 2026 one page held all 907, 850 KB (98 KB compressed). `cursor` is the
+// last page's `cursor` (`parseInstruments`), "" for the first.
+function instrumentsUrl(cursor) {
+  return HOST + "/v5/market/instruments-info?category=linear&limit=1000" + (cursor ? "&cursor=" + encodeURIComponent(cursor) : "")
+}
+
 // One contract, such as BTCUSDT: the same answer as the list, with one item.
 function instrumentUrl(symbol) {
   return HOST + "/v5/market/instruments-info?category=linear&symbol=" + encodeURIComponent(symbol)
 }
 
-// The instruments in scope, one entry each, as { instruments, truncated }.
+// The instruments in scope, one entry each, as { instruments, truncated,
+// cursor }.
 // A symbol is the base coin and USDT, such as BTCUSDT, which is what a person
 // types. Its name is Bybit's `fullName` ("Bitcoin"), as a row and the hero
 // say a company's name, or the base coin ("BTC") where Bybit sends none. `truncated` is true when Bybit says more instruments exist than it
 // sent (a non-empty nextPageCursor): the list is then incomplete, and whoever
-// shows it must say so rather than pass it off as whole.
+// shows it must say so rather than pass it off as whole, or ask for the
+// next page with `cursor`.
 function parseInstruments(json) {
   var r = resultOf(json)
   if (!r || !Array.isArray(r.list)) return null
@@ -93,7 +102,7 @@ function parseInstruments(json) {
       fundingInterval: num(x.fundingInterval)
     })
   }
-  return { instruments: out, truncated: !!r.nextPageCursor }
+  return { instruments: out, truncated: !!r.nextPageCursor, cursor: r.nextPageCursor || "" }
 }
 
 // ---- The latest price --------------------------------------------------

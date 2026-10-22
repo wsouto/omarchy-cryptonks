@@ -119,18 +119,33 @@ const TODAY = Math.floor(NOW / DAY) * DAY
 const candle = (t, high = 10, low = 5) => ({ t, open: 7, high, low, close: 7, volume: 1, turnover: 1 })
 const days = (from, count) => Array.from({ length: count }, (_, i) => candle(from + i * DAY))
 const roles = plan => plan.asked
-const limitOf = plan => Number(plan.urls[plan.asked.indexOf("daily")].match(/limit=(\d+)/)[1])
+const limitOf = plan => Number(plan.urls[1].match(/limit=(\d+)/)[1])
 
-test("the first refresh asks for the instrument and a year of candles", () => {
-  const plan = R.plan(B, "BTCUSDT", null, NOW)
-  expect(roles(plan)).toEqual(FIRST)
+test("the featured symbol's first refresh asks for the instrument and a year of candles", () => {
+  const plan = R.plan(B, "BTCUSDT", null, NOW, true, true)
+  expect(roles(plan)).toEqual(["quotes", "year", "day", "instrument"])
   expect(limitOf(plan)).toBe(365)
   expect(plan.urls[3]).toContain("symbol=BTCUSDT")
 })
 
+test("a row's first refresh asks for two days, not a year", () => {
+  const plan = R.plan(B, "BTCUSDT", null, NOW)
+  expect(roles(plan)).toEqual(FIRST)
+  expect(limitOf(plan)).toBe(2)
+})
+
+test("a row that becomes featured asks for its year once", () => {
+  const kept = { symbol: "BTCUSDT", instrument: btc(), candles: days(TODAY - DAY, 2), year: false }
+  expect(limitOf(R.plan(B, "BTCUSDT", kept, NOW, true, true))).toBe(365)
+  const text = answer(0, 200, body("tickers.json")) + answer(1, 200, body("kline-btcusdt-d.json")) + answer(2, 200, body("kline-btcusdt-5.json"))
+  const got = R.read(F.answers(text, B.limits), ["quotes", "year", "day"], "BTCUSDT", kept, B)
+  expect(got.kept.year).toBe(true)
+  expect(limitOf(R.plan(B, "BTCUSDT", got.kept, NOW, true, true))).toBeLessThan(365)
+})
+
 test("once a year is kept, each minute asks for two candles and no instrument", () => {
-  const kept = { symbol: "BTCUSDT", instrument: btc(), candles: days(TODAY - 364 * DAY, 365) }
-  const plan = R.plan(B, "BTCUSDT", kept, NOW)
+  const kept = { symbol: "BTCUSDT", instrument: btc(), candles: days(TODAY - 364 * DAY, 365), year: true }
+  const plan = R.plan(B, "BTCUSDT", kept, NOW, true, true)
   expect(roles(plan)).toEqual(LATER)
   expect(limitOf(plan)).toBe(2)
 })
@@ -141,9 +156,9 @@ test("after days asleep, a refresh asks for every day missed", () => {
 })
 
 test("what was kept for another symbol is asked for again", () => {
-  const eth = { symbol: "ETHUSDT", instrument: { ...btc(), symbol: "ETHUSDT", name: "ETH" }, candles: days(TODAY - 364 * DAY, 365) }
-  const plan = R.plan(B, "BTCUSDT", eth, NOW)
-  expect(roles(plan)).toEqual(FIRST)
+  const eth = { symbol: "ETHUSDT", instrument: { ...btc(), symbol: "ETHUSDT", name: "ETH" }, candles: days(TODAY - 364 * DAY, 365), year: true }
+  const plan = R.plan(B, "BTCUSDT", eth, NOW, true, true)
+  expect(roles(plan)).toEqual(["quotes", "year", "day", "instrument"])
   expect(limitOf(plan)).toBe(365)
 })
 
@@ -227,7 +242,7 @@ test("5-minute candles Bybit turned down give Bybit's own words, and no quote", 
 // ---- A run of several symbols ----
 
 const readyKept = (symbol, candlesAt) =>
-  ({ symbol, instrument: { ...btc(), symbol }, candles: days(TODAY - 364 * DAY, 365), day: [candle(TODAY)], candlesAt })
+  ({ symbol, instrument: { ...btc(), symbol }, candles: days(TODAY - 364 * DAY, 365), year: true, day: [candle(TODAY)], candlesAt })
 const rolesBy = plan => plan.asked.map(a => a.symbol + ":" + a.role)
 
 test("a row asks for its candles every 5 minutes, the featured symbol every minute", () => {

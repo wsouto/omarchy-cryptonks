@@ -20,9 +20,12 @@ var ANSWER_MARK = "@@cryptostonks"
 // The cap of every run, above the largest answer it asks for even
 // uncompressed: a year of daily candles, about 40 KB as Bybit sent them on
 // 2026-10-21. It leaves room for the most Bybit sends, 1000 candles. A feed
-// that asks for the whole list of contracts (850 KB) or of tickers (680 KB)
-// will need a cap of its own.
+// that asks for the whole list of tickers (680 KB) will need a cap of its
+// own.
 var DAILY_CAP = 128000
+// The whole list of contracts, uncompressed: 850 KB on 2026-10-22, with
+// room for the list to grow.
+var LIST_CAP = 4000000
 
 // `urls` are fetched in turn; an answer over `maxBytes` is a bad answer.
 // `--max-time` is per URL, so no URL holds a run more than 10 s.

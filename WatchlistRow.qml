@@ -1,13 +1,15 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
 // WatchlistRow.qml. Changes: the row's figures are the hero's
-// (`Figures.heroView`), since the day is the UTC day for both; the remove
-// button, the drag, the Ctrl-click lists and the draw-in come with lists
-// and search (roadmap step 8), and the freshness words with the statuses
-// (step 11), so the name line says only a refresh's problem.
+// (`Figures.heroView`), since the day is the UTC day for both; the drag,
+// the Ctrl-click lists and the draw-in come with order and lists (roadmap
+// steps 8b and 8c), and the freshness words with the statuses (step 11), so
+// the name line says only a refresh's problem. The remove button is the
+// row's own pointer's, with no drag to tell it from yet.
 pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Commons
 import qs.Commons as Commons
+import "Cells.js" as Cells
 import "Chart.js" as Chart
 import "Format.js" as Format
 import "Tones.js" as Tones
@@ -15,7 +17,9 @@ import "Tones.js" as Tones
 // One watchlist row: symbol over name, the day line, price over change.
 // The featured row sits in the shell's selected fill; the cursor, which the
 // keys and the pointer both move, takes the shell's hover-cursor fill and a
-// bar down the left edge, and on the featured row only the bar.
+// bar down the left edge, and on the featured row only the bar. A cursor you
+// put there, by pointer or key, shows a remove button, as the shell's
+// Bluetooth panel shows Forget on its cursor's row.
 Rectangle {
   id: row
 
@@ -27,6 +31,9 @@ Rectangle {
   property string problem: ""
   property bool featuredRow: false
   property bool cursor: false
+  // The cursor is yours here, not resting on the featured row: the remove
+  // button shows.
+  property bool removable: false
   property bool retro: false
   property real scrubX: -1
   property color ground: "transparent"
@@ -40,6 +47,8 @@ Rectangle {
   // The pointer is on the row, and a click on it.
   signal pointed()
   signal featureRequested()
+  // The ×, a right-click or a middle-click.
+  signal removeRequested()
 
   // The day line is the quote's own drawing: it changes when the quote does,
   // never with the clock, the change mode, or another symbol's quote. A day
@@ -124,6 +133,7 @@ Rectangle {
   }
 
   Text {
+    id: symbolText
     x: row.gap
     y: row.inset
     textFormat: Text.PlainText
@@ -174,13 +184,81 @@ Rectangle {
     font.bold: true
   }
 
+  // The shell's row action (PanelActionButton, as Bluetooth's Forget): dim
+  // at rest, the foreground under the pointer, never the urgent colour,
+  // which here means a falling price. It sits just after the symbol it
+  // removes, on its line, so nothing on the row moves or narrows for it,
+  // and it has no tip: the × says what it does, and the ? sheet says a
+  // right-click does the same. The row's own pointer handles it.
+  Item {
+    id: removeButton
+    objectName: "rowRemove"
+    visible: row.removable
+    width: Style.space(22)
+    height: width
+    x: symbolText.x + symbolText.width + Style.space(4)
+    y: symbolText.y + (symbolText.height - height) / 2
+    readonly property bool hovered: mouse.containsMouse && mouse.onRemove(mouse.mouseX, mouse.mouseY)
+    readonly property color ink: hovered ? row.foreground : row.dim
+
+    // The shell's 22 px target; its fill 2 px inside it, so on a 40 px row
+    // it keeps clear of the row's top edge.
+    Rectangle {
+      anchors.fill: parent
+      anchors.margins: Style.space(2)
+      radius: row.retro ? 0 : Style.cornerRadius
+      color: removeButton.hovered && mouse.pressed ? Style.pressedFillFor(row.foreground, Commons.Color.accent)
+        : removeButton.hovered ? Style.hoverFillFor(row.foreground, Commons.Color.accent) : "transparent"
+      Behavior on color { ColorAnimation { duration: 60 } }
+    }
+
+    // Smooth: a plain ×, the weight of the symbol beside it.
+    Text {
+      visible: !row.retro
+      anchors.centerIn: parent
+      textFormat: Text.PlainText
+      text: "󰅖"
+      color: removeButton.ink
+      font.family: row.fontFamily
+      font.pixelSize: Style.font.body
+    }
+
+    // Retro: an × in the rows' own 2 px cells, built only in that look.
+    Loader {
+      anchors.centerIn: parent
+      active: row.retro
+      sourceComponent: Component {
+        PixelSprite {
+          width: Cells.REMOVE_SPRITE[0].length * 2
+          height: Cells.REMOVE_SPRITE.length * 2
+          columns: Cells.REMOVE_SPRITE[0].length
+          rows: Cells.REMOVE_SPRITE.length
+          pixels: Cells.spritePixels(Cells.REMOVE_SPRITE)
+          color: removeButton.ink
+        }
+      }
+    }
+  }
+
   // Moving the pointer puts the cursor on the row under it; a click
-  // features it.
+  // features it, or on the × removes it, as a right or middle click does.
+  // A double-click is one click: its second would land on whatever took
+  // the first one's place, the row sliding up after a removal.
   MouseArea {
+    id: mouse
     anchors.fill: parent
     hoverEnabled: true
+    acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
     cursorShape: Qt.PointingHandCursor
+    function onRemove(x, y) {
+      return removeButton.visible && x >= removeButton.x && x < removeButton.x + removeButton.width
+        && y >= removeButton.y && y < removeButton.y + removeButton.height
+    }
     onPositionChanged: row.pointed()
-    onClicked: row.featureRequested()
+    onClicked: function(event) {
+      if (event.button !== Qt.LeftButton || onRemove(event.x, event.y)) row.removeRequested()
+      else row.featureRequested()
+    }
+    onDoubleClicked: {}
   }
 }

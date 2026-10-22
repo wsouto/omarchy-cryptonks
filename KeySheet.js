@@ -1,8 +1,8 @@
 .pragma library
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
-// KeySheet.js. Changes: only the keys that work today are on it; search,
-// removal, undo, the row moves, the ranges and the lists join it with the
-// steps that bring them (roadmap steps 8 to 10). `c` switches between two
+// KeySheet.js. Changes: only the keys that work today are on it; the row
+// moves, the lists and the ranges join it with the steps that bring them
+// (roadmap steps 8b, 8c and 9). `c` switches between two
 // modes here, and the README's table of every key comes in step 12, so the
 // sheet has no note pointing to it yet.
 
@@ -17,7 +17,10 @@ function sheet() {
       { title: "Rows", rows: [
         { key: "↑ ↓", does: "Move the selection" },
         { key: "⏎", does: "Show the row's chart" },
-        { key: "1–9", does: "Show that row's chart" }
+        { key: "1–9", does: "Show that row's chart" },
+        { key: "a", does: "Search and add a symbol" },
+        { key: "x", does: "Remove the selected row" },
+        { key: "u", does: "Undo the last removal" }
       ]},
       { title: "Chart", rows: [
         { key: "← →", does: "Scrub one chart step" },
@@ -31,7 +34,7 @@ function sheet() {
     ],
     mouse: { title: "Mouse", rows: [
       { key: "pill", does: "Click opens this · middle-click changes form" },
-      { key: "row", does: "Click shows its chart" },
+      { key: "row", does: "Click shows its chart · right-click removes it" },
       // The replay had a tooltip under the animal, which covered the line
       // naming the symbol: the sheet says it instead.
       { key: "animal", does: "Click the bull or bear to replay the chart" }
