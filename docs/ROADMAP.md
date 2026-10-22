@@ -117,10 +117,12 @@ The steps from 5 on follow the original's layers, as drawn in
         range that failed offers RETRY in the header.
   - [x] **11c. The data file.** "Can't read the data file" in the footer,
         and the file left alone.
-- [ ] **12. Polish.** (12a boundary check done) The boundary check that only `adapters/` names an
-      exchange (`test/boundaries.sh`), flow tests, the README with pictures,
-      and the manifest's description no longer "work in progress". You see:
-      a plugin that reads as finished.
+- [x] **12. Polish.** The boundary check that only `adapters/` names an
+      exchange (`test/boundaries.sh`), the README with a picture, and the
+      manifest's description no longer "work in progress". Flow tests were
+      left out: the original's need a QtTest harness, and this project's
+      tests are bun tests on saved Bybit answers. You see: a plugin that
+      reads as finished.
 - [ ] **13. Publish on GitHub.** The repository on the author's GitHub, with
       the agent files kept out (`.gitignore`), `CHANGELOG.md`, the version in
       `manifest.json` and tagged releases (`vX.Y.Z`, with release notes from

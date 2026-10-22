@@ -1,9 +1,8 @@
 .pragma library
 .import "Settings.js" as Settings
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
-// KeySheet.js. Changes: only the keys that work today are on it. `c`
-// switches between two modes here, and the README's table of every key comes
-// in step 12, so the sheet has no note pointing to it yet.
+// KeySheet.js. Changes: only the keys this project has are on it. `c`
+// switches between two modes here. The README has the same table of keys.
 
 // What the key sheet shows. Knows nothing of how the keys are handled.
 

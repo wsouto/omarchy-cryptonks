@@ -5,7 +5,7 @@
   "version": "0.0.1",
   "author": "Walter Souto",
   "license": "MIT",
-  "description": "A crypto futures watchlist for your Omarchy bar. Work in progress: today the pill shows BTCUSDT's move since 00:00 UTC as the day's line, an arrow, text, or a bull or a bear, and a click opens its day's chart to scrub.",
+  "description": "A crypto futures watchlist for your Omarchy bar: Bybit USDT perpetuals as a pill with the day's move since 00:00 UTC, and a popup or window with a chart to scrub, ranges, and your lists.",
   "kinds": ["service", "bar-widget"],
   "keepLoaded": true,
   "entryPoints": {
