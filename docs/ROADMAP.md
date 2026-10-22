@@ -2,7 +2,8 @@
 
 Small steps, each leaving a plugin that loads. Tick a box when it is done and
 commit. Each step says what you will see. Run `bash test/check.sh` and
-`omarchy restart shell` after every step.
+`omarchy restart shell` after every step. If the step makes anything differ
+from the original, add it to [DIFFERENCES.md](DIFFERENCES.md) in the same commit.
 
 - [x] **0. Scaffold.** Repo, licence with credit, manifest, a placeholder pill.
       You see: "CRYPTO" in the bar after following [HOWTO.md](HOWTO.md).
