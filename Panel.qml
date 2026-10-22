@@ -2,7 +2,7 @@
 // Panel.qml and the hero and rows of StonksBody.qml and Watchlist.qml.
 // Changes: the body is the header, the hero, the day chart, the list line
 // and its menu, the rows, search and the footer, built here, and the key
-// sheet in their place; the ranges and statuses come in roadmap steps 9 to
+// sheet in their place, and the range row; the statuses come in roadmap step
 // 11, with the keys that drive them; a new list's name is not kept through
 // a close. The rows are a ListView whose rows a drag shifts in
 // place, so the row under the pointer is never rebuilt mid-drag. An add is featured at once, so there is no
@@ -17,6 +17,7 @@ import qs.Ui
 import "Figures.js" as Figures
 import "Settings.js" as Settings
 import "Format.js" as Format
+import "History.js" as History
 import "KeySheet.js" as KeySheet
 import "Tones.js" as Tones
 import "adapters/bybit.js" as Bybit
@@ -91,16 +92,26 @@ Panel {
   readonly property string changeMode: service ? service.changeMode : "pct"
   // The look, smooth or retro, which s or the look icon switches.
   readonly property bool retro: !!service && service.retro
+  // The chart range, the day or another; another's line, once it came.
+  readonly property string range: service ? service.range : "1D"
+  readonly property bool onDay: range === "1D"
+  readonly property var history: !onDay && service ? service.histories[symbol + "|" + range] || null : null
   readonly property int scrubT: motion.scrubT
-  readonly property var view: quote ? Figures.heroView(quote, scrubT, changeMode) : null
+  // The rows and the rule keep the day on every range, so a scrub of
+  // another range moves neither.
+  readonly property int dayScrubT: onDay ? scrubT : 0
+  readonly property var view: !quote ? null
+    : onDay ? Figures.heroView(quote, scrubT, changeMode) : Figures.rangeView(history, quote, scrubT, range)
   // Live is honest only while refreshes land, the quote is this session's
   // own, and the moment shown is now.
   readonly property bool live: !!quote && !!service && !!service.freshness[symbol] && problem === "" && !scrubT
-  readonly property string statusText: scrubT && view && view.time !== null ? "At " + Format.utcClock(view.time) + " UTC"
+  readonly property string statusText: scrubT && view && view.time !== null
+      ? (onDay ? "At " + Format.utcClock(view.time) + " UTC" : History.momentText(history, view.time))
     : problem !== "" ? "! " + problem
     : quote ? "Live" : ""
-  readonly property string baselineText: quote && typeof quote.dayOpen === "number"
-    ? "OPEN 00:00 UTC " + Format.money(quote.dayOpen, quote.priceDigits) : ""
+  readonly property string baselineText: !quote ? ""
+    : onDay ? (typeof quote.dayOpen === "number" ? "OPEN 00:00 UTC " + Format.money(quote.dayOpen, quote.priceDigits) : "")
+    : history ? "START " + History.momentText(history, history.bars[0].t) + " " + Format.money(history.baseline, quote.priceDigits) : ""
 
   // The card's colour, opaque whatever the theme's popup alpha.
   readonly property color ground: Qt.rgba(Commons.Color.popups.background.r, Commons.Color.popups.background.g, Commons.Color.popups.background.b, 1)
@@ -177,6 +188,15 @@ Panel {
 
   function setStyle(style) {
     if (root.service) root.service.persist({ style: style })
+  }
+
+  function setRange(range) {
+    root.showingHelp = false
+    if (root.service) root.service.persist({ range: range })
+  }
+
+  function stepRange(delta) {
+    root.setRange(History.steppedRange(root.range, delta))
   }
 
   function toggleHelp() {
@@ -501,6 +521,8 @@ Panel {
   ChartMotion {
     id: motion
     quote: root.quote
+    range: root.range
+    history: root.history
     surfaceOpen: root.opened
   }
 
@@ -557,6 +579,8 @@ Panel {
         }
         root.showingHelp = false
         if (t === "c") root.cycleChangeMode()
+        else if (t === "[") root.stepRange(-1)
+        else if (t === "]") root.stepRange(1)
         else if (t === "p") motion.replay()
         else if (t === "s") root.setStyle(root.retro ? "smooth" : "retro")
         else if (t === "r" && root.service) root.service.refresh()
@@ -613,6 +637,7 @@ Panel {
             ghost: root.ghost
             missingText: root.problem !== "" ? "—" : "…"
             baselineText: root.baselineText
+            changeCycles: root.onDay
             foreground: root.foreground
             dim: root.dim
             upColor: root.upColor
@@ -658,7 +683,7 @@ Panel {
             scrubX: root.retro ? -1 : motion.scrubX
             reveal: root.retro ? 1 : motion.reveal
             replayX: root.retro ? -1 : motion.replayX
-            live: root.live && !root.retro
+            live: root.live && !root.retro && root.onDay
             newestPrice: root.newestPrice
             surfaceOpen: root.opened
             still: !root.opened
@@ -673,7 +698,7 @@ Panel {
             downColor: root.downColor
             baselineColor: root.dimmer
             glow: true
-            live: root.live && root.retro
+            live: root.live && root.retro && root.onDay
             newestPrice: root.newestPrice
             surfaceOpen: root.opened
             still: !root.opened
@@ -698,6 +723,19 @@ Panel {
           }
         }
 
+        // The chart's range, from the day to all of the symbol's life.
+        RangeSelector {
+          visible: !root.showingHelp
+          width: parent.width
+          options: History.RANGES
+          value: root.range
+          retro: root.retro
+          foreground: root.foreground
+          dim: root.dim
+          fontFamily: root.fontFamily
+          onSelected: function(value) { root.setRange(value) }
+        }
+
         // The list's name and its order, a group's gap over the rows.
         Column {
           id: rowsBlock
@@ -711,7 +749,7 @@ Panel {
             listLabel: root.listLabel
             // The rows' figures at the moment on screen, the scrub's too.
             breadth: Object.assign({ list: root.listName },
-              Figures.listBreadth(root.shownRows, root.service ? root.service.quotes : {}, root.scrubT, root.changeMode))
+              Figures.listBreadth(root.shownRows, root.service ? root.service.quotes : {}, root.dayScrubT, root.changeMode))
             still: !root.opened
             upColor: root.upColor
             downColor: root.downColor
@@ -786,13 +824,13 @@ Panel {
               symbol: modelData
               width: rows.width
               quote: root.service ? root.service.quotes[modelData] || null : null
-              view: quote ? Figures.heroView(quote, root.scrubT, root.changeMode) : null
+              view: quote ? Figures.heroView(quote, root.dayScrubT, root.changeMode) : null
               problem: root.service ? root.service.problems[modelData] || "" : ""
               featuredRow: modelData === root.featured
               cursor: modelData === root.cursorRow
               removable: modelData === root.cursorSymbol
               retro: root.retro
-              scrubX: motion.scrubX
+              scrubX: root.onDay ? motion.scrubX : -1
               ground: root.ground
               foreground: root.foreground
               dim: root.dim

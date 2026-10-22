@@ -1,10 +1,9 @@
 .pragma library
 .import "Settings.js" as Settings
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
-// KeySheet.js. Changes: only the keys that work today are on it; the
-// ranges join it with roadmap step 9. `c` switches between two
-// modes here, and the README's table of every key comes in step 12, so the
-// sheet has no note pointing to it yet.
+// KeySheet.js. Changes: only the keys that work today are on it. `c`
+// switches between two modes here, and the README's table of every key comes
+// in step 12, so the sheet has no note pointing to it yet.
 
 // What the key sheet shows. Knows nothing of how the keys are handled.
 
@@ -33,6 +32,7 @@ function sheet(order) {
       { title: "Rows", rows: rows },
       { title: "Chart", rows: [
         { key: "← →", does: "Scrub one chart step" },
+        { key: "[ ]", does: "Change the chart range" },
         { key: "p", does: "Replay the chart" }
       ]},
       { title: "Lists", rows: [
@@ -42,7 +42,8 @@ function sheet(order) {
       ]},
       { title: "Look", rows: [
         { key: "s", does: "Switch smooth and retro" },
-        { key: "c", does: "Switch % and amount" },
+        // A range's change is always the percentage.
+        { key: "c", does: "Switch the day's % and amount" },
         { key: "r", does: "Refresh" }
       ]}
     ],

@@ -1,6 +1,6 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2, the
-// list line of HeroBand.qml. Changes: its own file; "TODAY", which says the
-// rows keep the day on every range, comes with the ranges in roadmap step 9.
+// list line of HeroBand.qml. Changes: its own file; "TODAY" says the UTC
+// day, not a session.
 // The breadth rule rests while the popup is closed.
 import QtQuick
 import qs.Commons
@@ -35,7 +35,7 @@ Item {
     id: listText
     anchors.left: parent.left
     anchors.verticalCenter: parent.verticalCenter
-    width: Math.min(implicitWidth, parent.width - orderText.implicitWidth - Style.space(60))
+    width: Math.min(implicitWidth, parent.width - orderText.implicitWidth - todayText.implicitWidth - Style.space(80))
     textFormat: Text.PlainText
     text: root.listLabel.toUpperCase()
     color: root.foreground
@@ -70,13 +70,29 @@ Item {
     onClicked: root.listClicked()
   }
 
+  // The rows and the rule are the day's on every range, and say so.
+  Text {
+    id: todayText
+    objectName: "todayLabel"
+    anchors.left: listChevron.right
+    anchors.leftMargin: Style.space(12)
+    anchors.verticalCenter: parent.verticalCenter
+    textFormat: Text.PlainText
+    text: "TODAY"
+    color: root.dim
+    font.family: root.fontFamily
+    font.pixelSize: Style.font.caption
+    font.bold: true
+    font.letterSpacing: 1
+  }
+
   // The rule between the name and the order is the list's breadth.
   BreadthRule {
     id: breadthRule
-    anchors.left: listChevron.right
-    anchors.leftMargin: Style.space(12)
+    anchors.left: todayText.right
+    anchors.leftMargin: Style.space(10)
     anchors.right: orderText.left
-    anchors.rightMargin: Style.space(16)
+    anchors.rightMargin: Style.space(10)
     anchors.top: parent.top
     anchors.bottom: parent.bottom
     breadth: root.breadth

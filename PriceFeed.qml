@@ -20,7 +20,9 @@ import "adapters/bybit.js" as Bybit
 // undo, the popup's rows as it opens) or becomes featured is asked for in a
 // run of its own, so the rest wait for their minute rather than being asked
 // again. The candles come every 5 minutes for a row,
-// every minute for the featured symbol (`Refresh.planRun`). Before each run
+// every minute for the featured symbol (`Refresh.planRun`). The chart on
+// show (`want`), when it is a range, is asked for in the same run as that
+// symbol's price, so a refusal pauses it with the rest. Before each run
 // it asks whether a screen is on (`Screens.qml`): while every one is off,
 // nothing is fetched, and the run goes as soon as one is back. A refusal
 // leaves Bybit alone for as long as it asks, 10 minutes for its 403.
@@ -45,6 +47,11 @@ Item {
   property var quotes: ({})
   property var problems: ({})
   property var fresh: ({})
+  // The chart on show, { symbol, range }, or null with none to ask for; and
+  // the ranges that came, by "SYMBOL|RANGE": the line to draw, as the
+  // adapter builds it (`buildHistory`).
+  property var want: null
+  property var histories: ({})
 
   // What is kept between refreshes, by symbol: its instrument, up to a year
   // of daily candles and today's 5-minute ones (see `Refresh.js`), so each
@@ -65,6 +72,9 @@ Item {
   property var watched: []
   property var pending: []
   property bool whole: false
+  // The next run is a refresh you asked for: it asks for the range again
+  // even if the one kept is not due.
+  property bool forced: false
 
   // Quotes answered, for the service to save.
   signal answered()
@@ -73,6 +83,10 @@ Item {
   onSymbolsChanged: {
     root.pending = root.pending.concat(Refresh.newcomers(root.watched, root.symbols))
     root.watched = root.symbols.slice()
+    Qt.callLater(request, false)
+  }
+  onWantChanged: {
+    if (root.want) root.pending = root.pending.concat([root.want.symbol])
     Qt.callLater(request, false)
   }
   onFeaturedChanged: {
@@ -90,8 +104,11 @@ Item {
 
   function nowSeconds() { return Math.floor(Date.now() / 1000) }
 
-  // Every symbol: the minute's run, or one you asked for.
-  function refresh() { request(true) }
+  // Every symbol, as you asked for it.
+  function refresh() {
+    root.forced = true
+    request(true)
+  }
 
   // A run, of every symbol with `all`, else of those owed one. A run owed
   // while one is out, or while the screens answer, keeps what it owes.
@@ -118,7 +135,8 @@ Item {
     root.whole = false
     root.pending = []
     if (list.length === 0) return
-    var next = Refresh.planRun(Bybit, list, featured, kept, nowSeconds(), rowEvery)
+    var next = Refresh.planRun(Bybit, list, featured, kept, nowSeconds(), rowEvery, want, forced)
+    root.forced = false
     asked = next.asked
     began = false
     // One curl, all of the URLs over one connection. The largest answer is
@@ -136,6 +154,7 @@ Item {
     var quotes = Object.assign({}, root.quotes)
     var problems = Object.assign({}, root.problems)
     var fresh = Object.assign({}, root.fresh)
+    root.histories = Object.assign({}, root.histories, got.histories)
     var landed = false
     for (var s in got.problems) {
       problems[s] = got.wait > 0 ? got.waitProblem : got.problems[s]
@@ -163,7 +182,7 @@ Item {
     interval: root.interval * 1000
     repeat: true
     running: true
-    onTriggered: root.refresh()
+    onTriggered: root.request(true)
   }
 
   // A run ends with its stream, never with the process stopping: both fire

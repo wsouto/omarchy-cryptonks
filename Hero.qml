@@ -1,7 +1,8 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
 // Hero.qml. Changes: the listing line says the coin's name, Bybit and USDT;
-// the change is since 00:00 UTC, and its caption says so at rest; there is
-// no extended-hours print and no freshness word yet (roadmap step 11).
+// the change is since 00:00 UTC, and its caption says so at rest, or names
+// the range; there is no extended-hours print and no freshness word yet
+// (roadmap step 11).
 import QtQuick
 import qs.Commons
 import qs.Commons as Commons
@@ -26,6 +27,9 @@ Item {
   property var view: null
   property var quote: null
   property bool scrubbing: false
+  // A click on the change switches percent and amount only where the figure
+  // follows the mode: the day's. A range's change is always its percentage.
+  property bool changeCycles: true
   property bool retro: false
   // What the price says with no quote: "…" while the first is on its way,
   // "—" once it failed.
@@ -49,7 +53,7 @@ Item {
   // The day here starts at 00:00 UTC, and the screen says so, so the change
   // is never taken for an exchange's rolling 24 hours. A scrub says its own
   // moment in the header instead.
-  readonly property string changeCaption: view && !scrubbing ? "SINCE 00:00 UTC" : ""
+  readonly property string changeCaption: view && !scrubbing ? (view.caption || "SINCE 00:00 UTC") : ""
 
   readonly property int gap: Style.space(28)
   // The digits' ink at the surface's price size, and the box kept for it: a
@@ -190,6 +194,7 @@ Item {
     font.bold: true
     MouseArea {
       anchors.fill: parent
+      enabled: root.changeCycles
       cursorShape: Qt.PointingHandCursor
       onClicked: root.changeClicked()
     }

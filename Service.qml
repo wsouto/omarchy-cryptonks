@@ -1,7 +1,8 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
 // Service.qml. Changes: one feed for every symbol, a search preview among
 // them; the symbols to add come from a list fetched once a day, not a
-// lookup per query; no ranges, fundamentals or overnight feeds; an add
+// lookup per query; ranges ride the same feed, with no history feed, gate,
+// or charts fetched ahead; no fundamentals or overnight feeds; an add
 // features its symbol at once; no list keeps a scroll place, so lists have
 // no session keys; the files are this project's own.
 import QtQuick
@@ -38,6 +39,8 @@ Item {
   readonly property var library: dataSettings.symbols
   readonly property string featured: ready ? dataSettings.featured : ""
   readonly property string changeMode: dataSettings.changeMode
+  // The chart range the popup shows; the day is the pill's own.
+  readonly property string range: dataSettings.range
   // The list on show, "" for All; All and the named lists, as the menu
   // offers them (`Settings.listChoices`); the list's symbols in its manual
   // order; its order (`Settings.ORDERS`) and whether a sorted one runs the
@@ -74,6 +77,8 @@ Item {
   readonly property bool fresh: !!feed.fresh[featured]
   // By symbol, whether its quote is this session's own (`PriceFeed.fresh`).
   readonly property var freshness: feed.fresh
+  // The ranges that came, by "SYMBOL|RANGE" (`PriceFeed.histories`).
+  readonly property var histories: feed.histories
   function refresh() { feed.refresh() }
 
   // The symbols you can add (`SymbolList`).
@@ -186,6 +191,8 @@ Item {
     symbols: !root.ready ? [] : !root.popupOpen ? [root.featured]
       : Settings.normalizeSymbols(root.symbols.concat([root.featured, root.previewSymbol]))
     featured: root.featured
+    // Only the popup shows a range, and it shows the hero's symbol.
+    want: root.ready && root.popupOpen && root.range !== "1D" ? { symbol: root.previewSymbol || root.featured, range: root.range } : null
     screens: screenWatch
     onAnswered: root.saveQuotes()
   }

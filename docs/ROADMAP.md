@@ -84,7 +84,14 @@ The steps from 5 on follow the original's layers, as drawn in
         original's `ListMenu`, `ManageLists`, `SymbolLists`, `BreadthRule`,
         `RowPointer` and `KeyText` are copied unchanged. A new list's name
         is not kept through a close. You see: make a list and fill it.
-- [ ] **9. Ranges.** You see: 1W to All.
+- [x] **9. Ranges.** You see: 1W to All. The range row under the chart
+      (1D to All; `[` and `]`, the wheel or a click) is the original's
+      `RangeSelector`. A range's candles ride the price feed's run, for the
+      hero's symbol only while the popup is open, and are asked again after
+      15 minutes (1W, 1M) or an hour. The hero's change is the percentage
+      from the range's first open; the rows and their rule keep the day and
+      say "TODAY". The range is saved in the data file. The info block's
+      range line (low, high, since) is not built.
 - [ ] **10. The window.** The window, IPC, the launcher. You see:
       right-click opens the window.
 - [ ] **11. Statuses.** Errors, retry, the look at every state. You see:

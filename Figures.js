@@ -2,11 +2,13 @@
 .import "Change.js" as Change
 .import "Chart.js" as Chart
 .import "Format.js" as Format
+.import "History.js" as History
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
 // Figures.js. Changes: only the pill's two rules and the hero's figures are
 // kept; the animal reads the move's sign as drawn, and the hero's figures
 // (`heroView`, the original's `rowModel`) are measured from 00:00 UTC in
-// two modes, percent and amount.
+// two modes, percent and amount; a range's (`rangeView`) from the price at
+// its start.
 //
 // What the pill's arrow and icon forms, and the popup's hero, make of the
 // day's move.
@@ -56,5 +58,25 @@ function heroView(quote, scrubT, mode) {
     sign: sign,
     daySign: move ? Format.shownSign(move.pct, Format.pctDigits(Math.abs(move.pct))) : 0,
     time: read ? read.t : null
+  }
+}
+
+// The hero's figures on a range: the live price, or with `scrubT` the close
+// of the bar the scrub reads (`History.barAt`), against the price at the
+// range's start. A range's change is always its percentage. With no history
+// yet the price stays and the change is "—". The shape of `heroView`'s, with
+// `caption`, what the change is measured over.
+function rangeView(history, quote, scrubT, range) {
+  var bar = history && scrubT ? History.barAt(history, scrubT) : null
+  var price = bar ? bar.p : quote.price
+  var move = history ? Change.sinceOpen({ price: price, dayOpen: history.baseline }) : null
+  var sign = move ? Format.shownSign(move.pct, Format.pctDigits(Math.abs(move.pct))) : 0
+  return {
+    priceText: Format.money(price, quote.priceDigits),
+    changeText: move ? Format.pct(move.pct) : "—",
+    sign: sign,
+    daySign: sign,
+    time: bar ? bar.t : null,
+    caption: String(range).toUpperCase()
   }
 }

@@ -30,6 +30,22 @@ Each entry: **what**, **why**, and a tag.
   "Loading…" about 5 s after a shell restart. `PR?` if the original has the
   same wait.
 
+## Ranges (step 9)
+
+- **A range's candles ride the price feed's run** (`Refresh.js`,
+  `PriceFeed.qml`), with no `HistoryFeed`, `Gate` or second curl: one pause
+  for a refusal covers both. `crypto`
+- **The chart's baseline on a range is the first candle's open**, and its
+  caption names the range ("1W"). The scrub strip says "START <moment>".
+  `crypto`
+- **A range is asked again by age alone**, 15 minutes for 1W and 1M, an hour
+  for the rest; the market never closes, so there is no session rule. `crypto`
+- **No charts fetched ahead for rows**, and no held chart that dims while the
+  next range loads: the chart is empty, then draws in. The loading look comes
+  with step 11. `left out`
+- **The info block's range line** (low, high, SINCE for a young symbol) is
+  not built; the line itself already shows only a young symbol's life. `left out`
+
 ## Left out of step 8c
 
 - **A half-typed list name or rename is lost when the popup closes**
