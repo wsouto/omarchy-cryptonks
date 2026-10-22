@@ -1,0 +1,13 @@
+# Agent files stay out (CONTRIBUTING, "Agents"): an installed copy would hand
+# them to the user's own coding agents, and the marketplace review refuses them.
+AGENTS.md
+CLAUDE.md
+CLAUDE.local.md
+GEMINI.md
+.claude/
+.agents/
+.codex/
+.cursor/
+.cursorrules
+.gemini/
+.ai-memory.toml

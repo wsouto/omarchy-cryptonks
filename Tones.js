@@ -1,7 +1,8 @@
 .pragma library
 // Copied from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2, Tones.js.
 // Changes: only what this project uses is kept; the dimmer text level and the
-// chart's wash were removed until a screen needs them. Kept as plain
+// chart's wash were removed until a screen needs them; secondary text checks
+// its contrast after rounding to "#rrggbb", not before. Kept as plain
 // JavaScript on purpose.
 // How the theme's colours are put to work: which colours are up and down,
 // and how much quieter secondary text is. Every colour comes in from the theme, except Stonks' own
@@ -122,16 +123,17 @@ function mixed(from, to, share) {
 // body text's 4.5:1.
 var DIM = { share: 0.32, floor: 4.5 }
 function secondary(foreground, ground, level) {
+  // Judged as drawn: rounding to "#rrggbb" can cost the floor a hair.
+  var at = function(share) { return hexColor(hexOf(mixed(foreground, ground, share))) }
   if (contrast(foreground, ground) <= level.floor) return hexOf(foreground)
-  if (contrast(mixed(foreground, ground, level.share), ground) >= level.floor)
-    return hexOf(mixed(foreground, ground, level.share))
+  if (contrast(at(level.share), ground) >= level.floor) return hexOf(at(level.share))
   var lo = 0, hi = level.share
   for (var i = 0; i < 30; i++) {
     var mid = (lo + hi) / 2
-    if (contrast(mixed(foreground, ground, mid), ground) >= level.floor) lo = mid
+    if (contrast(at(mid), ground) >= level.floor) lo = mid
     else hi = mid
   }
-  return hexOf(mixed(foreground, ground, lo))
+  return hexOf(at(lo))
 }
 
 function dim(foreground, ground) {

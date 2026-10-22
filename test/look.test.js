@@ -1,0 +1,115 @@
+// What the pill writes and in which colours: Format.js's prices and
+// percents, and Tones.js's up, down and secondary text. Each test names what
+// a user would see go wrong in the bar.
+//
+// Run with `bun test` (test/check.sh does).
+import { test, expect } from "bun:test"
+import { load } from "./load.js"
+
+const Fmt = load("Format.js")
+const T = load("Tones.js")
+
+const MINUS = "−"
+const hex = T.hexColor
+
+// ---- Prices ----
+
+test("a price keeps its listing's decimals, with commas in the whole part only", () => {
+  expect(Fmt.money(84440.8, 1)).toBe("84,440.8")
+  expect(Fmt.money(0.00000541, 9)).toBe("0.000005410")
+})
+
+test("a price with no listing decimals drops cents from 10,000 up", () => {
+  expect(Fmt.money(84440.8)).toBe("84,441")
+  expect(Fmt.money(1234.567)).toBe("1,234.57")
+})
+
+test("a negative price takes a true minus, and one that rounds to zero takes none", () => {
+  expect(Fmt.money(-5.5, 2)).toBe(MINUS + "5.50")
+  expect(Fmt.money(-0.004, 2)).toBe("0.00")
+})
+
+test("a price that is not known shows a dash, never a 0", () => {
+  expect(Fmt.money(null)).toBe("—")
+  expect(Fmt.money(undefined)).toBe("—")
+  expect(Fmt.money(NaN)).toBe("—")
+})
+
+// ---- Percents ----
+
+test("a move shows its sign and two decimals", () => {
+  expect(Fmt.pct(1.746)).toBe("+1.75%")
+  expect(Fmt.pct(-1.746)).toBe(MINUS + "1.75%")
+})
+
+test("a move that rounds to nothing shows no sign", () => {
+  expect(Fmt.pct(0.004)).toBe("0.00%")
+  expect(Fmt.pct(-0.004)).toBe("0.00%")
+})
+
+test("a move four digits wide drops its decimals", () => {
+  expect(Fmt.pct(1234.4)).toBe("+1,234%")
+})
+
+test("a move that is not known shows a dash", () => {
+  expect(Fmt.pct(null)).toBe("—")
+  expect(Fmt.pct(Infinity)).toBe("—")
+})
+
+// The bar colours by this sign, so it must agree with the sign drawn.
+test("the colour's sign matches the sign drawn", () => {
+  for (const v of [1.746, -1.746, 0.004, -0.006, 0, null]) {
+    const sign = Fmt.shownSign(v, Fmt.pctDigits(Math.abs(v)))
+    const text = Fmt.pct(v)
+    expect(sign).toBe(text.startsWith("+") ? 1 : text.startsWith(MINUS) ? -1 : 0)
+  }
+})
+
+// ---- Secondary text ----
+
+test("secondary text is quieter than the foreground but keeps 4.5:1, on dark and light", () => {
+  for (const [fg, ground] of [["#ffffff", "#000000"], ["#000000", "#ffffff"], ["#cdd6f4", "#1e1e2e"]]) {
+    const dim = T.dim(hex(fg), hex(ground))
+    expect(dim).not.toBe(fg)
+    expect(T.contrast(hex(dim), hex(ground))).toBeLessThan(T.contrast(hex(fg), hex(ground)))
+    expect(T.contrast(hex(dim), hex(ground))).toBeGreaterThanOrEqual(4.5)
+  }
+})
+
+test("secondary text mixes only as far as 4.5:1 allows", () => {
+  // #666666 on white is 5.74:1: a third of the way to white would fall
+  // under, so it stops between. Checked as drawn, after rounding to #rrggbb.
+  const dim = T.dim(hex("#666666"), hex("#ffffff"))
+  expect(dim).not.toBe("#666666")
+  expect(T.contrast(hex(dim), hex("#ffffff"))).toBeGreaterThanOrEqual(4.5)
+  // #767676 is 4.54:1 and its next shade, #777777, is 4.48:1: no room to mix.
+  expect(T.dim(hex("#767676"), hex("#ffffff"))).toBe("#767676")
+})
+
+test("a foreground already under 4.5:1 is left as it is", () => {
+  expect(T.dim(hex("#999999"), hex("#ffffff"))).toBe("#999999")
+})
+
+// ---- Up and down ----
+
+const dark = hex("#1e1e2e")
+
+test("a theme with a real green and red keeps its own", () => {
+  // Catppuccin Mocha's green and red.
+  expect(T.trend("#a6e3a1", hex("#f38ba8"), dark)).toEqual({ up: "#a6e3a1", down: hex("#f38ba8") })
+})
+
+test("a theme with two greens gets Stonks' own pair, picked for the ground", () => {
+  expect(T.trend("#00ff00", hex("#00cc00"), dark)).toEqual(T.OWN_PAIRS[0])
+  expect(T.trend("#00ff00", hex("#00cc00"), hex("#ffffff"))).toEqual(T.OWN_PAIRS[1])
+})
+
+test("a theme with no green at all gets Stonks' own pair", () => {
+  expect(T.trend("", hex("#f38ba8"), dark)).toEqual(T.OWN_PAIRS[0])
+})
+
+test("a theme's green is read from colors.toml, then from color2", () => {
+  expect(T.themeColor('green = "#a6e3a1"\ncolor2 = "#000000"', ["green", "color2"])).toBe("#a6e3a1")
+  expect(T.themeColor("color2 = '#40a02b'", ["green", "color2"])).toBe("#40a02b")
+  expect(T.themeColor("", ["green", "color2"])).toBe("")
+})
