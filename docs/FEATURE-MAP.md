@@ -176,8 +176,8 @@ on 2026-10-21.
 | One curl in `Fetch.js`; request limits and size caps | yes | **Done** |
 | `test/boundaries.sh`: only a few files run a command, write a file or name an endpoint | yes | **Later**, roadmap step 8 |
 | Flow harnesses that drive the real shell with keys and pointer | yes | **Later**: copy the ones for features we keep |
-| Version watch and the "Stonks is out, click to update" footer note | reads `main`'s manifest on GitHub | **Later**: needs the repository published |
-| Plugin marketplace listing | yes | **Later** |
+| Version watch and the "Stonks is out, click to update" footer note | reads `main`'s manifest on GitHub | **Later**: needs the repository published (step 13) |
+| Plugin marketplace listing | yes | **Not planned**: GitHub releases only (step 13) |
 | Robinhood, Yahoo, fundamentals, overnight feeds and their rules (`Quote.js`, `Overnight.js`, `Market.js`, `Fundamentals.js`, `calendars.json`) | yes | **Drop**, replaced by `adapters/bybit.js` |
 
 ## Questions for you
@@ -238,7 +238,8 @@ original's layers, they could be:
 | 9 | Ranges | 1W to All |
 | 10 | The window, IPC, launcher | right-click opens the window |
 | 11 | Statuses, errors, retry, the look at every state | unplug the network and read it |
-| 12 | Boundary check, flow tests, README, publishing | a release |
+| 12 | Boundary check, flow tests, README | a plugin that reads as finished |
+| 13 | GitHub repository, CHANGELOG, releases, install and update steps | a release page |
 
 `ROADMAP.md` follows this order since the review on 2026-10-21.
 

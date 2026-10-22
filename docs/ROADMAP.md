@@ -117,11 +117,21 @@ The steps from 5 on follow the original's layers, as drawn in
         range that failed offers RETRY in the header.
   - [x] **11c. The data file.** "Can't read the data file" in the footer,
         and the file left alone.
-- [ ] **12. Polish and release.** The boundary check that only `adapters/`
-      names an exchange, flow tests, README, publishing. You see: a release.
+- [ ] **12. Polish.** The boundary check that only `adapters/` names an
+      exchange (`test/boundaries.sh`), flow tests, the README with pictures,
+      and the manifest's description no longer "work in progress". You see:
+      a plugin that reads as finished.
+- [ ] **13. Publish on GitHub.** The repository on the author's GitHub, with
+      the agent files kept out (`.gitignore`), `CHANGELOG.md`, the version in
+      `manifest.json` and tagged releases (`vX.Y.Z`, with release notes from
+      the changelog), install and update steps in the README
+      (`omarchy plugin add <repo URL>`), issue templates and a fresh-clone
+      check. Not the Omarchy marketplace. You see: a release page you can
+      install from. Optional after it: the version watch and its footer note
+      ("a newer version is out"), which need the repository.
 
 Not planned yet: portfolio, API keys, a second exchange, WebSocket, funding
-rate. They are in the design notes and can come after step 12.
+rate. They are in the design notes and can come after step 13.
 
 ## Rules for the code
 
