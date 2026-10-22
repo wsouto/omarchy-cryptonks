@@ -11,8 +11,8 @@ import "adapters/bybit.js" as Bybit
 // `Fetch.js`'s; what a run's answers mean for the quote is `Refresh.js`'s.
 // This file only joins them to a timer.
 //
-// It reads the clock (to know when a pause ends, and how many days of
-// candles to ask for), which an adapter or a rule file may not.
+// It reads the clock (to know when a pause ends, and which candles to ask
+// for), which an adapter or a rule file may not.
 //
 // For now it serves one symbol and lives inside the pill. When the list
 // arrives (roadmap step 6) it moves into a service shared by every screen,
@@ -31,9 +31,9 @@ Item {
   // says more than a pill gone blank.
   property string problem: ""
 
-  // What is kept between refreshes for one symbol: its instrument and up to
-  // a year of daily candles (see `Refresh.js`), so each minute asks only for
-  // the price and the last two candles.
+  // What is kept between refreshes for one symbol: its instrument, up to a
+  // year of daily candles and today's 5-minute ones (see `Refresh.js`), so
+  // each minute asks only for the price and the newest candles.
   property var kept: null
   // The time, in seconds, before which Bybit is left alone.
   property real pausedUntil: 0

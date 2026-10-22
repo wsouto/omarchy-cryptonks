@@ -21,13 +21,13 @@ change it)
 | --- | --- |
 | `instrumentUrl(symbol)` and `parseInstruments(json)` | one of the symbols you can add, or (from step 6, with `instrumentsUrl()`) all of them for search: `{ instruments, truncated }` |
 | `quotesUrl(symbols)` and `parseQuotes(json)` | the latest price of the symbols asked for (every symbol if not one): `{ time, prices }` |
-| `dailyUrl(symbol, count)` and `parseDaily(json)` | daily candles, oldest first |
-| `buildQuote(instrument, price, marketTime, candles)` | the record of [QUOTE-RECORD.md](QUOTE-RECORD.md) |
+| `dailyUrl(symbol, count)` and `parseCandles(json)` | daily candles, oldest first |
+| `candlesUrl(symbol, start)` and `parseCandles(json)` | 5-minute candles from `start` (seconds), the day's line, oldest first |
+| `buildQuote(instrument, price, marketTime, candles, dayCandles)` | the record of [QUOTE-RECORD.md](QUOTE-RECORD.md) |
 | `limits` | request limits, which statuses mean "refused", for how long, and why in words |
 
 A reader gives `null` for an answer it can't use, so a refused question is
-never taken for an empty list. Not yet written: `candlesUrl` for the chart
-(step 5).
+never taken for an empty list.
 
 **First adapter: Bybit** (`adapters/bybit.js`), V5 API,
 USDT perpetuals (`category=linear`):

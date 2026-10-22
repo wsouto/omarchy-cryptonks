@@ -9,6 +9,9 @@
 //   tickers.json       the same five, and OPENAIUSDT, a ticker with no
 //                      instrument entry
 //   kline-btcusdt-d.json   three daily candles of BTCUSDT, newest first
+//   kline-btcusdt-5.json   the 5-minute candles of BTCUSDT from 00:00 UTC
+//                          on 2026-10-22 to the time it was recorded,
+//                          newest first, uncut (a day later than the rest)
 //
 // Run with `bun test` (test/check.sh does).
 import { test, expect } from "bun:test"
@@ -122,7 +125,7 @@ test("tickers Bybit refused are null", () => {
   expect(B.parseQuotes({ retCode: 10016, result: {} })).toBeNull()
 })
 
-// ---- Daily candles ----
+// ---- Candles ----
 
 test("daily candles are asked for by symbol and within Bybit's limits", () => {
   const url = B.dailyUrl("BTCUSDT", 365)
@@ -136,7 +139,7 @@ test("daily candles are asked for by symbol and within Bybit's limits", () => {
 })
 
 test("candles come oldest first, in seconds, with numbers", () => {
-  const candles = B.parseDaily(fixture("kline-btcusdt-d.json"))
+  const candles = B.parseCandles(fixture("kline-btcusdt-d.json"))
   expect(candles.map(c => c.t)).toEqual([1792368000, 1792454400, 1792540800])
   expect(candles[2]).toEqual({
     t: 1792540800, open: 82991, high: 84880, low: 82588, close: 84440.8,
@@ -144,17 +147,31 @@ test("candles come oldest first, in seconds, with numbers", () => {
   })
 })
 
+test("today's 5-minute candles are asked for from a start, in Bybit's milliseconds", () => {
+  const url = B.candlesUrl("BTCUSDT", 1792627200)
+  expect(url).toContain("/v5/market/kline")
+  expect(url).toContain("symbol=BTCUSDT")
+  expect(url).toContain("interval=5")
+  expect(url).toContain("start=1792627200000")
+})
+
+test("a day's 5-minute candles start at 00:00 UTC and come oldest first", () => {
+  const day = B.parseCandles(fixture("kline-btcusdt-5.json"))
+  expect(day[0].t).toBe(1792627200)
+  for (let i = 1; i < day.length; i++) expect(day[i].t - day[i - 1].t).toBe(300)
+})
+
 test("a candle with a figure missing is left out whole", () => {
   const json = clone(fixture("kline-btcusdt-d.json"))
   json.result.list[1][2] = ""
-  expect(B.parseDaily(json).map(c => c.t)).toEqual([1792368000, 1792540800])
+  expect(B.parseCandles(json).map(c => c.t)).toEqual([1792368000, 1792540800])
 })
 
 // ---- The quote record ----
 
 const btc = () => instrument(B.parseInstruments(fixture("instruments.json")), "BTCUSDT")
 const quotes = () => B.parseQuotes(fixture("tickers.json"))
-const candles = () => B.parseDaily(fixture("kline-btcusdt-d.json"))
+const candles = () => B.parseCandles(fixture("kline-btcusdt-d.json"))
 
 test("the record is the one QUOTE-RECORD.md describes", () => {
   const q = quotes()
@@ -177,7 +194,7 @@ test("the record is the one QUOTE-RECORD.md describes", () => {
     low52w: 81150,
     firstTradeDate: 1584230400,
     fundingInterval: 480,
-    points: null
+    points: []
   })
 })
 
@@ -191,6 +208,24 @@ test("a newest candle from another day gives no day figures, not the wrong day's
   expect(record.turnover).toBeNull()
   expect(record.high52w).toBe(84880)
   expect(record.price).toBe(84440.8)
+})
+
+test("the day line is each 5-minute candle of today at its start and close", () => {
+  const json = fixture("kline-btcusdt-5.json")
+  const day = B.parseCandles(json)
+  const time = Math.floor(json.time / 1000)
+  const record = B.buildQuote(btc(), 1, time, candles(), day)
+  expect(record.points.length).toBe(day.length)
+  expect(record.points[0]).toEqual({ t: 1792627200, p: day[0].close })
+  expect(record.points.at(-1)).toEqual({ t: day.at(-1).t, p: day.at(-1).close })
+})
+
+test("a candle of yesterday never draws on today's line", () => {
+  const day = B.parseCandles(fixture("kline-btcusdt-5.json"))
+  const time = day.at(-1).t + 60
+  const yesterday = { ...day[0], t: day[0].t - 300 }
+  expect(B.buildQuote(btc(), 1, time, candles(), [yesterday, ...day]).points.length).toBe(day.length)
+  expect(B.buildQuote(btc(), 1, time + 86400, candles(), day).points).toEqual([])
 })
 
 test("with no candles, only what is known is in the record", () => {
@@ -298,7 +333,7 @@ test("a cut answer or a server error is bad", () => {
 // ---- The files copied unchanged still load ----
 
 test("the copied rule files load", () => {
-  for (const file of ["Format.js", "Tones.js"]) {
+  for (const file of ["Format.js", "Tones.js", "Cells.js"]) {
     expect(Object.keys(load(file)).length).toBeGreaterThan(0)
   }
 })

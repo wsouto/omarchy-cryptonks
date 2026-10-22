@@ -1,5 +1,6 @@
-// What the pill writes and in which colours: Format.js's prices and
-// percents, and Tones.js's up, down and secondary text. Each test names what
+// What the pill writes and draws, and in which colours: Format.js's prices,
+// percents and side-bar stack, Chart.js's day line, Figures.js's arrow and
+// animal, and Tones.js's up, down and secondary text. Each test names what
 // a user would see go wrong in the bar.
 //
 // Run with `bun test` (test/check.sh does).
@@ -8,6 +9,8 @@ import { load } from "./load.js"
 
 const Fmt = load("Format.js")
 const T = load("Tones.js")
+const Ch = load("Chart.js")
+const Fig = load("Figures.js")
 
 const MINUS = "−"
 const hex = T.hexColor
@@ -112,4 +115,63 @@ test("a theme's green is read from colors.toml, then from color2", () => {
   expect(T.themeColor('green = "#a6e3a1"\ncolor2 = "#000000"', ["green", "color2"])).toBe("#a6e3a1")
   expect(T.themeColor("color2 = '#40a02b'", ["green", "color2"])).toBe("#40a02b")
   expect(T.themeColor("", ["green", "color2"])).toBe("")
+})
+
+// ---- The day's line ----
+
+const DAY = 86400
+const D0 = 1792627200
+
+test("the line runs across the UTC day by time, ending where the day has got to", () => {
+  const g = Ch.dayGeometry({ dayOpen: 100, points: [{ t: D0, p: 100 }, { t: D0 + DAY / 2, p: 110 }] })
+  expect(g.points.map(p => p.x)).toEqual([0, 0.5])
+})
+
+test("the open is the baseline, in view, and a rise draws above it", () => {
+  const g = Ch.dayGeometry({ dayOpen: 100, points: [{ t: D0, p: 101 }, { t: D0 + 300, p: 110 }] })
+  expect(g.baselineY).toBeGreaterThan(0)
+  expect(g.baselineY).toBeLessThan(1)
+  for (const p of g.points) expect(p.y).toBeLessThan(g.baselineY)
+})
+
+test("a day that never moved draws level on its baseline", () => {
+  const g = Ch.dayGeometry({ dayOpen: 0.000005, points: [{ t: D0, p: 0.000005 }] })
+  expect(g.points[0].y).toBe(g.baselineY)
+})
+
+test("with no candles or no open there is no line, never a guessed one", () => {
+  expect(Ch.dayGeometry(null)).toBeNull()
+  expect(Ch.dayGeometry({ dayOpen: 100, points: [] })).toBeNull()
+  expect(Ch.dayGeometry({ dayOpen: null, points: [{ t: D0, p: 1 }] })).toBeNull()
+})
+
+// ---- The arrow and the animal ----
+
+test("the arrow tilts with the move and stops at 45 degrees past 5%", () => {
+  expect(Fig.arrowAngle(0)).toBe(0)
+  expect(Fig.arrowAngle(2.5)).toBe(22.5)
+  expect(Fig.arrowAngle(-12)).toBe(-45)
+  expect(Fig.arrowAngle(null)).toBe(0)
+})
+
+test("the bull for a day up, the bear for a day down, none for a flat one", () => {
+  expect(Fig.animalKind(1)).toBe("bull")
+  expect(Fig.animalKind(-1)).toBe("bear")
+  expect(Fig.animalKind(0)).toBe("")
+})
+
+// ---- A side bar's stack ----
+
+test("a symbol stacks as its coin over its quote currency", () => {
+  expect(Fmt.stackedSymbol("BTCUSDT", "USDT")).toEqual(["BTC", "USDT"])
+  expect(Fmt.stackedSymbol("1000PEPEUSDT", "USDT")).toEqual(["1000", "PEPE", "USDT"])
+  expect(Fmt.stackedSymbol("BTCUSDT", "")).toEqual(["BTCU", "SDT"])
+})
+
+test("a stacked move is its sign and figure over %, the pill's figure rounded", () => {
+  expect(Fmt.stackedPct(1.746)).toEqual({ lines: ["+1.8", "%"], sign: 1 })
+  expect(Fmt.stackedPct(9.95)).toEqual({ lines: ["+10", "%"], sign: 1 })
+  expect(Fmt.stackedPct(-0.04)).toEqual({ lines: ["0.0", "%"], sign: 0 })
+  expect(Fmt.stackedPct(1234)).toEqual({ lines: ["+1.2", "K%"], sign: 1 })
+  expect(Fmt.stackedPct(null)).toEqual({ lines: ["—"], sign: 0 })
 })

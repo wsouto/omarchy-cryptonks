@@ -1,8 +1,10 @@
 .pragma library
 // Copied from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2, Format.js.
-// Changes: only what this project uses is kept, writing a price and a percent;
-// the clock times, durations, stacking for a side bar and range texts were
-// removed until a screen needs them. Kept as plain JavaScript on purpose.
+// Changes: only what this project uses is kept, writing a price and a percent
+// and stacking them for a side bar; the clock times, durations, money moves
+// and range texts were removed until a screen needs them. A stacked symbol
+// splits at its quote currency, as the original splits BTC-USD at its dash.
+// Kept as plain JavaScript on purpose.
 // How numbers are checked and written: prices, changes and their signs.
 // Knows nothing of markets, quotes, or where the data comes from.
 
@@ -55,4 +57,68 @@ function pct(value) {
 
 function percent(value, digits) {
   return signText(shownSign(value, digits)) + grouped(Math.abs(value).toFixed(digits)) + "%"
+}
+
+// A move rounded for a side bar's stack: one decimal under 10%, none from
+// there. It is the pill's figure (`pct`) rounded half up, in whole
+// hundredths so no float can tip it, so the two never disagree: +9.95%
+// reads +10, +0.05% +0.1, however the quote's prices made it. `shown` is
+// its size.
+function narrowPctShown(value) {
+  var abs = Math.abs(value)
+  var hundredths = Math.round(Number(abs.toFixed(pctDigits(abs))) * 100)
+  var tenths = Math.round(hundredths / 10)
+  return tenths >= 100 ? { digits: 0, shown: Math.round(hundredths / 100) } : { digits: 1, shown: tenths / 10 }
+}
+
+// A bar at the side of the screen stacks the pill as Omarchy's clock stacks
+// its lines, one to an icon slot, each at most STACK_WIDTH characters: as
+// many as fit its 28 px at the clock's sizes.
+var STACK_WIDTH = 4
+
+// `text` broken after every STACK_WIDTH characters.
+function stackChunks(text) {
+  var out = []
+  for (var i = 0; i < text.length; i += STACK_WIDTH) out.push(text.slice(i, i + STACK_WIDTH))
+  return out
+}
+
+// A symbol's stacked lines: its base over its quote currency when it ends
+// with one (BTC over USDT), and any part still longer broken after its
+// fourth character (1000 PEPE). Before the currency is known, the symbol is
+// only broken (BTCU SDT).
+function stackedSymbol(symbol, currency) {
+  var s = String(symbol)
+  if (s.length <= STACK_WIDTH) return [s]
+  var at = currency && s.length > currency.length && s.slice(-currency.length) === currency ? s.length - currency.length : -1
+  var parts = at > 0 ? [s.slice(0, at), s.slice(at)] : [s]
+  return parts.reduce(function(out, part) { return out.concat(stackChunks(part)) }, [])
+}
+
+// A magnitude of a thousand or more, in its unit: one decimal under 10,
+// none from there, and a figure that rounds to 1,000 of its unit is one of
+// the next. At most three characters, so its sign fits beside it.
+function stackedThousands(abs) {
+  var units = ["K", "M", "B", "T"]
+  var v = abs
+  var u = -1
+  do {
+    v /= 1000
+    u++
+  } while (Math.round(v) >= 1000 && u < units.length - 1)
+  return { figure: Math.round(v * 10) < 100 ? v.toFixed(1) : String(Math.round(v)), unit: units[u] }
+}
+
+// A move in percent stacked, its sign and figure over its %: −1.5 over %,
+// −12 over % from 10% (`narrowPctShown`), and from 1,000% in thousands,
+// 1.2 over K%. `sign` is the figure's as drawn.
+function stackedPct(value) {
+  if (!isFiniteNumber(value)) return { lines: ["—"], sign: 0 }
+  var narrow = narrowPctShown(value)
+  var sign = narrow.shown === 0 ? 0 : value > 0 ? 1 : -1
+  if (narrow.shown >= 1000) {
+    var big = stackedThousands(narrow.shown)
+    return { lines: [signText(sign) + big.figure, big.unit + "%"], sign: sign }
+  }
+  return { lines: [signText(sign) + narrow.shown.toFixed(narrow.digits), "%"], sign: sign }
 }

@@ -124,7 +124,7 @@ function parseQuotes(json) {
   return { time: Math.floor(time / 1000), prices: prices }
 }
 
-// ---- Daily candles -----------------------------------------------------
+// ---- Candles -----------------------------------------------------------
 
 // The last `count` daily candles of one symbol (1 to 1000). The newest is
 // today's, still open, and starts at 00:00 UTC.
@@ -134,11 +134,21 @@ function dailyUrl(symbol, count) {
     + "&interval=D&limit=" + n
 }
 
-// The candles, oldest first (Bybit sends newest first): { t, open, high, low,
+// The 5-minute candles of one symbol from `start` (seconds) on: at most 288
+// in a UTC day, so one request holds the whole day. Bybit's first candle
+// starts at `start` itself when it is on a 5-minute mark (checked on
+// 2026-10-22 with 00:00 UTC).
+function candlesUrl(symbol, start) {
+  return HOST + "/v5/market/kline?category=linear&symbol=" + encodeURIComponent(symbol)
+    + "&interval=5&start=" + Math.floor(start) * 1000 + "&limit=1000"
+}
+
+// Daily candles (dailyUrl) or 5-minute ones (candlesUrl), oldest first
+// (Bybit sends newest first): { t, open, high, low,
 // close, volume, turnover }, `t` the start in seconds. Volume is in the base
 // coin and turnover in the quote coin. A row with a figure missing is left
 // out whole, since half a candle says nothing true.
-function parseDaily(json) {
+function parseCandles(json) {
   var r = resultOf(json)
   if (!r || !Array.isArray(r.list)) return null
   var out = []
@@ -156,20 +166,25 @@ function parseDaily(json) {
 
 // The record of docs/QUOTE-RECORD.md for one symbol: its instrument entry
 // (from parseInstruments), its latest `price` and `marketTime` (from
-// parseQuotes) and its daily `candles` (from parseDaily).
+// parseQuotes), its daily `candles`, and `dayCandles`, its 5-minute candles
+// (both from parseCandles).
 //
 // The day figures belong to today's UTC day, so they come only from a newest
 // candle that starts at today's 00:00 UTC. A newest candle from another day
 // means the candles are not today's, and the day figures are null: not a
 // figure from the wrong day. The year's high and low come from the last 365
-// candles, or fewer for a young symbol, which `firstTradeDate` tells.
-function buildQuote(instrument, price, marketTime, candles) {
+// candles, or fewer for a young symbol, which `firstTradeDate` tells. The
+// day line, `points`, is each 5-minute candle of today's UTC day at its
+// start and close, so a candle of yesterday never draws on today's line.
+function buildQuote(instrument, price, marketTime, candles, dayCandles) {
   if (!instrument || price === null || marketTime === null) return null
   var list = candles || []
   var last = list.length ? list[list.length - 1] : null
   var today = Math.floor(marketTime / DAY) * DAY
   var isToday = last !== null && last.t === today
   var year = list.slice(-365)
+  var points = (dayCandles || []).filter(function (c) { return c.t >= today && c.t < today + DAY })
+    .map(function (c) { return { t: c.t, p: c.close } })
   var high = null
   var low = null
   for (var i = 0; i < year.length; i++) {
@@ -194,6 +209,6 @@ function buildQuote(instrument, price, marketTime, candles) {
     low52w: low,
     firstTradeDate: instrument.firstTradeDate,
     fundingInterval: instrument.fundingInterval,
-    points: null
+    points: points
   }
 }

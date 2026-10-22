@@ -6,8 +6,10 @@
 // handed in, and the time is an argument, so the feed reads the clock and
 // turns `wait` into a time. It names no exchange.
 //
-// What the feed keeps between refreshes is { symbol, instrument, candles }:
-// the instrument and up to a year of daily candles, oldest first. All of it
+// What the feed keeps between refreshes is { symbol, instrument, candles,
+// day }: the instrument, up to a year of daily candles, and the 5-minute
+// candles of the UTC day the exchange last answered in, each oldest first.
+// All of it
 // belongs to `symbol`, and is dropped whole when the symbol changes, so one
 // symbol's decimals or year never dress another's price.
 
@@ -18,7 +20,7 @@ var YEAR = 365
 // What is kept for `symbol`: `kept` when it is that symbol's, else nothing.
 function keptFor(kept, symbol) {
   if (kept && kept.symbol === symbol) return kept
-  return { symbol: symbol, instrument: null, candles: null }
+  return { symbol: symbol, instrument: null, candles: null, day: null }
 }
 
 // How many daily candles to ask for at `now` (seconds). With none kept, a
@@ -34,13 +36,22 @@ function dailyCount(candles, now) {
   return Math.min(YEAR, Math.max(2, missed + 1))
 }
 
+// Where the next run's 5-minute candles start: at the newest kept one, which
+// was still open when it came, or with none kept from today, at 00:00 UTC.
+function dayStart(day, now) {
+  var today = Math.floor(now / DAY) * DAY
+  var newest = day && day.length ? day[day.length - 1].t : 0
+  return newest >= today ? newest : today
+}
+
 // { urls, asked }: the URLs of the next run and the role of each, in order.
 // The instrument is asked for only when none is kept for this symbol: it
 // does not change by the minute.
 function plan(adapter, symbol, kept, now) {
   var mine = keptFor(kept, symbol)
-  var urls = [adapter.quotesUrl([symbol]), adapter.dailyUrl(symbol, dailyCount(mine.candles, now))]
-  var asked = ["quotes", "daily"]
+  var urls = [adapter.quotesUrl([symbol]), adapter.dailyUrl(symbol, dailyCount(mine.candles, now)),
+    adapter.candlesUrl(symbol, dayStart(mine.day, now))]
+  var asked = ["quotes", "daily", "day"]
   if (mine.instrument === null) {
     urls.push(adapter.instrumentUrl(symbol))
     asked.push("instrument")
@@ -49,16 +60,16 @@ function plan(adapter, symbol, kept, now) {
 }
 
 // The kept candles with the fresh ones in, oldest first: a fresh candle
-// replaces a kept one of the same day, since today's moves until midnight.
-// Only the last year is kept.
-function mergeDaily(kept, fresh) {
+// replaces a kept one that starts at the same time, since the newest moves
+// until it closes.
+function mergeCandles(kept, fresh) {
   var byDay = {}
   var all = (kept || []).concat(fresh)
   for (var i = 0; i < all.length; i++) byDay[all[i].t] = all[i]
   var out = []
   for (var t in byDay) out.push(byDay[t])
   out.sort(function (a, b) { return a.t - b.t })
-  return out.slice(-YEAR)
+  return out
 }
 
 // What the exchange itself said when it turned a question down: it answers
@@ -94,7 +105,7 @@ function refusedWords(adapter, status) {
 // exchange said about each question, and last a price it did not send.
 function read(all, asked, symbol, kept, adapter) {
   var mine = keptFor(kept, symbol)
-  var out = { kept: { symbol: symbol, instrument: mine.instrument, candles: mine.candles }, quote: null, problem: "", wait: 0 }
+  var out = { kept: { symbol: symbol, instrument: mine.instrument, candles: mine.candles, day: mine.day }, quote: null, problem: "", wait: 0 }
   // No answer at all, not even "no network", means curl never ran or died
   // before its first URL: the exchange was never asked.
   if (all.length === 0) {
@@ -139,14 +150,22 @@ function read(all, asked, symbol, kept, adapter) {
   }
   var quotes = json.quotes ? adapter.parseQuotes(json.quotes) : null
   if (json.quotes && quotes === null) trouble = trouble || said(adapter, json.quotes)
-  var candles = json.daily ? adapter.parseDaily(json.daily) : null
+  var candles = json.daily ? adapter.parseCandles(json.daily) : null
   if (json.daily && candles === null) trouble = trouble || said(adapter, json.daily)
-  if (candles !== null) out.kept.candles = mergeDaily(out.kept.candles, candles)
-  if (out.kept.instrument === null || quotes === null || candles === null || !(symbol in quotes.prices)) {
+  if (candles !== null) out.kept.candles = mergeCandles(out.kept.candles, candles).slice(-YEAR)
+  var day = json.day ? adapter.parseCandles(json.day) : null
+  if (json.day && day === null) trouble = trouble || said(adapter, json.day)
+  // Only the day the exchange answered in is kept: at midnight the line
+  // starts again.
+  if (day !== null && quotes !== null) {
+    var today = Math.floor(quotes.time / DAY) * DAY
+    out.kept.day = mergeCandles(out.kept.day, day).filter(function (c) { return c.t >= today })
+  }
+  if (out.kept.instrument === null || quotes === null || candles === null || day === null || !(symbol in quotes.prices)) {
     out.problem = trouble || adapter.NAME + " sent no price for " + symbol
     return out
   }
 
-  out.quote = adapter.buildQuote(out.kept.instrument, quotes.prices[symbol], quotes.time, out.kept.candles)
+  out.quote = adapter.buildQuote(out.kept.instrument, quotes.prices[symbol], quotes.time, out.kept.candles, out.kept.day)
   return out
 }

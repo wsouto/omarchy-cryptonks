@@ -5,7 +5,7 @@
   "version": "0.0.1",
   "author": "Walter Souto",
   "license": "MIT",
-  "description": "A crypto futures watchlist for your Omarchy bar. Work in progress: today the pill shows the price of BTCUSDT and its change since 00:00 UTC.",
+  "description": "A crypto futures watchlist for your Omarchy bar. Work in progress: today the pill shows BTCUSDT's move since 00:00 UTC as the day's line, an arrow, text, or a bull or a bear.",
   "kinds": ["bar-widget"],
   "entryPoints": {
     "barWidget": "BarWidget.qml"
@@ -16,6 +16,14 @@
     "category": "Info",
     "aliases": ["crypto", "stonks", "ticker"],
     "allowMultiple": false,
-    "defaultSection": "center"
+    "defaultSection": "center",
+    "defaults": {
+      "barStyle": "sparkline"
+    },
+    "schema": [
+      { "key": "barStyle", "type": "enum", "label": "Pill", "options": ["sparkline", "arrow", "text", "icon"], "defaultValue": "sparkline", "description": "How the pill looks in the centre or left section of a top or bottom bar. Middle-click the pill to change it." },
+      { "key": "barStyleRight", "type": "enum", "label": "Pill on the right", "options": ["sparkline", "arrow", "text", "icon"], "defaultValue": "icon", "description": "How the pill looks in the right section of a top or bottom bar, among the bar's icons. Middle-click the pill there to change it." },
+      { "key": "barStyleVertical", "type": "enum", "label": "Pill on a side bar", "options": ["icon", "stacked"], "defaultValue": "icon", "description": "How the pill looks on a bar at the side of the screen: the day's bull or bear, or the symbol over its change. Middle-click the pill there to switch." }
+    ]
   }
 }

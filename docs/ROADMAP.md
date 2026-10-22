@@ -24,8 +24,8 @@ commit. Each step says what you will see. Run `bash test/check.sh` and
 The steps from 5 on follow the original's layers, as drawn in
 [FEATURE-MAP.md](FEATURE-MAP.md), which says what each feature becomes here.
 
-- [ ] **5. The pill's forms.** The day's 5-minute candles (`candlesUrl`;
-      check that Bybit's kline accepts a `start` at 00:00 UTC), the
+- [x] **5. The pill's forms.** The day's 5-minute candles (`candlesUrl`;
+      checked: Bybit's kline accepts a `start` at 00:00 UTC), the
       sparkline, arrow and icon forms, middle-click to cycle. You see: the
       pill in its default sparkline form.
 - [ ] **6. The popup.** Hero, day chart, scrub, the retro and smooth looks.

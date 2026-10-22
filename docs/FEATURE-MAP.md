@@ -104,8 +104,8 @@ requests a minute, far below the limit of 600 every 5 seconds, but it is
 the heaviest thing here. The 5-minute candles of the UTC day also give the
 row its open, high, low and volume, so one request per row covers it.
 Recommend: the rows' lines refresh every 5 minutes, and the price every
-minute from the single all-tickers request. (To verify: that kline accepts a
-`start` at 00:00 UTC.). **Fine**.
+minute from the single all-tickers request. (Verified on 2026-10-22: that kline
+accepts a `start` at 00:00 UTC.). **Fine**.
 
 ## Lists
 
