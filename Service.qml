@@ -1,8 +1,9 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
 // Service.qml. Changes: one feed for every symbol, a search preview among
 // them; the symbols to add come from a list fetched once a day, not a
-// lookup per query; no lists, ranges, fundamentals or overnight feeds; an
-// add features its symbol at once; the files are this project's own.
+// lookup per query; no ranges, fundamentals or overnight feeds; an add
+// features its symbol at once; no list keeps a scroll place, so lists have
+// no session keys; the files are this project's own.
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -14,8 +15,8 @@ import "Settings.js" as Settings
 // saved, so a restart shows a price at once, until its first answer.
 //
 // The featured symbol is kept fresh always, for the pill; every symbol of
-// All while the popup is open, for its rows, and search's choice, for the
-// hero's preview.
+// the list on show while the popup is open, for its rows, and search's
+// choice, for the hero's preview.
 Item {
   id: root
 
@@ -37,18 +38,32 @@ Item {
   readonly property var library: dataSettings.symbols
   readonly property string featured: ready ? dataSettings.featured : ""
   readonly property string changeMode: dataSettings.changeMode
-  // All's order (`Settings.ORDERS`) and whether a sorted one runs the other
-  // way.
-  readonly property string order: dataSettings.order
-  readonly property bool reversed: dataSettings.reversed
+  // The list on show, "" for All; All and the named lists, as the menu
+  // offers them (`Settings.listChoices`); the list's symbols in its manual
+  // order; its order (`Settings.ORDERS`) and whether a sorted one runs the
+  // other way.
+  readonly property string listName: dataSettings.list
+  readonly property var lists: Settings.listChoices(dataSettings)
+  readonly property var symbols: Settings.listSymbols(dataSettings)
+  readonly property string order: Settings.listOrder(dataSettings)
+  readonly property bool reversed: Settings.listReversed(dataSettings)
   readonly property bool retro: dataSettings.style === "retro"
   // The popup says when it opens and closes.
   property bool popupOpen: false
   // Search's choice, which the popup's hero shows unadded: "" for none.
   property string previewSymbol: ""
-  // The last removal, which `undoRemoval` can take back until the next add:
-  // { symbol, before, left }, the settings before it and the hero it left.
+  // What the last removal took and the settings from just before it, on
+  // offer until the next change to what the lists hold, however it comes: a
+  // change here or in the data file. { symbol, before, left }, `left` the
+  // hero it left.
   property var lastRemoval: null
+  property string listsHeld: ""
+  onDataSettingsChanged: {
+    var held = Settings.listsHeld(root.dataSettings)
+    if (held === root.listsHeld) return
+    root.listsHeld = held
+    root.lastRemoval = null
+  }
 
   // Every symbol's quote and problem, as `PriceFeed` holds them, and the
   // featured one's on their own.
@@ -62,7 +77,7 @@ Item {
   function refresh() { feed.refresh() }
 
   // The symbols you can add (`SymbolList`).
-  readonly property alias symbolList: symbols
+  readonly property alias symbolList: symbolSource
 
   // A row clicked, a number key: the symbol the pill and the hero show.
   function feature(symbol) {
@@ -74,33 +89,76 @@ Item {
   }
 
   // An add is featured at once: the hero already shows it as the preview,
-  // so the chart on show never changes. It ends the offer to undo.
+  // so the chart on show never changes. On a named list it joins that list
+  // and All.
   function addSymbol(symbol) {
     var next = Settings.withSymbolAdded(root.dataSettings, symbol)
     next.featured = symbol
-    root.lastRemoval = null
     root.previewSymbol = ""
     root.persist(next)
   }
 
-  // A featured symbol that leaves hands the hero to its neighbour in
-  // `shown`, the rows as the popup shows them. The removal remembers the
-  // settings before it and the hero it left, so it can be taken back as it
-  // was without undoing anything chosen since. Its quote stays in the feed,
-  // so an undo shows it at once.
+  // Out of the list on show: a named list's membership, or All, and every
+  // list with it. A featured symbol that leaves All hands the hero to its
+  // neighbour in `shown`, the rows as the popup shows them.
   function removeSymbol(symbol, shown) {
+    root.remove(symbol, Settings.withMembership(root.dataSettings, symbol, root.listName, false, shown))
+  }
+
+  // A tick or untick in a symbol's checklist; "" is All. Unticking All is a
+  // removal, and can be taken back like one.
+  function setMembership(symbol, name, member, shown) {
+    var next = Settings.withMembership(root.dataSettings, symbol, name, member, shown)
+    if (name === "" && !member) root.remove(symbol, next)
+    else root.persist(next)
+  }
+
+  // A removal remembers the settings before it and the hero it left, so it
+  // can be taken back as it was without undoing anything chosen since. Its
+  // quote stays in the feed, so an undo shows it at once.
+  function remove(symbol, next) {
     var before = root.dataSettings
-    root.persist(Settings.withSymbolRemoved(before, symbol, shown))
+    root.persist(next)
     root.lastRemoval = { symbol: symbol, before: before, left: root.dataSettings.featured }
   }
 
   function setOrder(order) {
-    root.persist(Settings.withOrder(root.dataSettings, order))
+    root.persist(Settings.withListOrder(root.dataSettings, order))
   }
 
-  // The sorted order the other way; manual stays as it is.
+  // The current sorted order the other way; manual stays as it is.
   function reverseOrder() {
-    root.persist(Settings.withReversed(root.dataSettings))
+    root.persist(Settings.withListReversed(root.dataSettings))
+  }
+
+  function switchList(name) {
+    root.persist({ list: name })
+  }
+
+  function stepList(delta) {
+    root.switchList(Settings.steppedList(root.dataSettings, delta))
+  }
+
+  // Makes and opens an empty list. Returns why not, or "" once it exists.
+  function createList(name) {
+    var problem = Settings.listNameProblem(name, root.dataSettings.lists)
+    if (problem === "") root.persist(Settings.withListCreated(root.dataSettings, name))
+    return problem
+  }
+
+  // Returns why not, or "" once renamed.
+  function renameList(name, newName) {
+    var problem = Settings.renameProblem(root.dataSettings, name, newName)
+    if (problem === "") root.persist(Settings.withListRenamed(root.dataSettings, name, newName))
+    return problem
+  }
+
+  function moveList(name, delta) {
+    root.persist(Settings.withListMoved(root.dataSettings, name, delta))
+  }
+
+  function deleteList(name) {
+    root.persist(Settings.withListDeleted(root.dataSettings, name))
   }
 
   // A hand-arranged order of the rows.
@@ -119,14 +177,14 @@ Item {
   Screens { id: screenWatch }
 
   SymbolList {
-    id: symbols
+    id: symbolSource
     cachePath: root.cacheDir + "/instruments.json"
   }
 
   PriceFeed {
     id: feed
     symbols: !root.ready ? [] : !root.popupOpen ? [root.featured]
-      : root.previewSymbol !== "" && root.library.indexOf(root.previewSymbol) < 0 ? root.library.concat([root.previewSymbol]) : root.library
+      : Settings.normalizeSymbols(root.symbols.concat([root.featured, root.previewSymbol]))
     featured: root.featured
     screens: screenWatch
     onAnswered: root.saveQuotes()

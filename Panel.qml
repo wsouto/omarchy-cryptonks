@@ -1,9 +1,10 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
 // Panel.qml and the hero and rows of StonksBody.qml and Watchlist.qml.
-// Changes: the body is the header, the hero, the day chart, the rows of
-// All, search and the footer, built here, and the key sheet in their place;
-// the lists, ranges and statuses come in roadmap steps 8c to 11, with the
-// keys that drive them. The rows are a ListView whose rows a drag shifts in
+// Changes: the body is the header, the hero, the day chart, the list line
+// and its menu, the rows, search and the footer, built here, and the key
+// sheet in their place; the ranges and statuses come in roadmap steps 9 to
+// 11, with the keys that drive them; a new list's name is not kept through
+// a close. The rows are a ListView whose rows a drag shifts in
 // place, so the row under the pointer is never rebuilt mid-drag. An add is featured at once, so there is no
 // landing to wait for. The change has two modes, percent and amount, both
 // since 00:00 UTC.
@@ -47,12 +48,16 @@ Panel {
   readonly property var quote: service ? service.quotes[symbol] || null : null
   readonly property string problem: service ? service.problems[symbol] || "" : ""
   readonly property string featured: service ? service.featured : ""
-  // All, in its manual order, and the rows: All in its order.
+  // All, in its manual order; the list on show, "" for All, and its name;
+  // and the rows: that list in its order.
   readonly property var library: service ? service.library : []
+  readonly property string listName: service ? service.listName : ""
+  readonly property string listLabel: listName !== "" ? listName : "All"
+  readonly property var listSymbols: service ? service.symbols : []
   readonly property string order: service ? service.order : "manual"
   readonly property bool reversed: !!service && service.reversed
   readonly property bool manualOrder: order === "manual"
-  readonly property var shownRows: service ? Settings.sortedSymbols(library, service.quotes, order, reversed) : []
+  readonly property var shownRows: service ? Settings.sortedSymbols(listSymbols, service.quotes, order, reversed) : []
   readonly property int rowPitch: Style.space(40) + rowGap
   // The rows show up to six whole rows; more scroll.
   readonly property int maxRows: 6
@@ -65,6 +70,12 @@ Panel {
   readonly property string cursorRow: shownRows.indexOf(cursorSymbol) >= 0 ? cursorSymbol : featured
   // Search is open in the rows' place, with the hero on its choice.
   property bool adding: false
+  // The list menu lies over the rows.
+  property bool listMenuOpen: false
+  // A view has the keys, its field's or its own; as it lets them go, they
+  // come back to the popup's own handler.
+  readonly property bool ownsKeys: adding || listMenuOpen
+  onOwnsKeysChanged: if (!ownsKeys) Qt.callLater(function() { if (root.opened && !root.ownsKeys) keyCatcher.forceActiveFocus() })
   // Why a key did nothing, or what a removal took, in the footer for a
   // moment (`say`, `offerUndo`); `offered` is the removal it offers back,
   // while it is still the service's one on offer.
@@ -118,6 +129,7 @@ Panel {
       root.cursorSymbol = ""
       root.showingHelp = false
       root.cancelAdding()
+      root.listMenuOpen = false
       root.clearNote()
       footer.settle()
       root.cancelDrag()
@@ -134,6 +146,7 @@ Panel {
     setCenterHoverRevealSuppressed(false)
     motion.freeze()
     root.cancelAdding()
+    root.listMenuOpen = false
     root.cancelDrag()
     noteTimer.stop()
     if (root.service) root.service.popupOpen = false
@@ -263,18 +276,49 @@ Panel {
   // The list to search is asked for as search opens, unless one is fresh.
   function startAdding() {
     root.showingHelp = false
+    root.listMenuOpen = false
     root.clearNote()
     root.adding = true
     if (root.service) root.service.symbolList.want()
   }
 
-  // The keys go back to the popup's own handler: the field held them.
   function cancelAdding() {
-    var was = root.adding
     root.adding = false
     previewWait.stop()
     if (root.service) root.service.preview("")
-    if (was) Qt.callLater(function() { if (root.opened) keyCatcher.forceActiveFocus() })
+  }
+
+  // ---- Lists ----
+
+  function openListMenu() {
+    root.cancelAdding()
+    root.showingHelp = false
+    root.listMenuOpen = true
+  }
+
+  function closeListMenu() {
+    root.listMenuOpen = false
+  }
+
+  function chooseList(name) {
+    root.closeListMenu()
+    if (root.service && name !== root.listName) root.service.switchList(name)
+  }
+
+  // A new list is empty, so search opens straight away to fill it.
+  function createList(name) {
+    if (!root.service) return
+    var problem = root.service.createList(name)
+    if (problem !== "") {
+      listMenu.problem = problem
+      return
+    }
+    root.startAdding()
+  }
+
+  function stepList(delta) {
+    root.showingHelp = false
+    if (root.service) root.service.stepList(delta)
   }
 
   // The hero follows search's choice after a moment's pause, so typing and
@@ -290,11 +334,12 @@ Panel {
     onTriggered: if (root.adding && root.service) root.service.preview(root.chosen)
   }
 
-  // A result already in All is shown, as a click on its row shows it; a new
-  // one is added and featured, and the rows bring it into view.
+  // A result already in the list on show is shown, as a click on its row
+  // shows it; a new one is added, to the list and All, and featured, and the
+  // rows bring it into view.
   function acceptSymbol(symbol) {
     if (!root.service || !symbol) return
-    var member = root.library.indexOf(symbol) >= 0
+    var member = root.listSymbols.indexOf(symbol) >= 0
     root.cancelAdding()
     if (member) root.service.feature(symbol)
     else root.service.addSymbol(symbol)
@@ -303,13 +348,13 @@ Panel {
   }
 
   // Every removal comes through here, from a key or a click, so All's last
-  // row's refusal is said once, in the footer. Removing the row the cursor
+  // row's refusal is said once, in the footer. A named list may empty. Removing the row the cursor
   // is on hands the cursor to the row that takes its place, as Mail and
   // Finder do: the next row, or the one before when it was the last.
   function removeRow(symbol) {
     root.showingHelp = false
     if (!root.service || !symbol) return
-    if (!Settings.canRemove(root.library)) {
+    if (root.listName === "" && !Settings.canRemove(root.library)) {
       root.say("Keep at least one symbol")
       return
     }
@@ -318,7 +363,7 @@ Panel {
     var successor = symbol === root.cursorSymbol && at >= 0 ? (shown[at + 1] || shown[at - 1] || "") : ""
     root.service.removeSymbol(symbol, shown)
     root.cursorSymbol = successor
-    root.offerUndo(symbol)
+    root.offerUndo(symbol, root.listName)
   }
 
   function say(text) {
@@ -330,9 +375,9 @@ Panel {
   // A removal is instant and needs no confirm, and the row may be off
   // screen, so the footer names what went and offers it back. `u` takes it
   // back until the next add, long after the note has gone.
-  function offerUndo(symbol) {
+  function offerUndo(symbol, from) {
     root.offered = root.removal
-    root.note = "Removed " + symbol
+    root.note = "Removed " + symbol + (from !== "" ? " from " + from : "")
     root.holdNote()
   }
 
@@ -414,7 +459,8 @@ Panel {
     open: root.opened
     focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(root.panelWidth)
-    contentHeight: panel.fittedContentHeight(body.implicitHeight)
+    contentHeight: panel.fittedContentHeight(Math.max(body.implicitHeight,
+      root.listMenuOpen ? listMenu.y + listMenu.height + root.groupGap + footer.height : 0))
 
     // Escape hides the key sheet first, then lets go of a scrub, then
     // closes; any other key acts, and hides the sheet so what it does
@@ -424,6 +470,7 @@ Panel {
       id: keyCatcher
       anchors.fill: parent
       clip: true
+      blocked: root.ownsKeys
       // Ctrl+↑ ↓ and Ctrl+J K move the selected row, as the shell's panels do.
       reorderable: true
       onReorderRequested: function(dy) { root.moveSelected(dy) }
@@ -464,6 +511,9 @@ Panel {
         else if (t === "x") root.removeRow(root.cursorRow)
         else if (t === "u") root.undoRemoval()
         else if (t === "o") shifted ? root.reverseOrder() : root.cycleOrder()
+        else if (t === "w") root.openListMenu()
+        else if (t === ",") root.stepList(-1)
+        else if (t === ".") root.stepList(1)
         else if (t === "j" && shifted) root.moveSelected(1)
         else if (t === "k" && shifted) root.moveSelected(-1)
         else if (t >= "1" && t <= "9") root.feature(root.shownRows[Number(t) - 1])
@@ -596,12 +646,16 @@ Panel {
 
         // The list's name and its order, a group's gap over the rows.
         Column {
+          id: rowsBlock
           visible: !root.showingHelp && !root.adding
           width: parent.width
           spacing: root.groupGap
 
           ListLine {
+            id: listLine
             width: parent.width
+            listLabel: root.listLabel
+            onListClicked: root.listMenuOpen ? root.closeListMenu() : root.openListMenu()
             order: root.order
             reversed: root.reversed
             retro: root.retro
@@ -618,13 +672,24 @@ Panel {
           ListView {
             id: rows
             width: parent.width
-            height: Math.min(root.shownRows.length, root.maxRows) * root.rowPitch - root.rowGap
+            // An empty named list keeps one row, which says so.
+            height: Math.max(1, Math.min(root.shownRows.length, root.maxRows)) * root.rowPitch - root.rowGap
             clip: true
             spacing: root.rowGap
             boundsBehavior: Flickable.StopAtBounds
             // A carried row is held where the pointer is, not scrolled away.
             interactive: root.dragSymbol === ""
             model: root.shownRows
+
+          Text {
+            visible: root.shownRows.length === 0
+            anchors.centerIn: parent
+            textFormat: Text.PlainText
+            text: "No symbols in " + root.listLabel + " yet"
+            color: root.dim
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.bodySmall
+          }
           // The rows shown again, behind search or the key sheet before: the
           // pointer resting over them is no move (RowPointer.rest).
           onVisibleChanged: if (visible) rowPointer.rest()
@@ -696,7 +761,7 @@ Panel {
           instruments: root.service ? root.service.symbolList.instruments : []
           listStatus: root.service ? root.service.symbolList.status : ""
           quoteCoin: Bybit.QUOTE_COIN
-          members: root.library
+          members: root.listSymbols
           retro: root.retro
           foreground: root.foreground
           dim: root.dim
@@ -721,6 +786,40 @@ Panel {
           onClicked: root.footerClicked()
           onHoveredChanged: if (root.note !== "") root.holdNote()
         }
+      }
+
+      // A click anywhere off the open menu closes it, and nothing under it
+      // acts, not even to a resting pointer: the chart would scrub. While a
+      // new list's name is typed, it keeps the name as Enter does: the list
+      // is made, or the menu stays open saying why not; an empty field just
+      // closes.
+      MouseArea {
+        anchors.fill: parent
+        visible: root.listMenuOpen
+        hoverEnabled: true
+        z: 9
+        onClicked: listMenu.typedName.trim() !== "" ? root.createList(listMenu.typedName) : root.closeListMenu()
+        onWheel: function(wheel) { wheel.accepted = true }
+      }
+
+      // Under the list's name, over the rows; the card makes room for it
+      // and the footer under it (`panel.contentHeight`).
+      ListMenu {
+        id: listMenu
+        visible: root.listMenuOpen
+        active: root.listMenuOpen && root.opened
+        z: 10
+        y: rowsBlock.y + listLine.y + listLine.height + Style.space(4)
+        choices: root.service ? root.service.lists : []
+        current: root.listName
+        retro: root.retro
+        foreground: root.foreground
+        dim: root.dim
+        fontFamily: root.fontFamily
+        onChosen: function(name) { root.chooseList(name) }
+        onCreateRequested: function(name) { root.createList(name) }
+        onManageRequested: root.closeListMenu()
+        onDismissed: root.closeListMenu()
       }
     }
   }

@@ -1,14 +1,14 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2, the
-// list line of HeroBand.qml. Changes: its own file; the list's name is All
-// and does nothing yet, and the breadth rule and "TODAY" are not drawn: the
-// list menu and the breadth come in roadmap step 8c, ranges in step 9.
+// list line of HeroBand.qml. Changes: its own file; the breadth rule comes
+// in its own commit of roadmap step 8c, and "TODAY", which says the rows
+// keep the day on every range, with the ranges in step 9.
 import QtQuick
 import qs.Commons
 import qs.Commons as Commons
 import "Settings.js" as Settings
 
-// The line over the rows: the list's name on the left, its order on the
-// right.
+// The line over the rows: the list's name on the left, which opens the list
+// menu, its order on the right.
 Item {
   id: root
 
@@ -20,6 +20,7 @@ Item {
   property color dim: Commons.Color.foreground
   property string fontFamily: Style.font.family
 
+  signal listClicked()
   signal orderClicked()
   signal orderReverseClicked()
 
@@ -29,7 +30,7 @@ Item {
     id: listText
     anchors.left: parent.left
     anchors.verticalCenter: parent.verticalCenter
-    width: Math.min(implicitWidth, parent.width - orderText.implicitWidth - Style.space(40))
+    width: Math.min(implicitWidth, parent.width - orderText.implicitWidth - Style.space(60))
     textFormat: Text.PlainText
     text: root.listLabel.toUpperCase()
     color: root.foreground
@@ -38,6 +39,30 @@ Item {
     font.bold: true
     font.letterSpacing: 1
     elide: Text.ElideRight
+  }
+
+  Text {
+    id: listChevron
+    anchors.left: listText.right
+    anchors.leftMargin: Style.space(6)
+    anchors.verticalCenter: parent.verticalCenter
+    text: "󰅀"
+    color: root.dim
+    font.family: root.fontFamily
+    font.pixelSize: Style.font.caption
+    font.bold: true
+  }
+
+  MouseArea {
+    id: listMouse
+    anchors.left: listText.left
+    anchors.right: listChevron.right
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.margins: -Style.space(6)
+    hoverEnabled: true
+    cursorShape: Qt.PointingHandCursor
+    onClicked: root.listClicked()
   }
 
   // The order control hovers the way a button does: the fill and the

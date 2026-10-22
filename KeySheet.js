@@ -1,9 +1,8 @@
 .pragma library
 .import "Settings.js" as Settings
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
-// KeySheet.js. Changes: only the keys that work today are on it; the lists
-// and the ranges join it with the steps that bring them (roadmap steps 8c
-// and 9). `c` switches between two
+// KeySheet.js. Changes: only the keys that work today are on it; the
+// ranges join it with roadmap step 9. `c` switches between two
 // modes here, and the README's table of every key comes in step 12, so the
 // sheet has no note pointing to it yet.
 
@@ -36,9 +35,10 @@ function sheet(order) {
         { key: "← →", does: "Scrub one chart step" },
         { key: "p", does: "Replay the chart" }
       ]},
-      { title: "List", rows: [
+      { title: "Lists", rows: [
+        { key: "w", does: "Open the list menu" },
         { key: "o", does: "Change the list's order" },
-        { key: "O", does: "Reverse a sorted order" }
+        { key: ", .", does: "Previous or next list" }
       ]},
       { title: "Look", rows: [
         { key: "s", does: "Switch smooth and retro" },
