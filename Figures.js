@@ -100,10 +100,27 @@ function dayLine(quote) {
   }
 }
 
+// A perpetual has no market cap or P/E, so VOL stands here in their place,
+// under OPEN: the day's volume in the base coin and its worth in the quote
+// coin, as "51K BTC ($4.2B)". Its slot is as wide as 999.9M and $999.9B.
+function volumeFact(quote) {
+  var coin = quote.currency && quote.symbol.slice(-quote.currency.length) === quote.currency
+    ? quote.symbol.slice(0, -quote.currency.length) : ""
+  var text = function(volume, worth) {
+    return Format.compactNumber(volume) + (coin !== "" ? " " + coin : "") + (worth !== null ? " ($" + worth + ")" : "")
+  }
+  var known = Format.isFiniteNumber(quote.volume)
+  var worth = Format.isFiniteNumber(quote.turnover)
+  return {
+    label: "VOL",
+    value: known ? text(quote.volume, worth ? Format.compactNumber(quote.turnover) : null) : "",
+    widest: Format.widest(text(999.9e6, worth ? "999.9B" : null))
+  }
+}
+
 // The info block's second line: the last year's low and high, which already
 // hold today's, so an end the day set is the day's own and takes its tone.
-// A perpetual has no market cap or P/E, so VOL, the day's volume in the base
-// coin, stands here in their place, under OPEN; its slot is as wide as 999.9M.
+// Its one fact is VOL.
 function yearLine(quote) {
   if (!quote) return null
   var range = Format.infoRange(quote.low52w, quote.high52w, quote.price, quote.priceDigits)
@@ -113,6 +130,6 @@ function yearLine(quote) {
   return {
     title: "52W",
     range: range,
-    facts: [{ label: "VOL", value: Format.isFiniteNumber(quote.volume) ? Format.compactNumber(quote.volume) : "", widest: Format.widest("999.9M") }]
+    facts: [volumeFact(quote)]
   }
 }

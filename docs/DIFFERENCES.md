@@ -47,7 +47,8 @@ Each entry: **what**, **why**, and a tag.
   the 52-week line under OPEN, where the original has MKT CAP and P/E. Funding
   rate or open interest could take the other slot later. `crypto`
 - **VOL is the base coin's volume since 00:00 UTC** (BTC for BTCUSDT), under
-  1,000 to four digits. `crypto`
+  1,000 to four digits, and its worth in the quote coin: "51K BTC ($4.2B)".
+  The coin is the symbol without its quote currency. `crypto`
 
 ## Lists
 
