@@ -46,8 +46,8 @@ Rectangle {
   property color downColor: Commons.Color.urgent
   property string fontFamily: Style.font.family
 
-  // The pointer is on the row, and a click on it.
-  signal pointed()
+  // The pointer is on the row, at (x, y) in the scene, and a click on it.
+  signal pointed(real x, real y)
   signal featureRequested()
   // The ×, a right-click or a middle-click.
   signal removeRequested()
@@ -293,7 +293,8 @@ Rectangle {
     }
     onPositionChanged: function(event) {
       if (!pressed || pressY < 0) {
-        row.pointed()
+        var at = mapToItem(null, event.x, event.y)
+        row.pointed(at.x, at.y)
         return
       }
       if (!dragged) {

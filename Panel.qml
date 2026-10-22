@@ -164,6 +164,16 @@ Panel {
     if (root.showingHelp) helpSheet.contentY = 0
   }
 
+  // Where the pointer last was in the scene. Qt sends the hover again as
+  // rows move under a still pointer, a key's move or sort among them; that
+  // is no hand's move, so the cursor stays where the key put it.
+  property point pointerAt: Qt.point(-1, -1)
+  function pointTo(symbol, x, y) {
+    if (x === root.pointerAt.x && y === root.pointerAt.y) return
+    root.pointerAt = Qt.point(x, y)
+    if (root.opened) root.cursorSymbol = symbol
+  }
+
   function moveCursor(delta) {
     var at = root.shownRows.indexOf(root.cursorRow)
     root.cursorSymbol = root.shownRows[Math.max(0, Math.min(root.shownRows.length - 1, at + delta))] || ""
@@ -659,7 +669,7 @@ Panel {
               upColor: root.upColor
               downColor: root.downColor
               fontFamily: root.fontFamily
-              onPointed: if (root.opened) root.cursorSymbol = modelData
+              onPointed: function(x, y) { root.pointTo(modelData, x, y) }
               onFeatureRequested: root.feature(modelData)
               onRemoveRequested: root.removeRow(modelData)
               onDragStarted: function(y) { root.beginDrag(modelData, y) }
