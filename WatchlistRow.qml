@@ -1,15 +1,15 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
 // WatchlistRow.qml. Changes: the row's figures are the hero's
 // (`Figures.heroView`), since the day is the UTC day for both; the
-// freshness words come with the statuses (roadmap step 11), so the name
-// line says only a refresh's problem; there is no draw-in, and no slide but
-// the drag's.
+// freshness words have no trading phase; there is no draw-in, and no slide
+// but the drag's.
 pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Commons
 import qs.Commons as Commons
 import "Cells.js" as Cells
 import "Chart.js" as Chart
+import "Figures.js" as Figures
 import "Format.js" as Format
 import "Tones.js" as Tones
 
@@ -27,8 +27,6 @@ Rectangle {
   property var quote: null
   // The figures at the moment shown (`Figures.heroView`), null with no quote.
   property var view: null
-  // Why its last refresh failed, "" when it did not.
-  property string problem: ""
   property bool featuredRow: false
   property bool cursor: false
   // The cursor is yours here, not resting on the featured row: the remove
@@ -67,10 +65,16 @@ Rectangle {
   readonly property var dayUp: view && quote && typeof quote.dayOpen === "number" ? view.daySign >= 0 : null
 
   readonly property color trend: !view || view.sign === 0 ? dim : view.sign > 0 ? upColor : downColor
-  readonly property bool warns: problem !== ""
-  // A failed refresh is said in words on the name line, so it reads without
-  // hover and without colour.
-  readonly property string detail: warns ? "! " + problem : quote ? quote.name : "Loading…"
+  // What the feed has done for this symbol (`Figures.freshness`). A failed
+  // refresh is said in words on the name line, so it reads without hover and
+  // without colour; a quote kept from an earlier session, or gone old, says
+  // when it is from. Only a failure warns. The hero says the same.
+  property var freshness: null
+  readonly property bool warns: Figures.freshnessWarns(freshness)
+  readonly property string freshnessNote: Figures.freshnessText(freshness, true)
+  readonly property string detail: quote
+    ? (freshnessNote !== "" ? (warns ? "! " : "") + freshnessNote : quote.name)
+    : (warns ? "! " + freshnessNote : "Loading…")
 
   // Two lines, the way Apple's Stocks sets a row: symbol over name on the
   // left, price over change on the right, the day line between them.

@@ -8,7 +8,8 @@
 // kept; the animal reads the move's sign as drawn, and the hero's figures
 // (`heroView`, the original's `rowModel`) are measured from 00:00 UTC in
 // two modes, percent and amount; the info block's day and 52-week lines
-// (`dayLine`, `yearLine`) have no market cap or P/E; a range's (`rangeView`) from the price at
+// (`dayLine`, `yearLine`) have no market cap or P/E; freshness has no trading
+// phase and no overdue (see below); a range's (`rangeView`) from the price at
 // its start.
 //
 // What the pill's arrow and icon forms, and the popup's hero, make of the
@@ -132,4 +133,46 @@ function yearLine(quote) {
     range: range,
     facts: [volumeFact(quote)]
   }
+}
+
+// ---- Freshness ----
+
+// A quote is aged when it is older than the refresh interval and a minute
+// more: the market always trades, so the age is only about our refreshes.
+var AGED_AFTER = 120
+
+// What the feed has done for a symbol, kept as separate facts: whether its
+// last refresh failed (`problem`), whether its quote is this session's own
+// answer (`fresh`, else it was saved before), and the time it stands for.
+// There is no overdue state: every request ends within curl's 10 seconds,
+// so a run that does not answer fails, and says so.
+function freshness(problem, fresh, quote, now) {
+  var asOf = quote && Format.isFiniteNumber(quote.marketTime) ? quote.marketTime : null
+  var state = problem !== "" ? "failed"
+    : asOf === null ? "unavailable"
+    : !fresh ? "saved"
+    : now - asOf > AGED_AFTER ? "aged"
+    : "fresh"
+  return { state: state, asOf: asOf, earlier: asOf !== null && Math.floor(asOf / 86400) !== Math.floor(now / 86400) }
+}
+
+// The words for a freshness state, "" when nothing needs saying: in capitals
+// for the hero's line, in sentence case for a row's. A quote kept from an
+// earlier session says when it is from until its first answer. With nothing
+// ever answered there was nothing to refresh: "Refresh failed" is for a
+// symbol that had data and lost it.
+function freshnessText(fresh, sentence) {
+  if (!fresh) return ""
+  var say = function(text) { return sentence ? text.charAt(0) + text.slice(1).toLowerCase() : text }
+  if (fresh.asOf === null) return fresh.state === "failed" ? say("NO DATA FOR THIS SYMBOL") : ""
+  var d = new Date(fresh.asOf * 1000)
+  var day = fresh.earlier ? (sentence ? d.getUTCDate() + " " + Format.MONTHS[d.getUTCMonth()].charAt(0) + Format.MONTHS[d.getUTCMonth()].slice(1).toLowerCase() : d.getUTCDate() + " " + Format.MONTHS[d.getUTCMonth()]) + " " : ""
+  var asOf = (sentence ? "As of " : "AS OF ") + day + Format.utcClock(fresh.asOf) + " UTC"
+  if (fresh.state === "failed") return say("REFRESH FAILED") + " · " + asOf
+  if (fresh.state === "aged" || fresh.state === "saved") return asOf
+  return ""
+}
+
+function freshnessWarns(fresh) {
+  return !!fresh && fresh.state === "failed"
 }

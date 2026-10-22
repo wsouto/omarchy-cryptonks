@@ -108,6 +108,14 @@ The steps from 5 on follow the original's layers, as drawn in
         on the pill, `share/` launcher entry and icon.
 - [ ] **11. Statuses.** Errors, retry, the look at every state. You see:
       unplug the network and read it.
+  - [x] **11a. Freshness words.** The original's freshness states, on the
+        hero's listing line and on each row's name line: REFRESH FAILED, NO
+        DATA FOR THIS SYMBOL, and AS OF for a saved or aged quote; LIVE goes
+        out when the quote ages. Rules in `Figures.js`, tested.
+  - [ ] **11b. A range's loading look and RETRY.** The chart dims while a
+        range loads, and a range that failed offers RETRY in the header.
+  - [ ] **11c. The data file.** "Can't read the data file" in the footer,
+        and the file left alone.
 - [ ] **12. Polish and release.** The boundary check that only `adapters/`
       names an exchange, flow tests, README, publishing. You see: a release.
 

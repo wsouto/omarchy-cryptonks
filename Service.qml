@@ -8,6 +8,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "Figures.js" as Figures
 import "Settings.js" as Settings
 
 // The one data owner. The data settings live in wsouto.crypto-stonks.json
@@ -80,6 +81,13 @@ Item {
   readonly property bool fresh: !!feed.fresh[featured]
   // By symbol, whether its quote is this session's own (`PriceFeed.fresh`).
   readonly property var freshness: feed.fresh
+  // The clock in seconds, which a quote's age is read against; it moves every
+  // ten seconds, which is all an "as of" needs.
+  property int now: Math.floor(Date.now() / 1000)
+  // What the feed has done for a symbol (`Figures.freshness`).
+  function freshnessOf(symbol) {
+    return Figures.freshness(feed.problems[symbol] || "", !!feed.fresh[symbol], feed.quotes[symbol] || null, root.now)
+  }
   // The ranges that came, by "SYMBOL|RANGE" (`PriceFeed.histories`).
   readonly property var histories: feed.histories
   function refresh() { feed.refresh() }
@@ -346,6 +354,13 @@ Item {
     root.library.forEach(function(s) { if (feed.quotes[s]) saved[s] = feed.quotes[s] })
     quotesFile.setText(JSON.stringify({ version: 1, quotes: saved }) + "\n")
     quotesWait.restart()
+  }
+
+  Timer {
+    interval: 10000
+    repeat: true
+    running: true
+    onTriggered: root.now = Math.floor(Date.now() / 1000)
   }
 
   Timer {

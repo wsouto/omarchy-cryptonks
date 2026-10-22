@@ -88,3 +88,17 @@ code, and move it here with a one-line pitch.
   open**: the feed keeps every row fresh. `left out`
 - **The launcher icon is the pixel bull in Bitcoin orange**, so the two
   launcher entries differ. `crypto`
+
+## Statuses (step 11)
+
+- **No "UPDATE OVERDUE".** Every request ends within curl's 10 seconds, so a
+  run that does not answer has failed, and says "Refresh failed". An old quote
+  that nothing failed on (a feed that has not asked) says "As of", plainly,
+  after two minutes. The original's 90 seconds of owed time has no case here.
+  `crypto`
+- **The freshness words have no trading phase**: the market never closes, so
+  there is no "live" tied to it. LIVE goes out when the quote is over two
+  minutes old, saved, or failed. A quote from another UTC day names its day
+  ("As of 14 Nov 22:13 UTC"); times are UTC. `crypto`
+- **The header keeps Bybit's own reason** ("! No network") beside the words on
+  the hero's line and the rows' name lines. `crypto`

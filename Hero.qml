@@ -1,12 +1,13 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
 // Hero.qml. Changes: the listing line says the coin's name, Bybit and USDT;
 // the change is since 00:00 UTC, and its caption says so at rest, or names
-// the range; there is no extended-hours print and no freshness word yet
-// (roadmap step 11).
+// the range; there is no extended-hours print; the freshness words have no
+// trading phase.
 import QtQuick
 import qs.Commons
 import qs.Commons as Commons
 import "Cells.js" as Cells
+import "Figures.js" as Figures
 import "Format.js" as Format
 import "Tones.js" as Tones
 
@@ -47,7 +48,15 @@ Item {
   property int priceSize: Style.font.displayLarge * 2
 
   readonly property string priceText: view ? view.priceText : missingText
-  readonly property string listingLead: quote ? String(quote.name).toUpperCase() : ""
+  // What the feed has done for the symbol (`Figures.freshness`).
+  property var freshness: null
+  readonly property string freshnessText: Figures.freshnessText(freshness, false)
+  // Only a failure takes the mark; an aged quote is said plainly, as its row
+  // says it. A first fetch that failed says what the row says.
+  readonly property string listingLead: quote
+    ? (scrubbing || freshnessText === "" ? "" : (Figures.freshnessWarns(freshness) ? "! " : "") + freshnessText + " · ")
+      + String(quote.name).toUpperCase()
+    : (freshnessText !== "" ? "! " + freshnessText : "")
   readonly property string listingMeta: quote ? " · " + quote.exchange + " · " + quote.currency : ""
   readonly property real listingRoom: Math.max(0, listingRow.width - symbolText.implicitWidth - Style.space(8))
   // The day here starts at 00:00 UTC, and the screen says so, so the change
@@ -136,7 +145,7 @@ Item {
       anchors.baseline: symbolText.baseline
       textFormat: Text.PlainText
       text: root.listingLead
-      color: root.dim
+      color: Figures.freshnessWarns(root.freshness) ? root.foreground : root.dim
       font.family: root.fontFamily
       font.pixelSize: Style.font.caption
       font.bold: true

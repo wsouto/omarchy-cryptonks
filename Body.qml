@@ -119,7 +119,8 @@ Item {
     : onDay ? Figures.heroView(quote, scrubT, changeMode) : Figures.rangeView(history, quote, scrubT, range)
   // Live is honest only while refreshes land, the quote is this session's
   // own, and the moment shown is now.
-  readonly property bool live: !!quote && !!service && !!service.freshness[symbol] && problem === "" && !scrubT
+  readonly property var freshness: service ? service.freshnessOf(symbol) : null
+  readonly property bool live: !!quote && !!freshness && freshness.state === "fresh" && !scrubT
   // The info block's two lines: the day's or the range's, over the 52
   // weeks'; and every list of facts the first can hold on any range, so a
   // range change moves none of them.
@@ -623,6 +624,7 @@ Item {
         symbol: root.symbol
         quote: root.quote
         view: root.view
+        freshness: root.freshness
         scrubbing: root.scrubT !== 0
         retro: root.retro
         ghost: root.ghost
@@ -833,7 +835,7 @@ Item {
           width: rows.width
           quote: root.service ? root.service.quotes[modelData] || null : null
           view: quote ? Figures.heroView(quote, root.dayScrubT, root.changeMode) : null
-          problem: root.service ? root.service.problems[modelData] || "" : ""
+          freshness: root.service ? root.service.freshnessOf(modelData) : null
           featuredRow: modelData === root.featured
           cursor: modelData === root.cursorRow
           removable: modelData === root.cursorSymbol

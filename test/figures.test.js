@@ -53,3 +53,36 @@ test("the 52-week line is the year's low and high, toned where today set one, th
   expect(F.yearLine({ ...full, dayHigh: 90 }).range.highTone).toBe("up")
   expect(F.yearLine({ ...full, low52w: null }).range.lowText).toBe("")
 })
+
+// ---- Freshness ----
+
+const NOW = 1700000000
+const quoted = { marketTime: NOW - 30 }
+
+test("a quote is fresh until a refresh fails, or it is older than two minutes, or it was saved", () => {
+  expect(F.freshness("", true, quoted, NOW).state).toBe("fresh")
+  expect(F.freshness("", true, { marketTime: NOW - 121 }, NOW).state).toBe("aged")
+  expect(F.freshness("", false, quoted, NOW).state).toBe("saved")
+  expect(F.freshness("Bybit says no", true, quoted, NOW).state).toBe("failed")
+  expect(F.freshness("", false, null, NOW).state).toBe("unavailable")
+})
+
+test("the words say what failed and when the quote is from, in capitals or in sentence case", () => {
+  const at = Date.UTC(2023, 10, 14, 22, 13) / 1000
+  const same = { marketTime: at }
+  expect(F.freshnessText(F.freshness("x", true, same, at + 10))).toBe("REFRESH FAILED · AS OF 22:13 UTC")
+  expect(F.freshnessText(F.freshness("x", true, same, at + 10), true)).toBe("Refresh failed · As of 22:13 UTC")
+  expect(F.freshnessText(F.freshness("", true, same, at + 10))).toBe("")
+  expect(F.freshnessText(F.freshness("", false, same, at + 10))).toBe("AS OF 22:13 UTC")
+})
+
+test("a quote from another UTC day names its day; with no quote only a failure speaks", () => {
+  const at = Date.UTC(2023, 10, 14, 22, 13) / 1000
+  const old = F.freshness("", false, { marketTime: at }, at + 86400)
+  expect(F.freshnessText(old)).toBe("AS OF 14 NOV 22:13 UTC")
+  expect(F.freshnessText(old, true)).toBe("As of 14 Nov 22:13 UTC")
+  expect(F.freshnessText(F.freshness("x", false, null, NOW))).toBe("NO DATA FOR THIS SYMBOL")
+  expect(F.freshnessText(F.freshness("", false, null, NOW))).toBe("")
+  expect(F.freshnessWarns(F.freshness("x", true, quoted, NOW))).toBe(true)
+  expect(F.freshnessWarns(F.freshness("", false, quoted, NOW))).toBe(false)
+})
