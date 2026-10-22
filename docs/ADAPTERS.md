@@ -19,7 +19,7 @@ change it)
 
 | Function | Gives |
 | --- | --- |
-| `instrumentsUrl()`, `instrumentUrl(symbol)` and `parseInstruments(json)` | the symbols you can add, for search, or one of them: `{ instruments, truncated }` |
+| `instrumentUrl(symbol)` and `parseInstruments(json)` | one of the symbols you can add, or (from step 6, with `instrumentsUrl()`) all of them for search: `{ instruments, truncated }` |
 | `quotesUrl(symbols)` and `parseQuotes(json)` | the latest price of the symbols asked for (every symbol if not one): `{ time, prices }` |
 | `dailyUrl(symbol, count)` and `parseDaily(json)` | daily candles, oldest first |
 | `buildQuote(instrument, price, marketTime, candles)` | the record of [QUOTE-RECORD.md](QUOTE-RECORD.md) |

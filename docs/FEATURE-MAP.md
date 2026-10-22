@@ -47,7 +47,7 @@ the market rests have nothing to show here. The day is the UTC day instead
 | --- | --- | --- | --- |
 | Hero: symbol, listing line, price, change | yes | **Adapt** | The listing line says name, `Bybit` and `USDT` instead of a company, exchange and currency. |
 | Change shown as percent, amount, or "since the open" (`c`) | previous close is the base; "open" is the third | **Adapt** | Here the base is 00:00 UTC. For a market that never closes, the previous day's close and today's open are nearly the same number, so the third mode would repeat the first. Recommend two modes, percent and amount. |
-| Price in both looks (smooth, retro block digits) | yes | **Keep** | `Cells.js` is copied. |
+| Price in both looks (smooth, retro block digits) | yes | **Keep** | `Cells.js` comes back from Stonks when the retro look is built. |
 | Scrub: hover the chart and the price, change and rows follow | yes | **Keep** | |
 | Click the animal to replay the chart (`p`) | yes | **Keep** | |
 | Day chart, one rule for the day and every range, dashed baseline | yes | **Keep** | The day is the UTC day, from 5-minute candles (at most 288). |

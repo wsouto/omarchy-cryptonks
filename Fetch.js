@@ -1,10 +1,10 @@
 .pragma library
 // Copied from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2, Fetch.js.
 // Changes: the answer mark and user agent carry this project's name; the size
-// caps are Bybit's, not Yahoo's and Robinhood's; a refusal is not fixed at
-// 429 and 503 but also takes the statuses an adapter's `limits` name (Bybit
-// refuses with 403), and a refusal that sent no Retry-After waits as long as
-// those `limits` say.
+// cap is Bybit's, not Yahoo's and Robinhood's; `soleBody` is gone, unused; a
+// refusal is not fixed at 429 and 503 but also takes the statuses an
+// adapter's `limits` name (Bybit refuses with 403), and a refusal that sent
+// no Retry-After waits as long as those `limits` say.
 //
 // The one curl every feed runs: one or several URLs in one run, over one
 // connection, compressed, each answer capped and followed by a line that
@@ -17,12 +17,11 @@ var USER_AGENT = "Mozilla/5.0 (Omarchy Crypto Stonks)"
 // Retry-After. A JSON body never holds a newline followed by this.
 var ANSWER_MARK = "@@cryptostonks"
 
-// Caps, each above the largest real answer even uncompressed, as Bybit sent
-// them on 2026-10-21: every linear contract 850 KB (907 contracts, and
-// Bybit sends at most 1000), every ticker 678 KB, 365 daily candles about
-// 40 KB. They leave room to grow.
-var INSTRUMENTS_CAP = 1500000
-var TICKERS_CAP = 1200000
+// The cap of every run, above the largest answer it asks for even
+// uncompressed: a year of daily candles, about 40 KB as Bybit sent them on
+// 2026-10-21. It leaves room for the most Bybit sends, 1000 candles. A feed
+// that asks for the whole list of contracts (850 KB) or of tickers (680 KB)
+// will need a cap of its own.
 var DAILY_CAP = 128000
 
 // `urls` are fetched in turn; an answer over `maxBytes` is a bad answer.
@@ -83,10 +82,4 @@ function answers(text, limits) {
     from = pattern.lastIndex
   }
   return out
-}
-
-// The run's one answer as a body to parse, "" for anything but a whole 200.
-function soleBody(text) {
-  var all = answers(text)
-  return all.length && all[0].kind === "ok" ? all[0].body : ""
 }

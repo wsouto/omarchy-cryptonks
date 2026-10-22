@@ -34,27 +34,19 @@ function resultOf(json) {
   return json.result
 }
 
-// What the request limits are and what a refusal means. For the Fetch rules:
-// Bybit allows 600 requests per 5 seconds per IP. Past that it answers
+// What a refusal means, for the Fetch rules. Bybit allows 600 requests per
+// 5 seconds per IP. Past that it answers
 // HTTP 403 and bans the IP for at least 10 minutes, so a 403 is a refusal
 // that must be left alone for 10 minutes, not the 1 minute of a plain 429.
 // Bybit also answers 403 to the places it does not serve, such as the US,
 // and the two cannot be told apart by status alone, so the words name both.
 var limits = {
-  requestsPerWindow: 600,
-  windowSeconds: 5,
   refusedStatuses: [403],
   refusedPauseSeconds: 600,
   refusedReason: "too many requests from this IP, or Bybit is not available where you are"
 }
 
 // ---- The symbols you can add ------------------------------------------
-
-// All of the linear contracts in one request. About 900 exist, and Bybit
-// sends at most 1000 here, so there is no paging.
-function instrumentsUrl() {
-  return HOST + "/v5/market/instruments-info?category=linear&limit=1000"
-}
 
 // A contract this project shows: a perpetual that is trading now, a crypto
 // one, and quoted in USDT. Bybit also lists dated futures (contractType

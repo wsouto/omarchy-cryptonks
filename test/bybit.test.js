@@ -29,13 +29,6 @@ const instrument = (parsed, symbol) => parsed.instruments.find(i => i.symbol ===
 
 // ---- The symbols you can add ----
 
-test("the instruments list is one request for every linear contract", () => {
-  const url = B.instrumentsUrl()
-  expect(url).toContain("/v5/market/instruments-info")
-  expect(url).toContain("category=linear")
-  expect(url).toContain("limit=1000")
-})
-
 test("only crypto USDT perpetuals that trade are in scope", () => {
   const parsed = B.parseInstruments(fixture("instruments.json"))
   expect(symbolsOf(parsed)).toEqual(["BTCUSDT", "ETHUSDT"])
@@ -251,16 +244,11 @@ const run = (status, exit = 0, retryAfter = "", body = "{}", index = 0) =>
   `${body}\n${F.ANSWER_MARK} ${index} ${String(status).padStart(3, "0")} ${exit} ${retryAfter}\n`
 
 test("curl is asked for compressed, capped, timed-out answers", () => {
-  const cmd = F.curlCommand(["https://a", "https://b"], F.TICKERS_CAP)
+  const cmd = F.curlCommand(["https://a", "https://b"], F.DAILY_CAP)
   expect(cmd[0]).toBe("curl")
   expect(cmd).toContain("--compressed")
-  expect(cmd[cmd.indexOf("--max-filesize") + 1]).toBe(String(F.TICKERS_CAP))
+  expect(cmd[cmd.indexOf("--max-filesize") + 1]).toBe(String(F.DAILY_CAP))
   expect(cmd.slice(-2)).toEqual(["https://a", "https://b"])
-})
-
-test("the caps are above the answers Bybit sent", () => {
-  expect(F.INSTRUMENTS_CAP).toBeGreaterThan(850605)
-  expect(F.TICKERS_CAP).toBeGreaterThan(678372)
 })
 
 test("the daily cap holds the most candles a request can ask for", () => {
@@ -272,10 +260,9 @@ test("the daily cap holds the most candles a request can ask for", () => {
   expect(F.DAILY_CAP).toBeGreaterThan(envelope + 1000 * Math.max(...rows))
 })
 
-test("a whole 200 answer is ok and its body is the sole body", () => {
+test("a whole 200 answer is ok, with its body", () => {
   const text = run(200, 0, "", '{"retCode":0}')
-  expect(F.answers(text)[0].kind).toBe("ok")
-  expect(F.soleBody(text)).toBe('{"retCode":0}')
+  expect(F.answers(text)[0]).toMatchObject({ kind: "ok", body: '{"retCode":0}' })
 })
 
 test("answers are numbered from 0, in the order of the URLs sent", () => {
@@ -287,7 +274,6 @@ test("answers are numbered from 0, in the order of the URLs sent", () => {
 
 test("no answer at all is none", () => {
   expect(F.answers(run(0, 6))[0].kind).toBe("none")
-  expect(F.soleBody(run(0, 6))).toBe("")
 })
 
 test("429 and 503 are refusals, with the wait Retry-After names", () => {
@@ -312,7 +298,7 @@ test("a cut answer or a server error is bad", () => {
 // ---- The files copied unchanged still load ----
 
 test("the copied rule files load", () => {
-  for (const file of ["Format.js", "Tones.js", "Cells.js"]) {
+  for (const file of ["Format.js", "Tones.js"]) {
     expect(Object.keys(load(file)).length).toBeGreaterThan(0)
   }
 })
