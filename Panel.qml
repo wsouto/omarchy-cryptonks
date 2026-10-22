@@ -70,11 +70,15 @@ Panel {
   readonly property string cursorRow: shownRows.indexOf(cursorSymbol) >= 0 ? cursorSymbol : featured
   // Search is open in the rows' place, with the hero on its choice.
   property bool adding: false
-  // The list menu lies over the rows.
+  // The list menu lies over the rows. Manage lists, and the lists of one
+  // symbol (`listsSymbol`), take the rows' and the footer's place.
   property bool listMenuOpen: false
+  property bool managingLists: false
+  property string listsSymbol: ""
+  readonly property bool listViewOpen: managingLists || listsSymbol !== ""
   // A view has the keys, its field's or its own; as it lets them go, they
   // come back to the popup's own handler.
-  readonly property bool ownsKeys: adding || listMenuOpen
+  readonly property bool ownsKeys: adding || listMenuOpen || listViewOpen
   onOwnsKeysChanged: if (!ownsKeys) Qt.callLater(function() { if (root.opened && !root.ownsKeys) keyCatcher.forceActiveFocus() })
   // Why a key did nothing, or what a removal took, in the footer for a
   // moment (`say`, `offerUndo`); `offered` is the removal it offers back,
@@ -130,6 +134,7 @@ Panel {
       root.showingHelp = false
       root.cancelAdding()
       root.listMenuOpen = false
+      root.closeListViews()
       root.clearNote()
       footer.settle()
       root.cancelDrag()
@@ -277,6 +282,7 @@ Panel {
   function startAdding() {
     root.showingHelp = false
     root.listMenuOpen = false
+    root.closeListViews()
     root.clearNote()
     root.adding = true
     if (root.service) root.service.symbolList.want()
@@ -292,6 +298,7 @@ Panel {
 
   function openListMenu() {
     root.cancelAdding()
+    root.closeListViews()
     root.showingHelp = false
     root.listMenuOpen = true
   }
@@ -319,6 +326,51 @@ Panel {
   function stepList(delta) {
     root.showingHelp = false
     if (root.service) root.service.stepList(delta)
+  }
+
+  function openManageLists() {
+    root.closeListMenu()
+    root.cancelAdding()
+    root.showingHelp = false
+    root.listsSymbol = ""
+    root.managingLists = true
+  }
+
+  function openSymbolLists(symbol) {
+    if (!symbol) return
+    root.closeListMenu()
+    root.cancelAdding()
+    root.showingHelp = false
+    root.managingLists = false
+    root.listsSymbol = symbol
+  }
+
+  function closeListViews() {
+    root.managingLists = false
+    root.listsSymbol = ""
+  }
+
+  function renameList(name, newName) {
+    if (!root.service) return
+    var problem = root.service.renameList(name, newName)
+    if (problem !== "") manageLists.problem = problem
+    else manageLists.stopEditing()
+  }
+
+  // Unticking All is a removal from All: its last symbol stays, and the
+  // symbol it takes away has no lists left to show.
+  function setMembership(name, member) {
+    if (!root.service) return
+    if (name === "" && !member && !Settings.canRemove(root.library)) {
+      root.say("Keep at least one symbol")
+      return
+    }
+    var symbol = root.listsSymbol
+    root.service.setMembership(symbol, name, member, root.shownRows)
+    if (name === "" && !member) {
+      root.closeListViews()
+      root.offerUndo(symbol, "")
+    }
   }
 
   // The hero follows search's choice after a moment's pause, so typing and
@@ -511,7 +563,8 @@ Panel {
         else if (t === "x") root.removeRow(root.cursorRow)
         else if (t === "u") root.undoRemoval()
         else if (t === "o") shifted ? root.reverseOrder() : root.cycleOrder()
-        else if (t === "w") root.openListMenu()
+        else if (t === "w") shifted ? root.openManageLists() : root.openListMenu()
+        else if (t === "m") root.openSymbolLists(root.cursorRow)
         else if (t === ",") root.stepList(-1)
         else if (t === ".") root.stepList(1)
         else if (t === "j" && shifted) root.moveSelected(1)
@@ -647,7 +700,7 @@ Panel {
         // The list's name and its order, a group's gap over the rows.
         Column {
           id: rowsBlock
-          visible: !root.showingHelp && !root.adding
+          visible: !root.showingHelp && !root.adding && !root.listViewOpen
           width: parent.width
           spacing: root.groupGap
 
@@ -742,6 +795,7 @@ Panel {
               fontFamily: root.fontFamily
                 onFeatureRequested: root.feature(modelData)
               onRemoveRequested: root.removeRow(modelData)
+            onListsRequested: root.openSymbolLists(modelData)
               onDragStarted: function(y) { root.beginDrag(modelData, y) }
               onDragMoved: function(y) { root.dragTo(y) }
               onDragEnded: root.endDrag()
@@ -772,9 +826,44 @@ Panel {
           onRetryRequested: if (root.service) root.service.symbolList.retry()
         }
 
+        ManageLists {
+          id: manageLists
+          visible: root.managingLists && !root.showingHelp
+          active: root.managingLists && root.opened
+          width: parent.width
+          height: contentHeight
+          choices: root.service ? root.service.lists : []
+          retro: root.retro
+          foreground: root.foreground
+          dim: root.dim
+          fontFamily: root.fontFamily
+          onRenameRequested: function(name, newName) { root.renameList(name, newName) }
+          onMoveRequested: function(name, delta) { if (root.service) root.service.moveList(name, delta) }
+          onDeleteRequested: function(name) { if (root.service) root.service.deleteList(name) }
+          onDismissed: root.closeListViews()
+        }
+
+        SymbolLists {
+          id: symbolLists
+          visible: root.listsSymbol !== "" && !root.showingHelp
+          active: root.listsSymbol !== "" && root.opened
+          width: parent.width
+          height: contentHeight
+          choices: root.service ? root.service.lists : []
+          symbol: root.listsSymbol
+          symbolName: root.service && root.service.quotes[root.listsSymbol] ? root.service.quotes[root.listsSymbol].name : ""
+          note: root.note
+          retro: root.retro
+          foreground: root.foreground
+          dim: root.dim
+          fontFamily: root.fontFamily
+          onToggled: function(name, member) { root.setMembership(name, member) }
+          onDismissed: root.closeListViews()
+        }
+
         AddFooter {
           id: footer
-          visible: !root.showingHelp && !root.adding
+          visible: !root.showingHelp && !root.adding && !root.listViewOpen
           width: parent.width
           retro: root.retro
           foreground: root.foreground
@@ -818,7 +907,7 @@ Panel {
         fontFamily: root.fontFamily
         onChosen: function(name) { root.chooseList(name) }
         onCreateRequested: function(name) { root.createList(name) }
-        onManageRequested: root.closeListMenu()
+        onManageRequested: root.openManageLists()
         onDismissed: root.closeListMenu()
       }
     }

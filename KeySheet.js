@@ -27,7 +27,7 @@ function sheet(order) {
     { key: "pill", does: "Click opens this · middle-click changes form" },
     { key: "row", does: "Click shows its chart · right-click removes it" }
   ]
-  if (manual) mouse.push({ key: "", does: "Drag moves it" })
+  mouse.push({ key: "", does: manual ? "Ctrl-click opens its lists · drag moves it" : "Ctrl-click opens its lists" })
   return {
     groups: [
       { title: "Rows", rows: rows },

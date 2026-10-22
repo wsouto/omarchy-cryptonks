@@ -1,9 +1,9 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
 // WatchlistRow.qml. Changes: the row's figures are the hero's
 // (`Figures.heroView`), since the day is the UTC day for both; the
-// Ctrl-click lists come with lists (roadmap step 8c), and the freshness
-// words with the statuses (step 11), so the name line says only a refresh's
-// problem; there is no draw-in, and no slide but the drag's.
+// freshness words come with the statuses (roadmap step 11), so the name
+// line says only a refresh's problem; there is no draw-in, and no slide but
+// the drag's.
 pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Commons
@@ -50,6 +50,8 @@ Rectangle {
   signal featureRequested()
   // The ×, a right-click or a middle-click.
   signal removeRequested()
+  // Ctrl-click, Apple's Control-click: this row's lists.
+  signal listsRequested()
   // Drag positions are in the parent's coordinates, since the row itself
   // moves under the pointer.
   signal dragStarted(real y)
@@ -287,7 +289,7 @@ Rectangle {
     onPressed: function(event) {
       pressY = event.button === Qt.LeftButton ? event.y : -1
       dragged = false
-      pressedOnRemove = event.button === Qt.LeftButton && onRemove(event.x, event.y)
+      pressedOnRemove = event.button === Qt.LeftButton && !(event.modifiers & Qt.ControlModifier) && onRemove(event.x, event.y)
     }
     onPositionChanged: function(event) {
       if (!pressed || pressY < 0) return
@@ -306,6 +308,7 @@ Rectangle {
     onClicked: function(event) {
       if (dragged || pressedOnRemove) return
       if (event.button !== Qt.LeftButton) row.removeRequested()
+      else if (event.modifiers & Qt.ControlModifier) row.listsRequested()
       else row.featureRequested()
     }
     onDoubleClicked: {}
