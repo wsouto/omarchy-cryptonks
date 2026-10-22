@@ -50,6 +50,10 @@ Item {
   readonly property int bandGap: Style.space(16)
   readonly property int groupGap: Style.space(8)
   readonly property int edge: Style.space(8)
+  // The hero band sits in from the rows' edge, as the original's does.
+  readonly property int inset: Style.space(10)
+  readonly property int gutter: Style.space(8)
+  readonly property int bandWidth: body.width - 2 * inset - gutter
   // The room round the content: the popup's card has its own at the top.
   property int margins: edge
   property int topMargin: 0
@@ -633,7 +637,8 @@ Item {
 
       Hero {
         visible: !root.showingHelp
-        width: parent.width
+        x: root.inset
+      width: root.bandWidth
         symbol: root.symbol
         quote: root.quote
         view: root.view
@@ -669,7 +674,8 @@ Item {
 
     Item {
       visible: !root.showingHelp
-      width: parent.width
+      x: root.inset
+      width: root.bandWidth
       height: root.chartHeight
 
       DayChart {
@@ -732,7 +738,8 @@ Item {
     // The chart's range, from the day to all of the symbol's life.
     RangeSelector {
       visible: !root.showingHelp
-      width: parent.width
+      x: root.inset
+      width: root.bandWidth
       options: History.RANGES
       value: root.range
       retro: root.retro
@@ -746,7 +753,8 @@ Item {
     // the rows keep their place for every symbol and range.
     InfoTable {
       visible: !root.showingHelp
-      width: parent.width
+      x: root.inset
+      width: root.bandWidth
       height: implicitHeight
       lines: [root.periodLine, root.yearLine]
       titles: History.RANGES.map(function(r) { return r.toUpperCase() }).concat(["52W"])
