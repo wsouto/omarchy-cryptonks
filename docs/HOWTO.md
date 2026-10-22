@@ -4,6 +4,14 @@ Everything here uses the commands that ship with Omarchy 4. Run them in a
 terminal. The plugin lives in this folder, `~/Projects/omarchy-crypto-stonks`,
 and the shell loads it from `~/.config/omarchy/plugins/wsouto.crypto-stonks`.
 
+## What it needs
+
+- `curl` 7.84 or later, which fetches the prices. The plugin asks curl for
+  Bybit's `Retry-After` header with `%header{...}`, which older curl lacks.
+  Omarchy's own curl is newer: `curl --version` shows yours.
+- `bun`, only to run the tests: `sudo pacman -S bun`. The plugin itself does
+  not use it.
+
 ## Install for development (a link, not a copy)
 
 ```sh
@@ -23,7 +31,7 @@ omarchy plugin enable wsouto.crypto-stonks center
 ## After you change code
 
 ```sh
-bash test/check.sh          # manifest and QML checks; must end with ALL PASS
+bash test/check.sh          # manifest, QML and bun tests; must end with ALL PASS
 omarchy restart shell       # the shell keeps old code loaded until it restarts
 ```
 

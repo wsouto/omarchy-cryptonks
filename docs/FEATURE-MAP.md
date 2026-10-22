@@ -155,7 +155,7 @@ minute from the single all-tickers request. (To verify: that kline accepts a
 | --- | --- | --- |
 | "As of" and a time on an old price, on the row and above the price | more than 2 min behind while the market trades | **Adapt**: the market always trades, so "old" is only about our refreshes |
 | "No data", "Update overdue" after 90 s without an answer | yes | **Keep** the words; thresholds in the questions |
-| "No data for this symbol", "Refresh failed" | Yahoo | **Adapt**: Bybit's own `retMsg` is shown (done in `PriceFeed.qml`) |
+| "No data for this symbol", "Refresh failed" | Yahoo | **Adapt**: Bybit's own `retMsg` is shown (done in `Refresh.js`) |
 | The header says "schedule unavailable" | exchange calendars run out | **Drop** |
 | RETRY beside a failed range or search | yes | **Keep** |
 | "Can't read the data file" footer | yes | **Keep** |

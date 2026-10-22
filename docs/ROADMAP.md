@@ -22,8 +22,8 @@ commit. Each step says what you will see. Run `bash test/check.sh` and
 - [ ] **5. The popup.** The chart for one symbol, scrub with the pointer.
 - [ ] **6. The list.** Rows, adding a symbol through search, removing, undo.
 - [ ] **7. Named lists, ranges and the retro look.**
-- [ ] **8. Polish and tests.** Fixtures recorded from Bybit, the boundary check
-      that only `adapters/` names an exchange.
+- [ ] **8. Polish and tests.** The boundary check that only `adapters/`
+      names an exchange. (The fixtures recorded from Bybit came with step 3.)
 
 Not planned yet: portfolio, API keys, a second exchange, WebSocket, funding
 rate. They are in the design notes and can come after step 8.

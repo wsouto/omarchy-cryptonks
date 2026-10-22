@@ -7,7 +7,7 @@ supply is `null`, never a guess.
 
 | Field | Meaning | Source on Bybit |
 | --- | --- | --- |
-| `symbol` | the exchange's own symbol, such as `BTCUSDT` | ticker `symbol` |
+| `symbol` | the exchange's own symbol, such as `BTCUSDT` | instruments info `symbol` |
 | `name` | display name | instruments info `baseCoin`, such as `BTC` |
 | `exchange` | which adapter produced it, such as `Bybit` | the adapter |
 | `instrumentType` | `PERPETUAL` for now | the adapter |
@@ -37,11 +37,11 @@ Read from Bybit's [instruments-info page](https://bybit-exchange.github.io/docs/
 
 - `category=linear` holds more than 500 symbols and the endpoint returns 500
   by default. Ask for `limit=1000` so one request returns the whole list, and
-  do not paginate. (To verify: that the list stays under 1000 symbols. If it
-  ever reaches 1000, the adapter must say so instead of silently truncating.)
+  do not paginate. If the list ever reaches 1000, the adapter marks it
+  `truncated` instead of passing it off as whole.
 - **Search with autocomplete:** the adapter fetches the list once, keeps only
   the symbols in scope (below), and caches it. As the user types, such as
-  `btcusdt` or `btcusdc`, the screen filters that cached list locally, so
+  `btc` or `btcusdt`, the screen filters that cached list locally, so
   typing costs no requests. The cache is refreshed rarely, for example once
   a day, because new listings are infrequent.
 - Keep only `contractType` = `LinearPerpetual` and `status` = `Trading`. Dated

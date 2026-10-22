@@ -3,8 +3,9 @@
 A crypto futures watchlist for your [Omarchy](https://omarchy.org) bar: a small
 pill with a coin's move today, and a popup with its chart and your lists.
 
-> **Status: just started.** Today the plugin installs and shows a placeholder
-> pill that says "CRYPTO". See [docs/ROADMAP.md](docs/ROADMAP.md) for what
+> **Status: early.** Today the pill shows BTCUSDT's price on Bybit and how
+> far it has moved since 00:00 UTC, refreshed once a minute. There is no
+> popup and no list yet. See [docs/ROADMAP.md](docs/ROADMAP.md) for what
 > comes next and [docs/HOWTO.md](docs/HOWTO.md) to run it.
 
 ## Plan

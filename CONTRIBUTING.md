@@ -34,8 +34,8 @@ plugin. In short:
 ## Verify it
 
 - `bash test/check.sh` is the check to run before every commit: the manifest
-  follows the shell's schema and every QML file lints. Its last line must be
-  `ALL PASS`.
+  follows the shell's schema, every QML file lints, and `bun test` passes.
+  Its last line must be `ALL PASS`.
 - Tests check what the plugin does: what it fetches, saves and says. They
   never check a picture, a position, or a timing.
 - Before adding a test, name what a user would see break. A bug fix's test
@@ -48,13 +48,17 @@ plugin. In short:
 
 - `manifest.json`: the plugin's id, kinds, and the pill's settings.
 - `BarWidget.qml`: the pill in the bar.
+- `PriceFeed.qml`: fetches the pill's symbol once a minute and holds its
+  quote. `Refresh.js` is its rules: what each refresh asks for, and what the
+  answers mean.
 - `adapters/<exchange>.js`: the only files that name an exchange's endpoints
   or fields. Each returns the quote record in
   [docs/QUOTE-RECORD.md](docs/QUOTE-RECORD.md). See
   [docs/ADAPTERS.md](docs/ADAPTERS.md).
 - The rule files (`*.js`) are pure functions, one concern each, with no
   drawing and no clock.
-- Only the feeds fetch, each through a `Gate.qml`.
+- Only the feeds fetch. Today that is `PriceFeed.qml`, which keeps its own
+  pause; from roadmap step 6 each feed fetches through a `Gate.qml`.
 
 ## Product rules
 
@@ -72,7 +76,9 @@ plugin. In short:
 - **Fetching.** Fetch each symbol only as often as it is needed, fetch
   nothing while every screen is off, and leave a site that refuses us alone
   for a while. Bybit bans an IP for at least 10 minutes after too many
-  requests, so a refusal pauses us that long.
+  requests, so a refusal pauses us that long. (Not yet kept: the pill still
+  fetches while the screens are off. The shared service of roadmap step 6
+  adds it.)
 - **Mouse and keys.** Every flow works by mouse alone and by keys alone, and
   anything that looks clickable acts when clicked. A button says only what it
   does.

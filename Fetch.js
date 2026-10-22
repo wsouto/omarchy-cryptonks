@@ -27,6 +27,7 @@ var DAILY_CAP = 128000
 
 // `urls` are fetched in turn; an answer over `maxBytes` is a bad answer.
 // `--max-time` is per URL, so no URL holds a run more than 10 s.
+// `%header{retry-after}` needs curl 7.84 or later (docs/HOWTO.md).
 function curlCommand(urls, maxBytes) {
   return ["curl", "-sS", "--compressed", "--max-filesize", String(maxBytes),
     "--connect-timeout", "5", "--max-time", "10", "-A", USER_AGENT,

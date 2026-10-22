@@ -6,7 +6,7 @@
 #   3. bun test                  the rule files and the Bybit adapter, on
 #                                saved Bybit answers (no network)
 #
-# It prints "ALL PASS" on its last line only when both succeed.
+# It prints "ALL PASS" on its last line only when all three succeed.
 # The lint step borrows the approach of the original Stonks project
 # (test/lint.sh): qmllint finds the shell's types through a temporary
 # `qs` link to /usr/share/omarchy/shell.

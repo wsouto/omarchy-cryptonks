@@ -23,7 +23,7 @@ change it)
 | `quotesUrl(symbols)` and `parseQuotes(json)` | the latest price of the symbols asked for (every symbol if not one): `{ time, prices }` |
 | `dailyUrl(symbol, count)` and `parseDaily(json)` | daily candles, oldest first |
 | `buildQuote(instrument, price, marketTime, candles)` | the record of [QUOTE-RECORD.md](QUOTE-RECORD.md) |
-| `limits` | request limits, and which statuses mean "refused" and for how long |
+| `limits` | request limits, which statuses mean "refused", for how long, and why in words |
 
 A reader gives `null` for an answer it can't use, so a refused question is
 never taken for an empty list. Not yet written: `candlesUrl` for the chart
@@ -35,7 +35,7 @@ USDT perpetuals (`category=linear`):
 | Need | Endpoint |
 | --- | --- |
 | Prices for every symbol in one request | `GET /v5/market/tickers?category=linear` |
-| Chart candles | `GET /v5/market/kline` (up to 1000 per request) |
+| Daily candles and chart candles | `GET /v5/market/kline` (up to 1000 per request) |
 | Symbol list, tick size, launch time | `GET /v5/market/instruments-info?category=linear&limit=1000` (907 contracts on 2026-10-21; `truncated` is true if `nextPageCursor` is not empty) |
 
 Limit: 600 requests per 5 seconds per IP. Past it Bybit answers 403 and bans
