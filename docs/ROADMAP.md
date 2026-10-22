@@ -123,7 +123,7 @@ The steps from 5 on follow the original's layers, as drawn in
       left out: the original's need a QtTest harness, and this project's
       tests are bun tests on saved Bybit answers. You see: a plugin that
       reads as finished.
-- [ ] **13. Publish on GitHub.** The repository on the author's GitHub, with
+- [x] **13. Publish on GitHub.** The repository on the author's GitHub, with
       the agent files kept out (`.gitignore`), `CHANGELOG.md`, the version in
       `manifest.json` and tagged releases (`vX.Y.Z`, with release notes from
       the changelog), install and update steps in the README
