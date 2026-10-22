@@ -263,6 +263,15 @@ test("the caps are above the answers Bybit sent", () => {
   expect(F.TICKERS_CAP).toBeGreaterThan(678372)
 })
 
+test("the daily cap holds the most candles a request can ask for", () => {
+  // The recorded answer holds 3 candles; Bybit sends at most 1000, and each
+  // is about as long as the longest recorded one.
+  const json = fixture("kline-btcusdt-d.json")
+  const rows = json.result.list.map(row => JSON.stringify(row).length + 1)
+  const envelope = JSON.stringify({ ...json, result: { ...json.result, list: [] } }).length
+  expect(F.DAILY_CAP).toBeGreaterThan(envelope + 1000 * Math.max(...rows))
+})
+
 test("a whole 200 answer is ok and its body is the sole body", () => {
   const text = run(200, 0, "", '{"retCode":0}')
   expect(F.answers(text)[0].kind).toBe("ok")

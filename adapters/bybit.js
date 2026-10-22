@@ -38,11 +38,14 @@ function resultOf(json) {
 // Bybit allows 600 requests per 5 seconds per IP. Past that it answers
 // HTTP 403 and bans the IP for at least 10 minutes, so a 403 is a refusal
 // that must be left alone for 10 minutes, not the 1 minute of a plain 429.
+// Bybit also answers 403 to the places it does not serve, such as the US,
+// and the two cannot be told apart by status alone, so the words name both.
 var limits = {
   requestsPerWindow: 600,
   windowSeconds: 5,
   refusedStatuses: [403],
-  refusedPauseSeconds: 600
+  refusedPauseSeconds: 600,
+  refusedReason: "too many requests from this IP, or Bybit is not available where you are"
 }
 
 // ---- The symbols you can add ------------------------------------------
