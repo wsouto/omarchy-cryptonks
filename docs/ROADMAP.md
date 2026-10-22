@@ -117,7 +117,7 @@ The steps from 5 on follow the original's layers, as drawn in
         range that failed offers RETRY in the header.
   - [x] **11c. The data file.** "Can't read the data file" in the footer,
         and the file left alone.
-- [ ] **12. Polish.** The boundary check that only `adapters/` names an
+- [ ] **12. Polish.** (12a boundary check done) The boundary check that only `adapters/` names an
       exchange (`test/boundaries.sh`), flow tests, the README with pictures,
       and the manifest's description no longer "work in progress". You see:
       a plugin that reads as finished.

@@ -3,10 +3,11 @@
 #
 #   1. omarchy plugin validate   the manifest follows the shell's schema
 #   2. qmllint                   every QML file parses and uses real types
-#   3. bun test                  the rule files and the Bybit adapter, on
+#   3. boundaries                who may fetch, read files or name an endpoint
+#   4. bun test                  the rule files and the Bybit adapter, on
 #                                saved Bybit answers (no network)
 #
-# It prints "ALL PASS" on its last line only when all three succeed.
+# It prints "ALL PASS" on its last line only when all four succeed.
 # The lint step borrows the approach of the original Stonks project
 # (test/lint.sh): qmllint finds the shell's types through a temporary
 # `qs` link to /usr/share/omarchy/shell.
@@ -28,6 +29,9 @@ ln -s /usr/share/omarchy/shell "$tmp/qs"
 # Commons.Color.bar.background) is qmllint not seeing inside the installed
 # shell; the original Stonks accepts it too.
 /usr/lib/qt6/bin/qmllint --block-scope-var-declaration disable -I "$tmp" *.qml || failed=1
+
+echo "== boundaries"
+bash test/boundaries.sh || failed=1
 
 echo "== bun test"
 if command -v bun >/dev/null; then
