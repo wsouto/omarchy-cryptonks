@@ -57,6 +57,7 @@ plugin. In short:
   data file `~/.config/omarchy/wsouto.crypto-stonks.json` (its keys and
   defaults are `Settings.js`'s), the saved quotes in
   `~/.cache/wsouto.crypto-stonks/quotes.json`, and the feed.
+- `AppWindow.qml`, `WindowHost.qml`, `IpcTarget.qml`: the tiled window, what a request for it does with the popup, and the plugin's IPC target.
 - `PriceFeed.qml`: fetches the featured symbol once a minute, and every
   symbol while the popup is open, and holds their quotes, while a screen is
   on (`Screens.qml`). `Refresh.js` is its rules: what each refresh asks

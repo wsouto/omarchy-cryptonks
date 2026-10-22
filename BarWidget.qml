@@ -13,10 +13,10 @@ import "Tones.js" as Tones
 
 // The bar pill: one symbol and how far it has moved since 00:00 UTC, as the
 // day's line (the default), an arrow, text with the price, or the day's bull
-// or bear. Left click opens the popup (`Panel.qml`), and middle-click cycles
-// the form, which each section of the bar keeps on its own. The data is
-// the service's (`Plugin.qml`, `Service.qml`); the pill and the popup only
-// show it. Until the
+// or bear. Left click opens the popup (`Panel.qml`), right-click the window
+// (`WindowHost.qml`), and middle-click cycles the form, which each section of
+// the bar keeps on its own. The data is the service's (`Plugin.qml`,
+// `Service.qml`); the pill and the popup only show it. Until the
 // first answer it shows "…", and a refresh that failed puts a "!" on the
 // pill (the words are in the hover) while the last price stays.
 //
@@ -237,7 +237,8 @@ BarWidget {
       + "Change since 00:00 UTC" + (root.warns ? " · ! " + root.problem : "")
 
     onPressed: function(b) {
-      if (b === Qt.MiddleButton) root.cycleBarStyle()
+      if (b === Qt.RightButton) { if (root.plugin) root.plugin.windowHost.toggle() }
+      else if (b === Qt.MiddleButton) root.cycleBarStyle()
       else if (b === Qt.LeftButton) root.togglePanel()
     }
 

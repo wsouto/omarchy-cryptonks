@@ -100,10 +100,12 @@ The steps from 5 on follow the original's layers, as drawn in
         SINCE and how few bars it has. The columns are sized for every
         range, so a range change moves nothing. You see: 1W's low and high
         dates under the chart.
-- [ ] **10. The window.** The window, IPC, the launcher. You see:
+- [x] **10. The window.** The window, IPC, the launcher. You see:
       right-click opens the window.
   - [x] **10a. One body.** `Body.qml` holds what the popup showed; `Panel.qml`
         keeps only its lifecycle and keys. The window reuses the body.
+  - [x] **10b. The window.** `AppWindow`, `WindowHost`, `IpcTarget`, right-click
+        on the pill, `share/` launcher entry and icon.
 - [ ] **11. Statuses.** Errors, retry, the look at every state. You see:
       unplug the network and read it.
 - [ ] **12. Polish and release.** The boundary check that only `adapters/`

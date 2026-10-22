@@ -28,6 +28,17 @@ omarchy plugin enable wsouto.crypto-stonks center
   `cp -r ~/Projects/omarchy-crypto-stonks ~/.config/omarchy/plugins/wsouto.crypto-stonks`,
   and copy again after each edit. (Not yet tested on this machine.)
 
+## The launcher entry (optional)
+
+```sh
+cp share/crypto-stonks.desktop ~/.local/share/applications/
+mkdir -p ~/.local/share/icons/hicolor/scalable/apps
+cp share/wsouto.crypto-stonks.svg ~/.local/share/icons/hicolor/scalable/apps/
+```
+
+The window also opens with `omarchy-shell wsouto.crypto-stonks openWindow`
+(or `toggleWindow`), which a Hyprland binding can call.
+
 ## After you change code
 
 ```sh

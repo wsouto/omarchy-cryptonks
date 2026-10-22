@@ -10,6 +10,8 @@
 // keys are read by the surface (popup or window) and passed to `textKey`,
 // `moveKeys`, `activate`, `escapeKey` and `deleteKey`.
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import qs.Commons
 import qs.Commons as Commons
@@ -482,13 +484,15 @@ Item {
   // gives the rest of its height to the rows (`rowsRoom`).
   property real chromeHeight: 0
   function measureChrome() {
-    if (rowsBlock.visible) root.chromeHeight = body.implicitHeight - rows.height
+    if (rowsBlock.visible && body.implicitHeight > 0) root.chromeHeight = body.implicitHeight - rows.height
   }
   Connections {
     target: body
     function onImplicitHeightChanged() { root.measureChrome() }
+    function onVisibleChanged() { root.measureChrome() }
   }
   onShownCountChanged: measureChrome()
+  Component.onCompleted: measureChrome()
 
   // The views reset as the surface opens, before its first frame, not as it
   // closes: the card fades out showing what you were looking at.

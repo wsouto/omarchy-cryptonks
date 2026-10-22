@@ -73,3 +73,16 @@ Each entry: **what**, **why**, and a tag.
 Nothing confirmed yet. When an entry above is a fix or an improvement that does
 not depend on crypto, tag it `PR?`, check it against the original's current
 code, and move it here with a one-line pitch.
+
+## The window (step 10)
+
+- **`openWindow` and `toggleWindow` take no payload** (no symbol or range to
+  show on open), and there is no `show`/`hide`/`next`/`prev` on the IPC
+  target yet. `left out`
+- **The window is 520 wide at most**, like the popup's 480 plus room for the
+  rows' figures; the rows take the height the window has (`Body.rowsRoom`).
+  `PR?`
+- **A window out of sight (another workspace, a screen off) is treated as
+  open**: the feed keeps every row fresh. `left out`
+- **The launcher icon is the pixel bull in Bitcoin orange**, so the two
+  launcher entries differ. `crypto`

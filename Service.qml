@@ -51,8 +51,11 @@ Item {
   readonly property string order: Settings.listOrder(dataSettings)
   readonly property bool reversed: Settings.listReversed(dataSettings)
   readonly property bool retro: dataSettings.style === "retro"
-  // The popup says when it opens and closes.
+  // The popup and the window say when they open and close; either shows
+  // every row, and the chart's range.
   property bool popupOpen: false
+  property bool windowOpen: false
+  readonly property bool shown: popupOpen || windowOpen
   // Search's choice, which the popup's hero shows unadded: "" for none.
   property string previewSymbol: ""
   // What the last removal took and the settings from just before it, on
@@ -188,11 +191,11 @@ Item {
 
   PriceFeed {
     id: feed
-    symbols: !root.ready ? [] : !root.popupOpen ? [root.featured]
+    symbols: !root.ready ? [] : !root.shown ? [root.featured]
       : Settings.normalizeSymbols(root.symbols.concat([root.featured, root.previewSymbol]))
     featured: root.featured
-    // Only the popup shows a range, and it shows the hero's symbol.
-    want: root.ready && root.popupOpen && root.range !== "1D" ? { symbol: root.previewSymbol || root.featured, range: root.range } : null
+    // Only the popup and the window show a range, and it shows the hero's symbol.
+    want: root.ready && root.shown && root.range !== "1D" ? { symbol: root.previewSymbol || root.featured, range: root.range } : null
     screens: screenWatch
     onAnswered: root.saveQuotes()
   }
