@@ -37,10 +37,19 @@ The steps from 5 on follow the original's layers, as drawn in
         and the replay (`p`, or click the animal). The row name is now
         `fullName`.
   - [x] **6b. Retro.** The pixel chart, the block digits, the look icon
-        and `s`; the pill's pixel line and ▲▼ signs. The look rides the
-        pill's bar entry (`style`) until the saved settings of step 7.
+        and `s`; the pill's pixel line and ▲▼ signs. The look rode the
+        pill's bar entry (`style`) until step 7a.
 - [ ] **7. Rows.** The shared service, `Gate.qml`, the saved quotes,
-      `Settings.js`, rows. You see: a list of rows.
+      `Settings.js`, rows. You see: a list of rows. Done in two parts:
+  - [x] **7a. The service.** `Plugin.qml` and `Service.qml`, shared by the
+        pill and the popup; `Settings.js` and the data file (the starter
+        symbols, the featured one, the change mode, the look); the saved
+        quotes; nothing fetched while every screen is off. You see: the
+        same pill and popup, but the look and the change mode survive a
+        restart, and a restart shows the last price at once.
+  - [ ] **7b. Rows.** The rows of the five starters in the popup, their
+        feed (prices every minute, day lines every 5 minutes) and
+        `Gate.qml`. You see: a list of rows.
 - [ ] **8. Lists and search.** Lists, search, order, undo, the key sheet.
       You see: add a symbol by typing `eth`.
 - [ ] **9. Ranges.** You see: 1W to All.

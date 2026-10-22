@@ -15,7 +15,8 @@ import "Tones.js" as Tones
 // day's line (the default), an arrow, text with the price, or the day's bull
 // or bear. Left click opens the popup (`Panel.qml`), and middle-click cycles
 // the form, which each section of the bar keeps on its own. The data is
-// `PriceFeed`'s; the pill and the popup only show it. Until the
+// the service's (`Plugin.qml`, `Service.qml`); the pill and the popup only
+// show it. Until the
 // first answer it shows "…", and a refresh that failed puts a "!" on the
 // pill (the words are in the hover) while the last price stays.
 //
@@ -30,9 +31,16 @@ BarWidget {
   id: root
   moduleName: "wsouto.crypto-stonks"
 
-  readonly property string symbol: feed.symbol
-  readonly property var quote: feed.quote
-  readonly property string problem: feed.problem
+  // The service and the theme's up and down, shared with the popup; null
+  // until the shell has loaded the service.
+  readonly property var plugin: bar && bar.shell && typeof bar.shell.serviceFor === "function"
+    ? bar.shell.serviceFor(moduleName) : null
+  readonly property var service: plugin ? plugin.service : null
+  readonly property var trendColors: plugin ? plugin.trendColors : null
+
+  readonly property string symbol: service ? service.featured : ""
+  readonly property var quote: service ? service.quote : null
+  readonly property string problem: service ? service.problem : ""
   readonly property bool warns: problem !== ""
   // How far the price has moved since 00:00 UTC; null while it is not known.
   readonly property var move: Change.sinceOpen(quote)
@@ -58,17 +66,15 @@ BarWidget {
   readonly property string barStyle: setting(styleKey, vertical || onRight ? "icon" : "sparkline")
   // Just the day's animal, a quiet icon among the bar's own.
   readonly property bool iconOnly: barStyle === "icon"
-  // The look, smooth or retro, which the popup switches: kept on the bar
-  // entry, as the original pill reads it before its service loads, until
-  // the saved settings come (roadmap step 7).
-  readonly property bool retro: setting("style", "smooth") === "retro"
+  // The look, smooth or retro, which the popup switches.
+  readonly property bool retro: !!service && service.retro
 
   // Up and down are the theme's green and red, picked for the bar's own
   // ground (`TrendColors`), and the dim of a flat move is quieter than the
   // bar's ink by the same rule everywhere (`Tones.dim`).
   readonly property color barGround: Qt.rgba(Commons.Color.bar.background.r, Commons.Color.bar.background.g, Commons.Color.bar.background.b, 1)
-  readonly property color upColor: colors.upOn(barGround)
-  readonly property color downColor: colors.downOn(barGround)
+  readonly property color upColor: trendColors ? trendColors.upOn(barGround) : button.foreground
+  readonly property color downColor: trendColors ? trendColors.downOn(barGround) : Commons.Color.urgent
   readonly property color dimColor: Tones.dim(button.foreground, barGround)
   // 1 up, -1 down, 0 flat: the sign as it is drawn, so a move that rounds to
   // +0.00% is flat and takes no colour.
@@ -183,11 +189,12 @@ BarWidget {
     target.settings = root.settings
     target.anchorItem = button
     target.hostWidget = root
-    target.feed = feed
-    target.trendColors = colors
+    target.service = root.service
+    target.trendColors = root.trendColors
   }
 
   onBarChanged: injectPanel()
+  onPluginChanged: injectPanel()
   onSettingsChanged: injectPanel()
 
   Loader {
@@ -201,9 +208,6 @@ BarWidget {
     }
   }
 
-  PriceFeed { id: feed }
-
-  TrendColors { id: colors }
 
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight

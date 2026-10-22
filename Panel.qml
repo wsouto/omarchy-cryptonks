@@ -1,11 +1,9 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
 // Panel.qml and the hero part of StonksBody.qml. Changes: one symbol, the
-// pill's feed, so the body is the header, the hero and the day chart, built
-// here; the rows, lists, search, ranges, key sheet and footer come in
-// roadmap steps 7 to 11, with the keys that drive them. The change has two
-// modes, percent and amount, both since 00:00 UTC, kept until the shell
-// restarts; the look rides the pill's bar entry, as the original pill keeps
-// it before its service loads (the saved settings come in step 7).
+// featured one, so the body is the header, the hero and the day chart,
+// built here; the rows, lists, search, ranges, key sheet and footer come in
+// roadmap steps 7b to 11, with the keys that drive them. The change has two
+// modes, percent and amount, both since 00:00 UTC.
 pragma ComponentBehavior: Bound
 
 import QtQuick
@@ -17,7 +15,8 @@ import "Format.js" as Format
 import "Tones.js" as Tones
 
 // The popup. Owns its lifecycle, keys, and what the hero shows at the moment
-// on screen; the chart's motion is `ChartMotion`'s, the data the feed's.
+// on screen; the chart's motion is `ChartMotion`'s, the data and the saved
+// look and change mode the service's.
 Panel {
   id: root
   moduleName: "wsouto.crypto-stonks"
@@ -26,8 +25,8 @@ Panel {
 
   property var anchorItem: null
   property var hostWidget: null
-  // The pill's `PriceFeed` and `TrendColors`.
-  property var feed: null
+  // The plugin's `Service` and `TrendColors`.
+  property var service: null
   property var trendColors: null
   readonly property var barIdentity: hostWidget || root
   readonly property int panelWidth: Style.space(480)
@@ -36,17 +35,18 @@ Panel {
   readonly property int bandGap: Style.space(16)
   readonly property int groupGap: Style.space(8)
 
-  readonly property var quote: feed ? feed.quote : null
-  readonly property string symbol: feed ? feed.symbol : ""
-  readonly property string problem: feed ? feed.problem : ""
+  readonly property var quote: service ? service.quote : null
+  readonly property string symbol: service ? service.featured : ""
+  readonly property string problem: service ? service.problem : ""
   // The change's unit: "pct" or "abs", which c or a click on it switches.
-  property string changeMode: "pct"
+  readonly property string changeMode: service ? service.changeMode : "pct"
   // The look, smooth or retro, which s or the look icon switches.
-  readonly property bool retro: hostWidget ? hostWidget.retro === true : false
+  readonly property bool retro: !!service && service.retro
   readonly property int scrubT: motion.scrubT
   readonly property var view: quote ? Figures.heroView(quote, scrubT, changeMode) : null
-  // Live is honest only while refreshes land and the moment shown is now.
-  readonly property bool live: !!quote && problem === "" && !scrubT
+  // Live is honest only while refreshes land, the quote is this session's
+  // own, and the moment shown is now.
+  readonly property bool live: !!quote && !!service && service.fresh && problem === "" && !scrubT
   readonly property string statusText: scrubT && view && view.time !== null ? "At " + Format.utcClock(view.time) + " UTC"
     : problem !== "" ? "! " + problem
     : quote ? "Live" : ""
@@ -110,11 +110,11 @@ Panel {
   }
 
   function setStyle(style) {
-    if (root.hostWidget) root.hostWidget.persistSetting("style", style)
+    if (root.service) root.service.persist({ style: style })
   }
 
   function cycleChangeMode() {
-    root.changeMode = root.changeMode === "pct" ? "abs" : "pct"
+    if (root.service) root.service.persist({ changeMode: root.changeMode === "pct" ? "abs" : "pct" })
   }
 
   ChartMotion {
@@ -150,7 +150,7 @@ Panel {
         if (t === "c") root.cycleChangeMode()
         else if (t === "p") motion.replay()
         else if (t === "s") root.setStyle(root.retro ? "smooth" : "retro")
-        else if (t === "r" && root.feed) root.feed.refresh()
+        else if (t === "r" && root.service) root.service.refresh()
       }
 
       Column {

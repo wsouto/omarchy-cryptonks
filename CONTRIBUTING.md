@@ -52,9 +52,14 @@ plugin. In short:
   and `DayChart.qml` draw it in the smooth look, `PixelChart.qml` and
   `BlockDigits.qml` in the retro one, and `ChartMotion.qml` holds its scrub,
   replay and draw-in.
-- `PriceFeed.qml`: fetches the pill's symbol once a minute and holds its
-  quote. `Refresh.js` is its rules: what each refresh asks for, and what the
-  answers mean.
+- `Plugin.qml`: the manifest's service entry, which the pill and the popup
+  share through `serviceFor`. Its `Service.qml` is the one data owner: the
+  data file `~/.config/omarchy/wsouto.crypto-stonks.json` (its keys and
+  defaults are `Settings.js`'s), the saved quotes in
+  `~/.cache/wsouto.crypto-stonks/quotes.json`, and the feed.
+- `PriceFeed.qml`: fetches the featured symbol once a minute and holds its
+  quote, while a screen is on (`Screens.qml`). `Refresh.js` is its rules:
+  what each refresh asks for, and what the answers mean.
 - `adapters/<exchange>.js`: the only files that name an exchange's endpoints
   or fields. Each returns the quote record in
   [docs/QUOTE-RECORD.md](docs/QUOTE-RECORD.md). See
@@ -62,7 +67,7 @@ plugin. In short:
 - The rule files (`*.js`) are pure functions, one concern each, with no
   drawing and no clock.
 - Only the feeds fetch. Today that is `PriceFeed.qml`, which keeps its own
-  pause; from roadmap step 7 each feed fetches through a `Gate.qml`.
+  pause; from roadmap step 7b each feed fetches through a `Gate.qml`.
 
 ## Product rules
 
@@ -80,9 +85,7 @@ plugin. In short:
 - **Fetching.** Fetch each symbol only as often as it is needed, fetch
   nothing while every screen is off, and leave a site that refuses us alone
   for a while. Bybit bans an IP for at least 10 minutes after too many
-  requests, so a refusal pauses us that long. (Not yet kept: the pill still
-  fetches while the screens are off. The shared service of roadmap step 7
-  adds it.)
+  requests, so a refusal pauses us that long.
 - **Mouse and keys.** Every flow works by mouse alone and by keys alone, and
   anything that looks clickable acts when clicked. A button says only what it
   does.
