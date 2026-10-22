@@ -1,10 +1,9 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
 // WatchlistRow.qml. Changes: the row's figures are the hero's
-// (`Figures.heroView`), since the day is the UTC day for both; the drag,
-// the Ctrl-click lists and the draw-in come with order and lists (roadmap
-// steps 8b and 8c), and the freshness words with the statuses (step 11), so
-// the name line says only a refresh's problem. The remove button is the
-// row's own pointer's, with no drag to tell it from yet.
+// (`Figures.heroView`), since the day is the UTC day for both; the
+// Ctrl-click lists come with lists (roadmap step 8c), and the freshness
+// words with the statuses (step 11), so the name line says only a refresh's
+// problem; there is no draw-in, and no slide but the drag's.
 pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Commons
@@ -17,7 +16,8 @@ import "Tones.js" as Tones
 // One watchlist row: symbol over name, the day line, price over change.
 // The featured row sits in the shell's selected fill; the cursor, which the
 // keys and the pointer both move, takes the shell's hover-cursor fill and a
-// bar down the left edge, and on the featured row only the bar. A cursor you
+// bar down the left edge, and on the featured row only the bar. A row held
+// in a drag takes the pressed fill and a border. A cursor you
 // put there, by pointer or key, shows a remove button, as the shell's
 // Bluetooth panel shows Forget on its cursor's row.
 Rectangle {
@@ -34,6 +34,8 @@ Rectangle {
   // The cursor is yours here, not resting on the featured row: the remove
   // button shows.
   property bool removable: false
+  // True while the pointer carries this row; the popup positions it.
+  property bool lifted: false
   property bool retro: false
   property real scrubX: -1
   property color ground: "transparent"
@@ -49,6 +51,12 @@ Rectangle {
   signal featureRequested()
   // The ×, a right-click or a middle-click.
   signal removeRequested()
+  // Drag positions are in the parent's coordinates, since the row itself
+  // moves under the pointer.
+  signal dragStarted(real y)
+  signal dragMoved(real y)
+  signal dragEnded()
+  signal dragCanceled()
 
   // The day line is the quote's own drawing: it changes when the quote does,
   // never with the clock, the change mode, or another symbol's quote. A day
@@ -75,13 +83,26 @@ Rectangle {
   // The fill the row's state asks for; the row eases to it, and the retro
   // stems are weighed against it over the ground, so a featured or cursor
   // row's two colours still read alike.
-  readonly property color fill: featuredRow ? Style.selectedFillFor(foreground, Commons.Color.accent)
+  readonly property color fill: lifted ? Style.pressedFillFor(foreground, Commons.Color.accent)
+    : featuredRow ? Style.selectedFillFor(foreground, Commons.Color.accent)
     : cursor ? Style.hoverFillFor(foreground, Commons.Color.accent) : "transparent"
   color: fill
+  border.width: lifted ? 1 : 0
+  border.color: Style.normalBorderFor(foreground, Commons.Color.accent)
 
   // The shell's own speed (CursorSurface), so the fill keeps up with the
   // pointer.
   Behavior on color { ColorAnimation { duration: 60 } }
+
+  // Under the fill while the row is held: the rows it passes never show
+  // through.
+  Rectangle {
+    z: -1
+    anchors.fill: parent
+    radius: row.radius
+    visible: row.lifted
+    color: row.ground
+  }
 
   // Only the shown look is built: `s` builds the other, which draws before
   // that frame.
@@ -207,7 +228,7 @@ Rectangle {
       anchors.fill: parent
       anchors.margins: Style.space(2)
       radius: row.retro ? 0 : Style.cornerRadius
-      color: removeButton.hovered && mouse.pressed ? Style.pressedFillFor(row.foreground, Commons.Color.accent)
+      color: removeButton.hovered && mouse.pressed && mouse.pressedOnRemove && !mouse.dragged ? Style.pressedFillFor(row.foreground, Commons.Color.accent)
         : removeButton.hovered ? Style.hoverFillFor(row.foreground, Commons.Color.accent) : "transparent"
       Behavior on color { ColorAnimation { duration: 60 } }
     }
@@ -241,22 +262,55 @@ Rectangle {
   }
 
   // Moving the pointer puts the cursor on the row under it; a click
-  // features it, or on the × removes it, as a right or middle click does.
-  // A double-click is one click: its second would land on whatever took
-  // the first one's place, the row sliding up after a removal.
+  // features it, or on the × removes it, as a right or middle click does; a
+  // left press moved 6 px carries it. A double-click is one click: its
+  // second would land on whatever took the first one's place, the row
+  // sliding up after a removal.
   MouseArea {
     id: mouse
     anchors.fill: parent
     hoverEnabled: true
+    // The list would take a vertical drag as a scroll.
+    preventStealing: true
     acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
-    cursorShape: Qt.PointingHandCursor
+    cursorShape: row.lifted ? Qt.ClosedHandCursor : Qt.PointingHandCursor
+
+    property real pressY: -1
+    property bool dragged: false
+    // The press began on the remove button: only its release, on the
+    // button and with no drag between, removes, and a release off it does
+    // nothing, as a button's does.
+    property bool pressedOnRemove: false
+
     function onRemove(x, y) {
       return removeButton.visible && x >= removeButton.x && x < removeButton.x + removeButton.width
         && y >= removeButton.y && y < removeButton.y + removeButton.height
     }
-    onPositionChanged: row.pointed()
+    onPressed: function(event) {
+      pressY = event.button === Qt.LeftButton ? event.y : -1
+      dragged = false
+      pressedOnRemove = event.button === Qt.LeftButton && onRemove(event.x, event.y)
+    }
+    onPositionChanged: function(event) {
+      if (!pressed || pressY < 0) {
+        row.pointed()
+        return
+      }
+      if (!dragged) {
+        if (Math.abs(event.y - pressY) < 6) return
+        dragged = true
+        row.dragStarted(row.mapToItem(row.parent, event.x, pressY).y)
+      }
+      row.dragMoved(row.mapToItem(row.parent, event.x, event.y).y)
+    }
+    onReleased: function(event) {
+      if (dragged) row.dragEnded()
+      else if (pressedOnRemove && onRemove(event.x, event.y)) row.removeRequested()
+    }
+    onCanceled: if (dragged) row.dragCanceled()
     onClicked: function(event) {
-      if (event.button !== Qt.LeftButton || onRemove(event.x, event.y)) row.removeRequested()
+      if (dragged || pressedOnRemove) return
+      if (event.button !== Qt.LeftButton) row.removeRequested()
       else row.featureRequested()
     }
     onDoubleClicked: {}

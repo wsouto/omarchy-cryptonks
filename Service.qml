@@ -37,6 +37,10 @@ Item {
   readonly property var library: dataSettings.symbols
   readonly property string featured: ready ? dataSettings.featured : ""
   readonly property string changeMode: dataSettings.changeMode
+  // All's order (`Settings.ORDERS`) and whether a sorted one runs the other
+  // way.
+  readonly property string order: dataSettings.order
+  readonly property bool reversed: dataSettings.reversed
   readonly property bool retro: dataSettings.style === "retro"
   // The popup says when it opens and closes.
   property bool popupOpen: false
@@ -88,6 +92,20 @@ Item {
     var before = root.dataSettings
     root.persist(Settings.withSymbolRemoved(before, symbol, shown))
     root.lastRemoval = { symbol: symbol, before: before, left: root.dataSettings.featured }
+  }
+
+  function setOrder(order) {
+    root.persist(Settings.withOrder(root.dataSettings, order))
+  }
+
+  // The sorted order the other way; manual stays as it is.
+  function reverseOrder() {
+    root.persist(Settings.withReversed(root.dataSettings))
+  }
+
+  // A hand-arranged order of the rows.
+  function setManualOrder(symbols) {
+    root.persist(Settings.withManualOrder(root.dataSettings, symbols))
   }
 
   // The last removal, put back where it was. Only once.

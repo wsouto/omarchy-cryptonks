@@ -70,7 +70,12 @@ The steps from 5 on follow the original's layers, as drawn in
         footer's note undoes. Rows now ask for 2 daily candles, and only the
         featured symbol for a year, the one that `high52w` and `low52w`
         need. You see: add LINKUSDT by typing `link`.
-  - [ ] **8b. Order.** Drag, Shift+J/K, sort by symbol, name or change.
+  - [x] **8b. Order.** The line over the rows: ALL and the order control,
+        whose word steps (`o`) through manual, symbol, name and % change
+        since 00:00 UTC, and whose arrow reverses a sort (`O`). In manual
+        order a row moves by drag, Shift+J/K or Ctrl+J/K and Ctrl+↑/↓; in a
+        sorted one the footer says to switch. A sort never rewrites the
+        order arranged by hand. You see: sort the rows by % change.
   - [ ] **8c. Lists.** Named lists, the list menu, Manage lists, `m`, `,`
         and `.`, and the line of how many rows are up and down.
 - [ ] **9. Ranges.** You see: 1W to All.

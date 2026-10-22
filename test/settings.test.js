@@ -13,6 +13,8 @@ test("a first start shows the five starters, BTCUSDT featured, smooth and in per
     version: 1,
     symbols: ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "DOGEUSDT"],
     featured: "BTCUSDT",
+    order: "manual",
+    reversed: false,
     changeMode: "pct",
     style: "smooth"
   })
@@ -68,4 +70,45 @@ test("an undo puts the symbol back at its place, and the hero back if nothing mo
   // A hero chosen since stays.
   const chosen = S.fileSettings({ ...removed, featured: "XRPUSDT" })
   expect(S.withRemovalUndone(chosen, before, "ETHUSDT", removed.featured).featured).toBe("XRPUSDT")
+})
+
+// ---- Order ----
+
+const quote = (symbol, name, price, dayOpen) => ({ symbol, name, price, dayOpen })
+const quotes = {
+  BTCUSDT: quote("BTCUSDT", "Bitcoin", 101, 100),
+  ETHUSDT: quote("ETHUSDT", "Ethereum", 95, 100),
+  SOLUSDT: quote("SOLUSDT", "Solana", 110, 100)
+}
+const all = ["SOLUSDT", "XRPUSDT", "BTCUSDT", "ETHUSDT"]
+
+test("orders run manual, symbol, name, % change and back, each starting its own way", () => {
+  expect(["manual", "symbol", "name", "pct"].map(S.nextOrder)).toEqual(["symbol", "name", "pct", "manual"])
+  expect(S.orderLabel("manual", true)).toBe("↕  MANUAL")
+  expect(S.orderLabel("symbol", false)).toBe("↑  SYMBOL")
+  expect(S.orderLabel("pct", false)).toBe("↓  % CHANGE")
+  expect(S.withOrder(S.fileSettings({ order: "name", reversed: true }), "pct").reversed).toBe(false)
+})
+
+test("a sort ranks the rows and keeps a row with no quote at the bottom, in its place", () => {
+  expect(S.sortedSymbols(all, quotes, "manual", false)).toEqual(all)
+  expect(S.sortedSymbols(all, quotes, "symbol", false)).toEqual(["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT"])
+  expect(S.sortedSymbols(all, quotes, "name", true)).toEqual(["SOLUSDT", "ETHUSDT", "BTCUSDT", "XRPUSDT"])
+  expect(S.sortedSymbols(all, quotes, "pct", false)).toEqual(["SOLUSDT", "BTCUSDT", "ETHUSDT", "XRPUSDT"])
+  expect(S.sortedSymbols(all, quotes, "pct", true)).toEqual(["ETHUSDT", "BTCUSDT", "SOLUSDT", "XRPUSDT"])
+})
+
+test("manual has no direction, and a sort never rewrites the order arranged by hand", () => {
+  expect(S.fileSettings({ order: "manual", reversed: true }).reversed).toBe(false)
+  const sorted = S.withOrder(S.fileSettings({ symbols: all }), "symbol")
+  expect(sorted.symbols).toEqual(all)
+})
+
+test("a move by hand keeps every symbol and makes the order manual; a different set is refused", () => {
+  const sorted = S.withOrder(S.fileSettings({ symbols: all }), "pct")
+  const moved = S.withManualOrder(sorted, S.movedSymbols(all, 0, 2))
+  expect(moved.symbols).toEqual(["XRPUSDT", "BTCUSDT", "SOLUSDT", "ETHUSDT"])
+  expect(moved.order).toBe("manual")
+  expect(S.withManualOrder(sorted, ["BTCUSDT"]).symbols).toEqual(all)
+  expect(S.movedSymbols(all, 0, 9)).toEqual(all)
 })

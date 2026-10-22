@@ -2,8 +2,9 @@
 // Panel.qml and the hero and rows of StonksBody.qml and Watchlist.qml.
 // Changes: the body is the header, the hero, the day chart, the rows of
 // All, search and the footer, built here, and the key sheet in their place;
-// the order, lists, ranges and statuses come in roadmap steps 8b to 11,
-// with the keys that drive them. An add is featured at once, so there is no
+// the lists, ranges and statuses come in roadmap steps 8c to 11, with the
+// keys that drive them. The rows are a ListView whose rows a drag shifts in
+// place, so the row under the pointer is never rebuilt mid-drag. An add is featured at once, so there is no
 // landing to wait for. The change has two modes, percent and amount, both
 // since 00:00 UTC.
 pragma ComponentBehavior: Bound
@@ -46,8 +47,13 @@ Panel {
   readonly property var quote: service ? service.quotes[symbol] || null : null
   readonly property string problem: service ? service.problems[symbol] || "" : ""
   readonly property string featured: service ? service.featured : ""
-  // All, in its manual order: the rows.
+  // All, in its manual order, and the rows: All in its order.
   readonly property var library: service ? service.library : []
+  readonly property string order: service ? service.order : "manual"
+  readonly property bool reversed: !!service && service.reversed
+  readonly property bool manualOrder: order === "manual"
+  readonly property var shownRows: service ? Settings.sortedSymbols(library, service.quotes, order, reversed) : []
+  readonly property int rowPitch: Style.space(40) + rowGap
   // The rows show up to six whole rows; more scroll.
   readonly property int maxRows: 6
   readonly property int rowGap: Style.space(2)
@@ -56,7 +62,7 @@ Panel {
   property string cursorSymbol: ""
   // The key sheet shows in the place of the hero, the chart and the rows.
   property bool showingHelp: false
-  readonly property string cursorRow: library.indexOf(cursorSymbol) >= 0 ? cursorSymbol : featured
+  readonly property string cursorRow: shownRows.indexOf(cursorSymbol) >= 0 ? cursorSymbol : featured
   // Search is open in the rows' place, with the hero on its choice.
   property bool adding: false
   // Why a key did nothing, or what a removal took, in the footer for a
@@ -114,7 +120,8 @@ Panel {
       root.cancelAdding()
       root.clearNote()
       footer.settle()
-      rows.positionViewAtIndex(Math.max(0, root.library.indexOf(root.featured)), ListView.Contain)
+      root.cancelDrag()
+      rows.positionViewAtIndex(Math.max(0, root.shownRows.indexOf(root.featured)), ListView.Contain)
       motion.reset()
       header.settle()
       motion.revealChart()
@@ -126,6 +133,7 @@ Panel {
     setCenterHoverRevealSuppressed(false)
     motion.freeze()
     root.cancelAdding()
+    root.cancelDrag()
     noteTimer.stop()
     if (root.service) root.service.popupOpen = false
     root.controller.hide()
@@ -157,9 +165,91 @@ Panel {
   }
 
   function moveCursor(delta) {
-    var at = root.library.indexOf(root.cursorRow)
-    root.cursorSymbol = root.library[Math.max(0, Math.min(root.library.length - 1, at + delta))] || ""
-    rows.positionViewAtIndex(root.library.indexOf(root.cursorSymbol), ListView.Contain)
+    var at = root.shownRows.indexOf(root.cursorRow)
+    root.cursorSymbol = root.shownRows[Math.max(0, Math.min(root.shownRows.length - 1, at + delta))] || ""
+    rows.positionViewAtIndex(root.shownRows.indexOf(root.cursorSymbol), ListView.Contain)
+  }
+
+  // ---- Order ----
+
+  function cycleOrder() {
+    root.showingHelp = false
+    if (root.service) root.service.setOrder(Settings.nextOrder(root.order))
+  }
+
+  // Manual has no direction: there it does nothing at all.
+  function reverseOrder() {
+    if (root.manualOrder) return
+    root.showingHelp = false
+    if (root.service) root.service.reverseOrder()
+  }
+
+  // A row moves only in manual order: a sort would put it straight back.
+  function moveSelected(delta) {
+    root.showingHelp = false
+    if (!root.manualOrder) {
+      root.say("Switch to manual order to move rows")
+      return
+    }
+    var symbol = root.cursorRow
+    var from = root.shownRows.indexOf(symbol)
+    var to = from + delta
+    if (from < 0 || to < 0 || to >= root.shownRows.length) return
+    root.service.setManualOrder(Settings.movedSymbols(root.shownRows, from, to))
+    root.cursorSymbol = symbol
+    rows.positionViewAtIndex(to, ListView.Contain)
+  }
+
+  // The row the pointer carries, where it is drawn in the list's content,
+  // the slot it would drop into, and where the pointer took it.
+  property string dragSymbol: ""
+  property real dragY: 0
+  property int dragTarget: -1
+  property real dragOffset: 0
+
+  // Where a row sits while one is carried: the rows between the carried
+  // row's slot and its target shift one place to make room.
+  function slotOf(symbol) {
+    var i = root.shownRows.indexOf(symbol)
+    if (root.dragSymbol === "") return i
+    var from = root.shownRows.indexOf(root.dragSymbol)
+    if (from < root.dragTarget && i > from && i <= root.dragTarget) return i - 1
+    if (root.dragTarget < from && i >= root.dragTarget && i < from) return i + 1
+    return i
+  }
+
+  function beginDrag(symbol, y) {
+    if (!root.manualOrder) {
+      root.say("Switch to manual order to move rows")
+      return
+    }
+    var from = root.shownRows.indexOf(symbol)
+    if (from < 0) return
+    root.showingHelp = false
+    root.cursorSymbol = symbol
+    root.dragOffset = y - from * root.rowPitch
+    root.dragY = from * root.rowPitch
+    root.dragTarget = from
+    root.dragSymbol = symbol
+  }
+
+  function dragTo(y) {
+    if (root.dragSymbol === "") return
+    root.dragY = Math.max(0, Math.min((root.shownRows.length - 1) * root.rowPitch, y - root.dragOffset))
+    root.dragTarget = Math.round(root.dragY / root.rowPitch)
+  }
+
+  function endDrag() {
+    var from = root.shownRows.indexOf(root.dragSymbol)
+    var to = root.dragTarget
+    var moved = from >= 0 && to >= 0 && from !== to ? Settings.movedSymbols(root.shownRows, from, to) : null
+    root.cancelDrag()
+    if (moved && root.service) root.service.setManualOrder(moved)
+  }
+
+  function cancelDrag() {
+    root.dragSymbol = ""
+    root.dragTarget = -1
   }
 
   function feature(symbol) {
@@ -208,7 +298,7 @@ Panel {
     if (member) root.service.feature(symbol)
     else root.service.addSymbol(symbol)
     root.cursorSymbol = ""
-    Qt.callLater(function() { rows.positionViewAtIndex(root.library.indexOf(symbol), ListView.Contain) })
+    Qt.callLater(function() { rows.positionViewAtIndex(root.shownRows.indexOf(symbol), ListView.Contain) })
   }
 
   // Every removal comes through here, from a key or a click, so All's last
@@ -222,7 +312,7 @@ Panel {
       root.say("Keep at least one symbol")
       return
     }
-    var shown = root.library
+    var shown = root.shownRows
     var at = shown.indexOf(symbol)
     var successor = symbol === root.cursorSymbol && at >= 0 ? (shown[at + 1] || shown[at - 1] || "") : ""
     root.service.removeSymbol(symbol, shown)
@@ -255,7 +345,7 @@ Panel {
     root.clearNote()
     root.service.undoRemoval()
     root.cursorSymbol = symbol
-    rows.positionViewAtIndex(root.library.indexOf(symbol), ListView.Contain)
+    rows.positionViewAtIndex(root.shownRows.indexOf(symbol), ListView.Contain)
   }
 
   // The note's moment starts again, and waits while the pointer is on it,
@@ -333,6 +423,9 @@ Panel {
       id: keyCatcher
       anchors.fill: parent
       clip: true
+      // Ctrl+↑ ↓ and Ctrl+J K move the selected row, as the shell's panels do.
+      reorderable: true
+      onReorderRequested: function(dy) { root.moveSelected(dy) }
       onMoveRequested: function(dx, dy) {
         root.showingHelp = false
         if (dy !== 0) root.moveCursor(dy)
@@ -352,8 +445,11 @@ Panel {
       }
       onDeleteRequested: root.removeRow(root.cursorRow)
       onTabRequested: function(direction) { root.switchPanel(direction) }
-      onTextKey: function(text) {
+      // Shift is read from the modifiers, so O, J and K mean the same with
+      // Caps Lock on or off.
+      onTextKey: function(text, modifiers) {
         var t = text.toLowerCase()
+        var shifted = !!(modifiers & Qt.ShiftModifier)
         if (t === "?") {
           root.toggleHelp()
           return
@@ -366,7 +462,10 @@ Panel {
         else if (t === "a" || t === "+") root.startAdding()
         else if (t === "x") root.removeRow(root.cursorRow)
         else if (t === "u") root.undoRemoval()
-        else if (t >= "1" && t <= "9") root.feature(root.library[Number(t) - 1])
+        else if (t === "o") shifted ? root.reverseOrder() : root.cycleOrder()
+        else if (t === "j" && shifted) root.moveSelected(1)
+        else if (t === "k" && shifted) root.moveSelected(-1)
+        else if (t >= "1" && t <= "9") root.feature(root.shownRows[Number(t) - 1])
       }
 
       Column {
@@ -422,7 +521,7 @@ Panel {
             visible: root.showingHelp
             width: parent.width
             height: contentHeight
-            sheet: KeySheet.sheet()
+            sheet: KeySheet.sheet(root.order)
             retro: root.retro
             foreground: root.foreground
             dim: root.dim
@@ -494,41 +593,80 @@ Panel {
           }
         }
 
-        // The rows of All, up to six whole rows; the wheel scrolls more.
-        // They show the day at the moment on screen, so a scrub moves them
-        // with the hero.
-        ListView {
-          id: rows
+        // The list's name and its order, a group's gap over the rows.
+        Column {
           visible: !root.showingHelp && !root.adding
           width: parent.width
-          height: Math.min(root.library.length, root.maxRows) * (Style.space(40) + root.rowGap) - root.rowGap
-          clip: true
-          spacing: root.rowGap
-          boundsBehavior: Flickable.StopAtBounds
-          model: root.library
+          spacing: root.groupGap
 
-          delegate: WatchlistRow {
-            required property string modelData
-            symbol: modelData
-            width: rows.width
-            quote: root.service ? root.service.quotes[modelData] || null : null
-            view: quote ? Figures.heroView(quote, root.scrubT, root.changeMode) : null
-            problem: root.service ? root.service.problems[modelData] || "" : ""
-            featuredRow: modelData === root.featured
-            cursor: modelData === root.cursorRow
-            removable: modelData === root.cursorSymbol
+          ListLine {
+            width: parent.width
+            order: root.order
+            reversed: root.reversed
             retro: root.retro
-            scrubX: motion.scrubX
-            ground: root.ground
             foreground: root.foreground
             dim: root.dim
-            dimmer: root.dimmer
-            upColor: root.upColor
-            downColor: root.downColor
             fontFamily: root.fontFamily
-            onPointed: if (root.opened) root.cursorSymbol = modelData
-            onFeatureRequested: root.feature(modelData)
-            onRemoveRequested: root.removeRow(modelData)
+            onOrderClicked: root.cycleOrder()
+            onOrderReverseClicked: root.reverseOrder()
+          }
+
+          // The rows of All, up to six whole rows; the wheel scrolls more.
+          // They show the day at the moment on screen, so a scrub moves them
+          // with the hero.
+          ListView {
+            id: rows
+            width: parent.width
+            height: Math.min(root.shownRows.length, root.maxRows) * root.rowPitch - root.rowGap
+            clip: true
+            spacing: root.rowGap
+            boundsBehavior: Flickable.StopAtBounds
+            // A carried row is held where the pointer is, not scrolled away.
+            interactive: root.dragSymbol === ""
+            model: root.shownRows
+
+            delegate: WatchlistRow {
+              id: rowItem
+              required property string modelData
+              required property int index
+              readonly property bool carried: modelData === root.dragSymbol
+              z: carried ? 2 : 0
+              lifted: carried
+              // The carried row follows the pointer, the rest slide aside to
+              // make room; the drop rebuilds them in their new order.
+              transform: Translate {
+                y: rowItem.carried ? root.dragY - rowItem.index * root.rowPitch
+                  : (root.slotOf(rowItem.modelData) - rowItem.index) * root.rowPitch
+                Behavior on y {
+                  enabled: root.dragSymbol !== "" && !rowItem.carried
+                  NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
+                }
+              }
+              symbol: modelData
+              width: rows.width
+              quote: root.service ? root.service.quotes[modelData] || null : null
+              view: quote ? Figures.heroView(quote, root.scrubT, root.changeMode) : null
+              problem: root.service ? root.service.problems[modelData] || "" : ""
+              featuredRow: modelData === root.featured
+              cursor: modelData === root.cursorRow
+              removable: modelData === root.cursorSymbol
+              retro: root.retro
+              scrubX: motion.scrubX
+              ground: root.ground
+              foreground: root.foreground
+              dim: root.dim
+              dimmer: root.dimmer
+              upColor: root.upColor
+              downColor: root.downColor
+              fontFamily: root.fontFamily
+              onPointed: if (root.opened) root.cursorSymbol = modelData
+              onFeatureRequested: root.feature(modelData)
+              onRemoveRequested: root.removeRow(modelData)
+              onDragStarted: function(y) { root.beginDrag(modelData, y) }
+              onDragMoved: function(y) { root.dragTo(y) }
+              onDragEnded: root.endDrag()
+              onDragCanceled: root.cancelDrag()
+            }
           }
         }
 
