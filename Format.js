@@ -1,8 +1,8 @@
 .pragma library
 // Copied from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2, Format.js.
 // Changes: only what this project uses is kept, writing a price, a percent, a
-// move in money and a UTC clock, the retro look's signs, and stacking them
-// for a side bar; the local
+// move in money and a UTC clock, the retro look's signs, and stacking a
+// symbol, a percent and a move in money for a side bar; the local
 // clock times, durations and range texts were removed until a screen needs
 // them. A stacked symbol
 // splits at its quote currency, as the original splits BTC-USD at its dash.
@@ -84,6 +84,23 @@ function utcClock(t) {
 
 function pct(value) {
   return isFiniteNumber(value) ? percent(value, pctDigits(Math.abs(value))) : "—"
+}
+
+// A move in money stacked, as `signedMoney` writes it, split at its point
+// with its sign kept: −3 over .84, and a fraction too long for a line
+// broken after its fourth character, as a coin under a cent's is. From a
+// thousand, in its unit: 8.9 over K.
+function stackedMoney(value, digits) {
+  if (!isFiniteNumber(value)) return { lines: ["—"], sign: 0 }
+  var shown = moveDigits(Math.abs(value), digits)
+  var sign = shownSign(value, shown)
+  var fixed = Math.abs(value).toFixed(shown)
+  if (Number(fixed) >= 1000) {
+    var big = stackedThousands(Number(fixed))
+    return { lines: [signText(sign) + big.figure, big.unit], sign: sign }
+  }
+  var parts = fixed.split(".")
+  return { lines: [signText(sign) + parts[0]].concat(parts.length > 1 ? stackChunks("." + parts[1]) : []), sign: sign }
 }
 
 function percent(value, digits) {

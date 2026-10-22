@@ -76,10 +76,14 @@ BarWidget {
   readonly property color upColor: trendColors ? trendColors.upOn(barGround) : button.foreground
   readonly property color downColor: trendColors ? trendColors.downOn(barGround) : Commons.Color.urgent
   readonly property color dimColor: Tones.dim(button.foreground, barGround)
-  // 1 up, -1 down, 0 flat: the sign as it is drawn, so a move that rounds to
-  // +0.00% is flat and takes no colour.
+  // 1 up, -1 down, 0 flat: the percent's sign as it is drawn, so a move that
+  // rounds to +0.00% is flat; the animal and the arrow read it.
   readonly property int sign: signOf(quote)
-  readonly property color moveColor: !move ? dimColor : sign > 0 ? upColor : sign < 0 ? downColor : dimColor
+  // The change in the popup's unit, percent or amount (`c`), as the rows
+  // and the hero show it; its colour is its own sign as drawn, so an amount
+  // that rounds to +0.00 takes none.
+  readonly property var view: quote ? Figures.heroView(quote, 0, service ? service.changeMode : "pct") : null
+  readonly property color moveColor: !move ? dimColor : view.sign > 0 ? upColor : view.sign < 0 ? downColor : dimColor
 
   function signOf(q) {
     var m = Change.sinceOpen(q)
@@ -87,7 +91,7 @@ BarWidget {
   }
 
   readonly property string priceText: quote ? Format.money(quote.price, quote.priceDigits) : ""
-  readonly property string changeText: (warns ? "! " : "") + (move ? Format.lookSigns(Format.pct(move.pct), retro) : quote ? "—" : warns ? "No data" : "…")
+  readonly property string changeText: (warns ? "! " : "") + (move ? Format.lookSigns(view.changeText, retro) : quote ? "—" : warns ? "No data" : "…")
 
   // The day and animal the icon form shows. A new price that turns the same
   // symbol's day between the bull and the bear steps the animal
@@ -120,12 +124,14 @@ BarWidget {
   onSymbolChanged: Qt.callLater(reshowTooltip)
 
   // A side bar's stacked form: the symbol's lines over the move's, each at
-  // most four characters (`Format.stackedSymbol`), the move in percent
-  // (`Format.stackedPct`), coloured by its sign as drawn. A warning's "!"
+  // most four characters (`Format.stackedSymbol`), the move in the popup's
+  // unit, money in money and else a percent (`Format.stackedMoney`,
+  // `stackedPct`), coloured by its sign as drawn. A warning's "!"
   // goes on a short line of its own before the move, kept whether the "!"
   // shows or not: the pill never changes height for a warning. With no
   // quote at all the "!" is the move, in the place of the waiting "…".
   readonly property var stackedMove: !quote ? { lines: warns ? [] : ["…"], sign: 0 }
+    : service && service.changeMode === "abs" ? Format.stackedMoney(move ? move.abs : null, quote.priceDigits)
     : Format.stackedPct(move ? move.pct : null)
   readonly property var stackedLines: Format.stackedSymbol(symbol, quote ? quote.currency : "")
     .map(function(t) { return { text: t, move: false, warning: false } })

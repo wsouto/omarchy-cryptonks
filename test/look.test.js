@@ -178,6 +178,13 @@ test("a stacked move is its sign and figure over %, the pill's figure rounded", 
   expect(Fmt.stackedPct(null)).toEqual({ lines: ["—"], sign: 0 })
 })
 
+test("a side bar's stacked amount splits at its point, and from a thousand reads in K", () => {
+  expect(Fmt.stackedMoney(-1134.1, 1)).toEqual({ lines: [MINUS + "1.1", "K"], sign: -1 })
+  expect(Fmt.stackedMoney(3.84, 2)).toEqual({ lines: ["+3", ".84"], sign: 1 })
+  expect(Fmt.stackedMoney(-0.0017, 5)).toEqual({ lines: [MINUS + "0", ".001", "70"], sign: -1 })
+  expect(Fmt.stackedMoney(null, 2)).toEqual({ lines: ["—"], sign: 0 })
+})
+
 // ---- The popup's hero and scrub ----
 
 test("the hero's change is since the day's open, in percent or in money", () => {
