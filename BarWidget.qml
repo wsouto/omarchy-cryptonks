@@ -21,8 +21,8 @@ import "Tones.js" as Tones
 //
 // The forms, the animal's turn and the side bar's stack follow Stonks'
 // BarWidget.qml by Gaurav Chande (MIT, omarchy-stonks v1.0.2), as does the
-// way the popup is loaded and opened; its window, list and retro look come
-// back in later steps.
+// way the popup is loaded and opened, and the retro look's line and signs;
+// its window and list come back in later steps.
 //
 // `BarWidget` comes from the Omarchy shell (qs.Ui). `moduleName` must equal
 // the id in manifest.json; the shell uses it to find this widget's settings.
@@ -58,6 +58,10 @@ BarWidget {
   readonly property string barStyle: setting(styleKey, vertical || onRight ? "icon" : "sparkline")
   // Just the day's animal, a quiet icon among the bar's own.
   readonly property bool iconOnly: barStyle === "icon"
+  // The look, smooth or retro, which the popup switches: kept on the bar
+  // entry, as the original pill reads it before its service loads, until
+  // the saved settings come (roadmap step 7).
+  readonly property bool retro: setting("style", "smooth") === "retro"
 
   // Up and down are the theme's green and red, picked for the bar's own
   // ground (`TrendColors`), and the dim of a flat move is quieter than the
@@ -77,7 +81,7 @@ BarWidget {
   }
 
   readonly property string priceText: quote ? Format.money(quote.price, quote.priceDigits) : ""
-  readonly property string changeText: (warns ? "! " : "") + (move ? Format.pct(move.pct) : quote ? "—" : warns ? "No data" : "…")
+  readonly property string changeText: (warns ? "! " : "") + (move ? Format.lookSigns(Format.pct(move.pct), retro) : quote ? "—" : warns ? "No data" : "…")
 
   // The day and animal the icon form shows. A new price that turns the same
   // symbol's day between the bull and the bear steps the animal
@@ -134,10 +138,11 @@ BarWidget {
     font.pixelSize: Math.max(1, Math.round(button.fontSize))
   }
 
-  function persistBarStyle(next) {
+  // One setting of the bar entry, the others kept as they are.
+  function persistSetting(name, value) {
     var entry = { id: root.moduleName }
     for (var key in root.settings) if (key !== "id") entry[key] = root.settings[key]
-    entry[root.styleKey] = next
+    entry[name] = value
     root.settings = entry
     if (root.bar && root.bar.shell && typeof root.bar.shell.updateEntryInline === "function")
       root.bar.shell.updateEntryInline(root.moduleName, entry)
@@ -147,7 +152,7 @@ BarWidget {
   // middle-click there steps between them.
   function cycleBarStyle() {
     var ring = ["sparkline", "arrow", "text", "icon"]
-    root.persistBarStyle(root.vertical ? (root.iconOnly ? "stacked" : "icon")
+    root.persistSetting(root.styleKey, root.vertical ? (root.iconOnly ? "stacked" : "icon")
       : ring[(ring.indexOf(barStyle) + 1) % ring.length])
   }
 
@@ -233,7 +238,7 @@ BarWidget {
       visible: !root.vertical || root.iconOnly
 
       Sparkline {
-        visible: root.barStyle === "sparkline"
+        visible: root.barStyle === "sparkline" && !root.retro
         anchors.verticalCenter: parent.verticalCenter
         width: Style.space(40)
         height: Style.space(12)
@@ -241,6 +246,21 @@ BarWidget {
         lineColor: root.moveColor
         baselineColor: Qt.rgba(button.foreground.r, button.foreground.g, button.foreground.b, 0.25)
         lineWidth: 1.5
+      }
+
+      // The popup's pixel chart at pill size, so the pill and the hero are
+      // one drawing at two sizes.
+      PixelChart {
+        visible: root.barStyle === "sparkline" && root.retro
+        anchors.verticalCenter: parent.verticalCenter
+        width: Style.space(40)
+        height: Style.space(12)
+        geometry: root.retro ? root.lineGeometry : null
+        upColor: root.moveColor
+        downColor: root.moveColor
+        baselineColor: Qt.rgba(button.foreground.r, button.foreground.g, button.foreground.b, 0.25)
+        pixel: 2
+        gap: 1
       }
 
       // The 23-degrees idea: an arrow whose tilt is the size of today's move,
@@ -369,7 +389,7 @@ BarWidget {
           required property var modelData
           width: button.width
           height: modelData.warning ? root.stackedWarningHeight : Style.bar.iconSlot
-          text: modelData.text
+          text: modelData.move ? Format.lookSigns(modelData.text, root.retro) : modelData.text
           fontFamily: button.fontFamily
           fontSize: modelData.text.length > 3 ? button.fontSize * 0.9 : button.fontSize
           color: !modelData.move ? button.foreground : root.stackedMove.sign > 0 ? root.upColor

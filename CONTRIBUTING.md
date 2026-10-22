@@ -49,8 +49,9 @@ plugin. In short:
 - `manifest.json`: the plugin's id, kinds, and the pill's settings.
 - `BarWidget.qml`: the pill in the bar.
 - `Panel.qml`: the popup a left click opens: `HeaderStatus.qml`, `Hero.qml`
-  and `DayChart.qml` draw it, and `ChartMotion.qml` holds its scrub, replay
-  and draw-in.
+  and `DayChart.qml` draw it in the smooth look, `PixelChart.qml` and
+  `BlockDigits.qml` in the retro one, and `ChartMotion.qml` holds its scrub,
+  replay and draw-in.
 - `PriceFeed.qml`: fetches the pill's symbol once a minute and holds its
   quote. `Refresh.js` is its rules: what each refresh asks for, and what the
   answers mean.

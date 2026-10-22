@@ -4,7 +4,8 @@
 // here; the rows, lists, search, ranges, key sheet and footer come in
 // roadmap steps 7 to 11, with the keys that drive them. The change has two
 // modes, percent and amount, both since 00:00 UTC, kept until the shell
-// restarts (the saved settings come in step 7).
+// restarts; the look rides the pill's bar entry, as the original pill keeps
+// it before its service loads (the saved settings come in step 7).
 pragma ComponentBehavior: Bound
 
 import QtQuick
@@ -40,6 +41,8 @@ Panel {
   readonly property string problem: feed ? feed.problem : ""
   // The change's unit: "pct" or "abs", which c or a click on it switches.
   property string changeMode: "pct"
+  // The look, smooth or retro, which s or the look icon switches.
+  readonly property bool retro: hostWidget ? hostWidget.retro === true : false
   readonly property int scrubT: motion.scrubT
   readonly property var view: quote ? Figures.heroView(quote, scrubT, changeMode) : null
   // Live is honest only while refreshes land and the moment shown is now.
@@ -58,6 +61,8 @@ Panel {
   readonly property color downColor: trendColors ? trendColors.downOn(ground) : Commons.Color.urgent
   readonly property color dim: Tones.dim(foreground, ground)
   readonly property color dimmer: Tones.dimmer(foreground, ground)
+  readonly property color ghost: Qt.rgba(foreground.r, foreground.g, foreground.b, 0.05)
+  readonly property string newestPrice: quote && quote.points.length ? String(quote.points[quote.points.length - 1].p) : ""
 
   // The card's place along the bar, held from an open from closed until the
   // next; an open during the close fade keeps it, since the card is still on
@@ -104,6 +109,10 @@ Panel {
       root.bar.setCenterHoverRevealSuppressed(value)
   }
 
+  function setStyle(style) {
+    if (root.hostWidget) root.hostWidget.persistSetting("style", style)
+  }
+
   function cycleChangeMode() {
     root.changeMode = root.changeMode === "pct" ? "abs" : "pct"
   }
@@ -140,6 +149,7 @@ Panel {
         var t = text.toLowerCase()
         if (t === "c") root.cycleChangeMode()
         else if (t === "p") motion.replay()
+        else if (t === "s") root.setStyle(root.retro ? "smooth" : "retro")
         else if (t === "r" && root.feed) root.feed.refresh()
       }
 
@@ -157,6 +167,7 @@ Panel {
             id: header
             width: parent.width
             statusText: root.statusText
+            retro: root.retro
             animal: ({ kind: root.view ? Figures.animalKind(root.view.daySign) : "", chart: root.symbol })
             scrubbing: root.scrubT !== 0
             live: root.live
@@ -167,6 +178,7 @@ Panel {
             downColor: root.downColor
             fontFamily: root.fontFamily
             onReplayRequested: motion.replay()
+            onStyleRequested: function(style) { root.setStyle(style) }
           }
 
           Hero {
@@ -175,6 +187,8 @@ Panel {
             quote: root.quote
             view: root.view
             scrubbing: root.scrubT !== 0
+            retro: root.retro
+            ghost: root.ghost
             missingText: root.problem !== "" ? "—" : "…"
             baselineText: root.baselineText
             foreground: root.foreground
@@ -192,21 +206,46 @@ Panel {
 
           DayChart {
             id: dayChart
+            visible: !root.retro
             anchors.fill: parent
-            geometry: motion.geometry
+            // The hidden look rests: it draws nothing until it shows, so a
+            // new chart paints once, in the look on screen, and it neither
+            // draws in nor follows the scrub.
+            geometry: root.retro ? null : motion.geometry
             up: root.view && root.view.daySign !== 0 ? root.view.daySign > 0 : true
             upColor: root.upColor
             downColor: root.downColor
             baselineColor: root.dimmer
             hairlineColor: root.foreground
             ground: root.ground
-            scrubX: motion.scrubX
-            reveal: motion.reveal
-            replayX: motion.replayX
-            live: root.live
-            newestPrice: root.quote && root.quote.points.length ? String(root.quote.points[root.quote.points.length - 1].p) : ""
+            scrubX: root.retro ? -1 : motion.scrubX
+            reveal: root.retro ? 1 : motion.reveal
+            replayX: root.retro ? -1 : motion.replayX
+            live: root.live && !root.retro
+            newestPrice: root.newestPrice
             surfaceOpen: root.opened
             still: !root.opened
+          }
+
+          PixelChart {
+            visible: root.retro
+            anchors.fill: parent
+            geometry: root.retro ? motion.geometry : null
+            up: root.view && root.view.daySign !== 0 ? root.view.daySign > 0 : true
+            upColor: root.upColor
+            downColor: root.downColor
+            baselineColor: root.dimmer
+            glow: true
+            live: root.live && root.retro
+            newestPrice: root.newestPrice
+            surfaceOpen: root.opened
+            still: !root.opened
+            hairlineColor: root.foreground
+            ghostColor: root.ghost
+            ground: root.ground
+            scrubX: root.retro ? motion.scrubX : -1
+            reveal: root.retro ? motion.reveal : 1
+            replayX: root.retro ? motion.replayX : -1
           }
 
           // The pointer reads the chart where it is drawn; a click goes back
@@ -215,7 +254,7 @@ Panel {
             anchors.fill: parent
             hoverEnabled: true
             onPositionChanged: function(mouse) {
-              if (!motion.replayRunning) motion.scrubTo(dayChart.fractionAt(mouse.x))
+              if (!motion.replayRunning) motion.scrubTo(root.retro ? mouse.x / width : dayChart.fractionAt(mouse.x))
             }
             onExited: if (!motion.replayRunning) motion.clearScrub()
             onClicked: motion.clearScrub()

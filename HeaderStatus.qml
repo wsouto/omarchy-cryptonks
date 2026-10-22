@@ -1,30 +1,35 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
 // HeaderStatus.qml. Changes: the animal never sleeps, since a perpetual
-// never rests; the look icon comes back with the retro look, and the help
-// mark and the retry with the key sheet and the statuses (roadmap steps 8
-// and 11).
+// never rests; the help mark and the retry come with the key sheet and the
+// statuses (roadmap steps 8 and 11), so the look icon stands at the right
+// edge until then.
 import QtQuick
 import qs.Commons
 import qs.Commons as Commons
 import "Cells.js" as Cells
 import "Tones.js" as Tones
 
-// The animal and the status words. Surfaces own the actions; this only
-// draws and signals. The animal is the day's bull or bear in cells
-// (`Cells.spriteFor`), in one slot the status words start after, drawn or
-// not, so a flat day moves nothing. It has no tooltip: under the header one
-// covered the line naming the symbol.
+// The animal, the status words, and the look. Surfaces own the actions;
+// this only draws and signals. The animal is the day's bull or bear in
+// cells (`Cells.spriteFor`), the same in both looks, in one slot the status
+// words start after, drawn or not, so neither the look nor a flat day moves
+// them. The height is the slot's in both looks, and the look is one small
+// icon in both, so toggling moves nothing. Neither has a tooltip: under the
+// header one covered the line naming the symbol.
 Item {
   id: root
 
   property string statusText: ""
+  property bool retro: false
   // The animal, as the body decides it: `kind` "bull", "bear", or "" (a
   // flat day, or no direction yet), and `chart`, what it reads. A turn of
-  // the same chart crossfades; any other change is at once.
+  // the same chart crossfades in smooth; any other change, and every one in
+  // retro, is at once.
   property var animal: ({ kind: "", chart: "" })
   property bool scrubbing: false
   property bool live: false
-  // The surface is closing: the animal's turn stops where it is.
+  // The surface is closing: the look icon's step and the animal's turn stop
+  // where they are.
   property bool still: false
   property color foreground: Commons.Color.foreground
   property color dim: Tones.dim(foreground, Commons.Color.background)
@@ -37,18 +42,23 @@ Item {
   property string shownChart: ""
 
   signal replayRequested()
+  signal styleRequested(string style)
 
-  // At rest as a surface opens: the animal on what it reads.
-  function settle() { show(false) }
+  // At rest as a surface opens: the icon on the look, the animal on what
+  // it reads.
+  function settle() {
+    lookIcon.settle()
+    show(false)
+  }
 
-  // The layers to the animal: crossfading when it turns on the chart it
-  // showed, from wherever a turn under way has them; else at once.
+  // The layers to the animal: crossfading in smooth when it turns on the
+  // chart it showed, from wherever a turn under way has them; else at once.
   function show(fade) {
     shownChart = animal ? animal.chart : ""
     turn.stop()
     turnBull.to = kind === "bull" ? 1 : 0
     turnBear.to = kind === "bear" ? 1 : 0
-    if (fade) turn.start()
+    if (fade && !retro) turn.start()
     else {
       bull.opacity = turnBull.to
       bear.opacity = turnBear.to
@@ -108,7 +118,8 @@ Item {
   Text {
     anchors.left: slot.right
     anchors.leftMargin: Style.space(14)
-    anchors.right: parent.right
+    anchors.right: lookIcon.left
+    anchors.rightMargin: Style.space(8)
     anchors.verticalCenter: parent.verticalCenter
     textFormat: Text.PlainText
     text: root.statusText.toUpperCase()
@@ -118,5 +129,41 @@ Item {
     font.bold: true
     font.letterSpacing: 1
     elide: Text.ElideRight
+  }
+
+  // The look a click switches to, as s does, about a word tall: the chart
+  // already shows the current one. The target is the header's full height,
+  // so a click above or below the icon still lands. It hovers in brighter
+  // ink, and takes the pressed fill while the button is down. Inset by its
+  // fill's margin, so the fill ends on the header's edge: the popup clips
+  // anything past it.
+  LookIcon {
+    id: lookIcon
+    anchors.right: parent.right
+    anchors.rightMargin: Style.space(6)
+    anchors.verticalCenter: parent.verticalCenter
+    retro: root.retro
+    still: root.still
+    color: lookMouse.containsMouse ? root.foreground : root.dim
+
+    Rectangle {
+      z: -1
+      anchors.centerIn: parent
+      width: parent.width + Style.space(12)
+      height: parent.height + Style.space(6)
+      radius: root.retro ? 0 : Style.cornerRadius
+      color: lookMouse.pressed ? Style.pressedFillFor(root.foreground, Commons.Color.accent) : "transparent"
+    }
+
+    MouseArea {
+      id: lookMouse
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.verticalCenter: parent.verticalCenter
+      width: parent.width + Style.space(12)
+      height: root.height
+      hoverEnabled: true
+      cursorShape: Qt.PointingHandCursor
+      onClicked: root.styleRequested(root.retro ? "smooth" : "retro")
+    }
   }
 }

@@ -1,16 +1,18 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
 // Hero.qml. Changes: the listing line says the coin's name, Bybit and USDT;
 // the change is since 00:00 UTC, and its caption says so at rest; there is
-// no extended-hours print and no freshness word yet (roadmap step 11), and
-// only the smooth look until the retro one comes back.
+// no extended-hours print and no freshness word yet (roadmap step 11).
 import QtQuick
 import qs.Commons
 import qs.Commons as Commons
+import "Cells.js" as Cells
+import "Format.js" as Format
 import "Tones.js" as Tones
 
-// Featured symbol, listing line, the price, the change, and the caption
-// strip under them. The price's box is a whole number of retro cells tall,
-// so both looks will share a top line and a baseline. The change and its
+// Featured symbol, listing line, the price in both looks, the change, and
+// the caption strip under them. One box serves both looks: one fitted ink
+// height drives both digit renderers, so they share a top line, a
+// baseline, and a left edge however narrow it gets. The change and its
 // caption are pinned to the hero's right edge, so they never move with what
 // else is on show. The strip under the price carries the dashed baseline's
 // legend on the left while a scrub reads against it, and the change's
@@ -24,6 +26,7 @@ Item {
   property var view: null
   property var quote: null
   property bool scrubbing: false
+  property bool retro: false
   // What the price says with no quote: "…" while the first is on its way,
   // "—" once it failed.
   property string missingText: "…"
@@ -31,6 +34,7 @@ Item {
   property color dim: Tones.dim(foreground, Commons.Color.background)
   property color upColor: Commons.Color.foreground
   property color downColor: Commons.Color.urgent
+  property color ghost: Qt.rgba(foreground.r, foreground.g, foreground.b, 0.05)
   property string fontFamily: Style.font.family
   property string symbol: ""
   // What the chart's dashed line is: said in the strip while a scrub reads
@@ -53,15 +57,19 @@ Item {
   readonly property real naturalInk: -digitInk.tightBoundingRect.y
   readonly property int naturalCell: Math.max(1, Math.floor(naturalInk / 5))
   readonly property int boxHeight: naturalCell * 5
+  // The retro digits' width, from the price itself: the hidden look's
+  // digits draw nothing, and the smooth size must not follow them.
+  readonly property int cells: Cells.blockCells(priceText).columns
   readonly property real priceRoom: Math.max(1, width - gap - changeText.implicitWidth)
-  // The largest cell at which the price still fits the room the change
-  // leaves.
+  // One fitted ink height for both looks: the largest cell at which each
+  // renderer still fits the room the change leaves.
   readonly property int fittedCell: Math.max(1, Math.min(naturalCell,
-    Math.floor(priceRoom * naturalInk / (5 * Math.max(1, priceInk.advanceWidth)))))
+    Math.floor(priceRoom * naturalInk / (5 * Math.max(1, priceInk.advanceWidth))),
+    Math.floor(priceRoom / Math.max(1, cells))))
   readonly property int digitHeight: fittedCell * 5
   readonly property int fittedSize: Math.max(1, Math.round(priceSize * digitHeight / naturalInk))
-  // Where the digits' ink starts in their box: they are pulled left by it,
-  // so their ink starts on the band's edge.
+  // Where the smooth digits' ink starts in their box: they are pulled left
+  // by it, so their ink, like the retro cells, starts on the band's edge.
   readonly property real inkLeft: priceInk.tightBoundingRect.x * fittedSize / priceSize
   readonly property int baselineY: listingRow.height + Style.space(14) + boxHeight
   // The strip under the price starts below the retro comma's tail, one cell
@@ -147,6 +155,7 @@ Item {
   }
 
   Text {
+    visible: !root.retro
     x: -Math.round(root.inkLeft)
     y: root.baselineY - baselineOffset
     textFormat: Text.PlainText
@@ -158,13 +167,23 @@ Item {
     font.letterSpacing: -1
   }
 
+  BlockDigits {
+    visible: root.retro
+    y: root.baselineY - baselineOffset
+    // Hidden, it rests: a scrub in smooth repainted it every step.
+    text: root.retro ? root.priceText : ""
+    cell: root.fittedCell
+    color: root.foreground
+    ghostColor: root.ghost
+  }
+
   // A click switches the change between percent and amount, as c does.
   Text {
     id: changeText
     anchors.right: parent.right
     y: root.baselineY - baselineOffset
     textFormat: Text.PlainText
-    text: root.view ? root.view.changeText : ""
+    text: root.view ? Format.lookSigns(root.view.changeText, root.retro) : ""
     color: root.signColor(root.view ? root.view.sign : 0)
     font.family: root.fontFamily
     font.pixelSize: Style.font.display

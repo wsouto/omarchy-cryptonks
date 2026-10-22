@@ -1,7 +1,8 @@
 .pragma library
 // Copied from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2, Format.js.
 // Changes: only what this project uses is kept, writing a price, a percent, a
-// move in money and a UTC clock, and stacking them for a side bar; the local
+// move in money and a UTC clock, the retro look's signs, and stacking them
+// for a side bar; the local
 // clock times, durations and range texts were removed until a screen needs
 // them. A stacked symbol
 // splits at its quote currency, as the original splits BTC-USD at its dash.
@@ -50,6 +51,12 @@ function money(value, digits) {
   var abs = Math.abs(value)
   var shown = isFiniteNumber(digits) ? digits : moneyDigits(abs)
   return (shownSign(value, shown) < 0 ? MINUS : "") + grouped(abs.toFixed(shown))
+}
+
+// One sign language per look: smooth says + and −, retro says ▲ and ▼. An
+// unmoved figure has no sign in either.
+function lookSigns(text, retro) {
+  return retro ? String(text).replace("+", "▲").replace(MINUS, "▼") : text
 }
 
 // A move in money takes the listing's decimals, never fewer than two, and

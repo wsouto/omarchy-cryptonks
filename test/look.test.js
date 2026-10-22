@@ -1,7 +1,7 @@
 // What the pill and the popup write and draw, and in which colours:
 // Format.js's prices, percents, moves and side-bar stack, Chart.js's day
-// line and scrub, Figures.js's arrow, animal and hero, and Tones.js's up,
-// down and secondary text. Each test names what
+// line and scrub, Figures.js's arrow, animal and hero, Cells.js's retro digits,
+// and Tones.js's up, down and secondary text. Each test names what
 // a user would see go wrong in the bar.
 //
 // Run with `bun test` (test/check.sh does).
@@ -12,6 +12,7 @@ const Fmt = load("Format.js")
 const T = load("Tones.js")
 const Ch = load("Chart.js")
 const Fig = load("Figures.js")
+const Cells = load("Cells.js")
 
 const MINUS = "−"
 const hex = T.hexColor
@@ -207,4 +208,19 @@ test("the scrub runs across the UTC day and stops at the first and last candle",
   expect(Ch.fractionAtTime(q, D0 + DAY + 1)).toBe(-1)
   expect(Ch.stepTime(q, D0 + 3600, 1)).toBe(D0 + 3600)
   expect(Ch.stepTime(q, D0 + 900, -2)).toBe(D0 + 600)
+})
+
+// ---- The retro look ----
+
+test("retro says up and down with triangles, and smooth with signs", () => {
+  expect(Fmt.lookSigns("+1.75%", true)).toBe("▲1.75%")
+  expect(Fmt.lookSigns(MINUS + "0.25", true)).toBe("▼0.25")
+  expect(Fmt.lookSigns("+1.75%", false)).toBe("+1.75%")
+})
+
+test("retro digits draw every character of a crypto price, the comma's tail included", () => {
+  const grid = Cells.blockCells("82,950.10")
+  // Seven digits of three columns, two marks of one, a blank column between each.
+  expect(grid.columns).toBe(7 * 3 + 2 + 8)
+  expect(grid.cells.some(c => c.y === 5 && c.lit)).toBe(true)
 })
