@@ -107,8 +107,6 @@ Item {
 
   PriceFeed {
     id: feed
-    // shortcut: a new preview starts a whole run, every row's price with it;
-    // fine for a typed query's few, worth a run of its own for long lists.
     symbols: !root.ready ? [] : !root.popupOpen ? [root.featured]
       : root.previewSymbol !== "" && root.library.indexOf(root.previewSymbol) < 0 ? root.library.concat([root.previewSymbol]) : root.library
     featured: root.featured

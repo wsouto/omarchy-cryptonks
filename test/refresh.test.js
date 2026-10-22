@@ -293,3 +293,14 @@ test("a refusal pauses the whole run, with Bybit's reason", () => {
   expect(got.wait).toBe(600)
   expect(got.waitProblem).toContain("waiting 10 minutes")
 })
+
+test("a symbol joining the feed is asked for alone, and the rows wait for their minute", () => {
+  const rows = ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+  const joined = R.newcomers(rows, rows.concat(["LINKUSDT"]))
+  expect(joined).toEqual(["LINKUSDT"])
+  expect(R.runSymbols(rows.concat(["LINKUSDT"]), joined, false)).toEqual(["LINKUSDT"])
+  // A preview passed by before its run goes is not asked for.
+  expect(R.runSymbols(rows, ["LINKUSDT"], false)).toEqual([])
+  // The minute's run asks for every one.
+  expect(R.runSymbols(rows, [], true)).toEqual(rows)
+})

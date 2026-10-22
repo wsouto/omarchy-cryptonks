@@ -202,6 +202,21 @@ function read(all, asked, symbol, kept, adapter) {
 
 // ---- A run of several symbols ----
 
+// The symbols newly in `after`, not in `before`, in `after`'s order: a
+// symbol joining the feed (a preview, an add, an undo) is asked for in a
+// run of its own, and the rows wait for their minute.
+function newcomers(before, after) {
+  return (after || []).filter(function (s) { return (before || []).indexOf(s) < 0 })
+}
+
+// The symbols the next run asks for: every one watched with `whole` (the
+// minute's run, or a refresh you asked for), else those owed a run of their
+// own that are still watched.
+function runSymbols(watched, owed, whole) {
+  if (whole) return watched.slice()
+  return watched.filter(function (s) { return owed.indexOf(s) >= 0 })
+}
+
 // { urls, asked }: every symbol's URLs in one run, the featured one first so
 // the pill hears first; `asked` holds each URL's { symbol, role }. A
 // symbol's candles come every `rowEvery` seconds, the featured one's every

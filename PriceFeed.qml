@@ -16,7 +16,10 @@ import "adapters/bybit.js" as Bybit
 //
 // Every symbol goes in one run, one curl over one connection, each asking
 // for its own price: a request per symbol is under 1 KB, where Bybit's
-// all-tickers answer is 680 KB. The candles come every 5 minutes for a row,
+// all-tickers answer is 680 KB. A symbol that joins (a preview, an add, an
+// undo, the popup's rows as it opens) or becomes featured is asked for in a
+// run of its own, so the rest wait for their minute rather than being asked
+// again. The candles come every 5 minutes for a row,
 // every minute for the featured symbol (`Refresh.planRun`). Before each run
 // it asks whether a screen is on (`Screens.qml`): while every one is off,
 // nothing is fetched, and the run goes as soon as one is back. A refusal
@@ -57,13 +60,25 @@ Item {
   property bool owed: false
   // Another run was asked for while one was out: it goes as that one ends.
   property bool again: false
+  // The symbols last handed in, those owed a run of their own, and whether
+  // the next run asks for every symbol (`Refresh.runSymbols`).
+  property var watched: []
+  property var pending: []
+  property bool whole: false
 
   // Quotes answered, for the service to save.
   signal answered()
 
-  // A symbol newly watched, or newly featured, is asked for at once.
-  onSymbolsChanged: Qt.callLater(refresh)
-  onFeaturedChanged: Qt.callLater(refresh)
+  // A symbol newly watched, or newly featured, is asked for at once, alone.
+  onSymbolsChanged: {
+    root.pending = root.pending.concat(Refresh.newcomers(root.watched, root.symbols))
+    root.watched = root.symbols.slice()
+    Qt.callLater(request, false)
+  }
+  onFeaturedChanged: {
+    if (root.featured !== "") root.pending = root.pending.concat([root.featured])
+    Qt.callLater(request, false)
+  }
 
   // The last quotes saved, { symbol: quote }, each shown until its first
   // answer.
@@ -75,7 +90,13 @@ Item {
 
   function nowSeconds() { return Math.floor(Date.now() / 1000) }
 
-  function refresh() {
+  // Every symbol: the minute's run, or one you asked for.
+  function refresh() { request(true) }
+
+  // A run, of every symbol with `all`, else of those owed one. A run owed
+  // while one is out, or while the screens answer, keeps what it owes.
+  function request(all) {
+    if (all) root.whole = true
     if (root.symbols.length === 0 || nowSeconds() < pausedUntil) return
     if (proc.running) {
       root.again = true
@@ -93,7 +114,11 @@ Item {
 
   function run() {
     if (proc.running) return
-    var next = Refresh.planRun(Bybit, symbols, featured, kept, nowSeconds(), rowEvery)
+    var list = Refresh.runSymbols(root.symbols, root.pending, root.whole)
+    root.whole = false
+    root.pending = []
+    if (list.length === 0) return
+    var next = Refresh.planRun(Bybit, list, featured, kept, nowSeconds(), rowEvery)
     asked = next.asked
     began = false
     // One curl, all of the URLs over one connection. The largest answer is
@@ -125,7 +150,7 @@ Item {
     if (landed) root.answered()
     if (root.again) {
       root.again = false
-      Qt.callLater(refresh)
+      Qt.callLater(request, false)
     }
   }
 
