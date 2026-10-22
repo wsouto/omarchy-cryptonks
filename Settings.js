@@ -5,7 +5,8 @@
 // Settings.js. Changes: this project's starter symbols and its two change
 // modes; the featured symbol is always one of All; the refresh interval
 // comes back with the screen that changes it, and the first-run hint is gone with the hint; the change sorted by is
-// since 00:00 UTC; there is no order by the amount; nothing is read from the
+// since 00:00 UTC; there is no order by the amount; deleting a list takes its
+// symbols out of All; nothing is read from the
 // bar entry, which never held this project's symbols.
 //
 // The data file's settings and lists, and every rule that changes them:
@@ -345,12 +346,18 @@ function withListMoved(settings, name, delta) {
   return next
 }
 
-// Deleting a list leaves All and every other list as they were; deleting the
-// current one goes back to All.
+// Deleting a list takes its symbols with it: out of All too, unless another
+// list holds them. All keeps one symbol, so a list holding every symbol of
+// All leaves them in place. Deleting the current list goes back to All.
 function withListDeleted(settings, name) {
   var next = fileSettings(settings)
   var i = listIndex(next.lists, name)
-  if (i >= 0) next.lists.splice(i, 1)
+  if (i < 0) return next
+  var gone = next.lists.splice(i, 1)[0].symbols
+  var held = []
+  next.lists.forEach(function(list) { held = held.concat(list.symbols) })
+  var kept = next.symbols.filter(function(s) { return gone.indexOf(s) < 0 || held.indexOf(s) >= 0 })
+  if (kept.length > 0) next.symbols = kept
   return fileSettings(next)
 }
 

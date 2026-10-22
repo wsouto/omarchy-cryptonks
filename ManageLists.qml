@@ -1,5 +1,5 @@
 // Copied from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2, ManageLists.qml.
-// Changes: none.
+// Changes: a deleted list takes its symbols out of All, so the question says so.
 pragma ComponentBehavior: Bound
 
 import QtQuick
@@ -473,9 +473,7 @@ FocusScope {
             verticalAlignment: Text.AlignVCenter
             textFormat: Text.PlainText
             text: "Delete " + entry.modelData.label + "? "
-              + (entry.modelData.count === 0 ? "It's empty."
-                : entry.modelData.count === 1 ? "Its symbol stays in All."
-                : "Its " + entry.modelData.count + " symbols stay in All.")
+              + (entry.modelData.count === 0 ? "It's empty." : "Symbols in no other list leave All too.")
             color: root.foreground
             font.family: root.fontFamily
             font.pixelSize: Style.font.bodySmall

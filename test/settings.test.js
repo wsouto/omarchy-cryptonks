@@ -216,3 +216,18 @@ test("lists are made, named, moved, stepped and deleted; All stays first and unn
   const gone = S.withListDeleted(made, "Alts")
   expect([gone.list, gone.lists.length]).toEqual(["", 2])
 })
+
+test("deleting a list takes its symbols out of All, except those another list holds", () => {
+  const base = S.fileSettings({ symbols: ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT"], featured: "ETHUSDT",
+    lists: [{ name: "A", symbols: ["ETHUSDT", "SOLUSDT"] }, { name: "B", symbols: ["SOLUSDT"] }], list: "A" })
+  const gone = S.withListDeleted(base, "A")
+  expect(gone.symbols).toEqual(["BTCUSDT", "SOLUSDT", "XRPUSDT"])
+  expect(gone.featured).toBe("BTCUSDT")
+  expect([gone.list, gone.lists.map(l => l.name)]).toEqual(["", ["B"]])
+  expect(S.withListDeleted(base, "Nope")).toEqual(base)
+})
+
+test("a list holding all of All leaves them: All keeps a symbol", () => {
+  const base = S.fileSettings({ symbols: ["BTCUSDT"], lists: [{ name: "A", symbols: ["BTCUSDT"] }] })
+  expect(S.withListDeleted(base, "A").symbols).toEqual(["BTCUSDT"])
+})

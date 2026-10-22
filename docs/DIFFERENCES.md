@@ -49,6 +49,13 @@ Each entry: **what**, **why**, and a tag.
 - **VOL is the base coin's volume since 00:00 UTC** (BTC for BTCUSDT), under
   1,000 to four digits. `crypto`
 
+## Lists
+
+- **Deleting a list takes its symbols out of All too**, except those another
+  list holds, and never the last symbol of All. The original leaves them in
+  All. The question in Manage lists says so (`ManageLists.qml` changed one
+  line). Your choice, not the market's. `PR?`
+
 ## Left out of step 8c
 
 - **A half-typed list name or rename is lost when the popup closes**

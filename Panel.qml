@@ -42,6 +42,7 @@ Panel {
   // Between the band's blocks, and between the header and what it heads.
   readonly property int bandGap: Style.space(16)
   readonly property int groupGap: Style.space(8)
+  readonly property int edge: Style.space(8)
 
   // The hero's symbol: search's choice while search is open, else the
   // featured one, which the pill shows whatever the popup previews.
@@ -552,6 +553,10 @@ Panel {
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
+      // The clip reaches `edge` past the body on each side, so a range
+      // token's fill, which pads its word, is not cut at the band's edge.
+      anchors.leftMargin: -root.edge
+      anchors.rightMargin: -root.edge
       clip: true
       blocked: root.ownsKeys
       // Ctrl+↑ ↓ and Ctrl+J K move the selected row, as the shell's panels do.
@@ -607,7 +612,8 @@ Panel {
 
       Column {
         id: body
-        width: parent.width
+        x: root.edge
+        width: parent.width - 2 * root.edge
         spacing: root.bandGap
 
         // The header stands a group's gap over the hero it heads.
@@ -968,6 +974,7 @@ Panel {
         visible: root.listMenuOpen
         active: root.listMenuOpen && root.opened
         z: 10
+        x: root.edge
         y: rowsBlock.y + listLine.y + listLine.height + Style.space(4)
         choices: root.service ? root.service.lists : []
         current: root.listName
