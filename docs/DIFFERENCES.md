@@ -43,8 +43,11 @@ Each entry: **what**, **why**, and a tag.
 - **No charts fetched ahead for rows**, and no held chart that dims while the
   next range loads: the chart is empty, then draws in. The loading look comes
   with step 11. `left out`
-- **The info block's range line** (low, high, SINCE for a young symbol) is
-  not built; the line itself already shows only a young symbol's life. `left out`
+- **The info block has no market cap or P/E**: the 52-week line holds a
+  low, a rule and a high, with no facts. Funding rate or open interest could
+  take the slot later. `crypto`
+- **VOL is the base coin's volume since 00:00 UTC** (BTC for BTCUSDT), under
+  1,000 to four digits. `crypto`
 
 ## Left out of step 8c
 

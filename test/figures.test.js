@@ -23,3 +23,31 @@ test("a range's hero measures the live price from the range's start, always in p
 test("a range not yet in keeps the live price and has no change to show", () => {
   expect(F.rangeView(null, quote(110, 100), 0, "All")).toMatchObject({ priceText: "110.00", changeText: "—", sign: 0, caption: "ALL" })
 })
+
+// ---- The info block ----
+
+const full = { price: 82, priceDigits: 1, dayOpen: 80, dayLow: 79, dayHigh: 85, volume: 12345.6, low52w: 70, high52w: 90 }
+
+test("the day line is the day's range with the price between, then open and volume", () => {
+  const line = F.dayLine(full)
+  expect(line.title).toBe("1D")
+  expect(line.range).toMatchObject({ low: 79, high: 85, price: 82, lowText: "79.0", highText: "85.0", lowTone: "", highTone: "" })
+  expect(line.facts.map(f => [f.label, f.value])).toEqual([["OPEN", "80.0"], ["VOL", "12K"]])
+  expect(F.dayLine(null)).toBeNull()
+})
+
+test("a day end that is also the year's is toned, and an unknown figure leaves its slot empty", () => {
+  expect(F.dayLine({ ...full, dayHigh: 90 }).range.highTone).toBe("up")
+  expect(F.dayLine({ ...full, dayLow: 70 }).range.lowTone).toBe("down")
+  const open = F.dayLine({ ...full, dayOpen: null, volume: null })
+  expect(open.facts.map(f => f.value)).toEqual(["", ""])
+  expect(open.facts).toHaveLength(2)
+})
+
+test("the 52-week line is the year's low and high, toned where today set one, with no facts", () => {
+  const line = F.yearLine(full)
+  expect(line).toMatchObject({ title: "52W", facts: [] })
+  expect(line.range).toMatchObject({ low: 70, high: 90, highTone: "", lowTone: "" })
+  expect(F.yearLine({ ...full, dayHigh: 90 }).range.highTone).toBe("up")
+  expect(F.yearLine({ ...full, low52w: null }).range.lowText).toBe("")
+})

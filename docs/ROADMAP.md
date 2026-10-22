@@ -90,8 +90,16 @@ The steps from 5 on follow the original's layers, as drawn in
       hero's symbol only while the popup is open, and are asked again after
       15 minutes (1W, 1M) or an hour. The hero's change is the percentage
       from the range's first open; the rows and their rule keep the day and
-      say "TODAY". The range is saved in the data file. The info block's
-      range line (low, high, since) is not built.
+      say "TODAY". The range is saved in the data file. Part b is the info
+      block, below.
+  - [x] **9b. The info block.** Two lines under the range row, from the
+        original's `InfoTable` and `InfoRule`: the period's low, a rule with
+        the price's tick, its high and its facts, over the 52 weeks. On the
+        day the facts are OPEN and VOL (in the coin); on a range, the dates
+        of its low and high, and for a symbol younger than the range its
+        SINCE and how few bars it has. The columns are sized for every
+        range, so a range change moves nothing. You see: 1W's low and high
+        dates under the chart.
 - [ ] **10. The window.** The window, IPC, the launcher. You see:
       right-click opens the window.
 - [ ] **11. Statuses.** Errors, retry, the look at every state. You see:

@@ -206,8 +206,8 @@ function historyUrl(symbol, range, now) {
 }
 
 // A range's line as the chart reads it: { symbol, range, step, bars,
-// baseline }. A bar is a candle's start and close; `step` is the seconds one
-// candle spans. The baseline is the first candle's open, the price at the
+// baseline }. A bar is a candle's start, close, high and low; `step` is the
+// seconds one candle spans. The baseline is the first candle's open, the price at the
 // range's start, which the change is measured from; the first close would
 // leave that candle's own move out. Null with no candles.
 function buildHistory(symbol, range, candles) {
@@ -217,7 +217,7 @@ function buildHistory(symbol, range, candles) {
     symbol: symbol,
     range: range,
     step: spec.step,
-    bars: candles.map(function (c) { return { t: c.t, p: c.close } }),
+    bars: candles.map(function (c) { return { t: c.t, p: c.close, h: c.high, l: c.low } }),
     baseline: candles[0].open
   }
 }

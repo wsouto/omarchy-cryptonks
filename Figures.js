@@ -7,7 +7,8 @@
 // Figures.js. Changes: only the pill's two rules and the hero's figures are
 // kept; the animal reads the move's sign as drawn, and the hero's figures
 // (`heroView`, the original's `rowModel`) are measured from 00:00 UTC in
-// two modes, percent and amount; a range's (`rangeView`) from the price at
+// two modes, percent and amount; the info block's day and 52-week lines
+// (`dayLine`, `yearLine`) have no market cap or P/E; a range's (`rangeView`) from the price at
 // its start.
 //
 // What the pill's arrow and icon forms, and the popup's hero, make of the
@@ -79,4 +80,36 @@ function rangeView(history, quote, scrubT, range) {
     time: bar ? bar.t : null,
     caption: String(range).toUpperCase()
   }
+}
+
+// The info block's first line on the day: its low and high with the price's
+// place between them, then its open and volume. An end that is also the 52
+// weeks' takes that direction's tone, as the 52-week line's does. OPEN keeps
+// its slot when the day's candle is not in; VOL's is as wide as 999.9M, in
+// the base coin. With no quote there is no line.
+function dayLine(quote) {
+  if (!quote) return null
+  var range = Format.infoRange(quote.dayLow, quote.dayHigh, quote.price, quote.priceDigits)
+  if (range.high !== null && Format.isFiniteNumber(quote.high52w) && range.high >= quote.high52w) range.highTone = "up"
+  if (range.low !== null && Format.isFiniteNumber(quote.low52w) && range.low <= quote.low52w) range.lowTone = "down"
+  return {
+    title: "1D",
+    range: range,
+    facts: [
+      { label: "OPEN", value: Format.isFiniteNumber(quote.dayOpen) ? Format.money(quote.dayOpen, quote.priceDigits) : "", widest: range.widest },
+      { label: "VOL", value: Format.isFiniteNumber(quote.volume) ? Format.compactNumber(quote.volume) : "", widest: Format.widest("999.9M") }
+    ]
+  }
+}
+
+// The info block's second line: the last year's low and high, which already
+// hold today's, so an end the day set is the day's own and takes its tone.
+// A perpetual has no market cap or P/E, so it holds no facts.
+function yearLine(quote) {
+  if (!quote) return null
+  var range = Format.infoRange(quote.low52w, quote.high52w, quote.price, quote.priceDigits)
+  var both = range.low !== null && range.high !== null
+  if (both && Format.isFiniteNumber(quote.dayHigh) && quote.dayHigh >= quote.high52w) range.highTone = "up"
+  if (both && Format.isFiniteNumber(quote.dayLow) && quote.dayLow <= quote.low52w) range.lowTone = "down"
+  return { title: "52W", range: range, facts: [] }
 }

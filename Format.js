@@ -1,7 +1,8 @@
 .pragma library
 // Copied from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2, Format.js.
 // Changes: only what this project uses is kept, writing a price, a percent, a
-// move in money, the month names and a UTC clock, the retro look's signs, and stacking a
+// move in money, a count in its unit, an info line's range, the month names
+// and a UTC clock, the retro look's signs, and stacking a
 // symbol, a percent and a move in money for a side bar; the local
 // clock times, durations and range texts were removed until a screen needs
 // them. A stacked symbol
@@ -82,6 +83,47 @@ function pad2(n) {
 function utcClock(t) {
   var d = new Date(t * 1000)
   return pad2(d.getUTCHours()) + ":" + pad2(d.getUTCMinutes())
+}
+
+// A count in its unit: 52.4M, 1.6B. A figure that rounds up to 1,000 of its
+// unit is one of the next (999.96M is 1.0B, never 1000.0M), so no count
+// draws wider than 999.9M. A count under a thousand keeps four digits, since
+// a coin's volume is not whole.
+function compactNumber(n) {
+  if (!isFiniteNumber(n)) return "—"
+  if (n >= 999.95e9) return String(Number((n / 1e12).toFixed(2))) + "T"
+  if (n >= 999.95e6) return (n / 1e9).toFixed(1) + "B"
+  if (n >= 999.5e3) return (n / 1e6).toFixed(1) + "M"
+  if (n >= 1e3) return (n / 1e3).toFixed(0) + "K"
+  return String(Number(n.toPrecision(4)))
+}
+
+// The widest a figure of this shape draws: every digit an 8. A column sized
+// by it holds any value with the same digits, so a refresh that changes the
+// value never moves what stands beside it.
+function widest(text) {
+  return String(text).replace(/\d/g, "8")
+}
+
+// An info line's range: its low and high, each null and "" when not known,
+// the price whose place it marks, and the widest a price of the listing's
+// takes at its decimals, from the largest price the line knows.
+function infoRange(low, high, price, digits) {
+  var known = function (v) { return isFiniteNumber(v) ? v : null }
+  low = known(low)
+  high = known(high)
+  price = known(price)
+  var largest = [low, high, price].reduce(function (m, v) { return v === null ? m : Math.max(m, Math.abs(v)) }, -1)
+  return {
+    low: low,
+    high: high,
+    price: price,
+    lowText: low === null ? "" : money(low, digits),
+    highText: high === null ? "" : money(high, digits),
+    lowTone: "",
+    highTone: "",
+    widest: largest < 0 ? "" : widest(money(largest, digits))
+  }
 }
 
 function pct(value) {

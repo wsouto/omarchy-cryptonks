@@ -105,6 +105,14 @@ Panel {
   // Live is honest only while refreshes land, the quote is this session's
   // own, and the moment shown is now.
   readonly property bool live: !!quote && !!service && !!service.freshness[symbol] && problem === "" && !scrubT
+  // The info block's two lines: the day's or the range's, over the 52
+  // weeks'; and every list of facts the first can hold on any range, so a
+  // range change moves none of them.
+  readonly property var periodLine: !quote ? null : onDay ? Figures.dayLine(quote)
+    : history ? History.rangeLine(history, quote, History.youngRoom(quote)) : null
+  readonly property var yearLine: Figures.yearLine(quote)
+  readonly property var infoFactLists: [Figures.dayLine(quote || {}).facts]
+    .concat(History.rangeFactLists(History.youngRoom(quote)))
   readonly property string statusText: scrubT && view && view.time !== null
       ? (onDay ? "At " + Format.utcClock(view.time) + " UTC" : History.momentText(history, view.time))
     : problem !== "" ? "! " + problem
@@ -734,6 +742,23 @@ Panel {
           dim: root.dim
           fontFamily: root.fontFamily
           onSelected: function(value) { root.setRange(value) }
+        }
+
+        // The period and the 52 weeks: two lines that are always there, so
+        // the rows keep their place for every symbol and range.
+        InfoTable {
+          visible: !root.showingHelp
+          width: parent.width
+          height: implicitHeight
+          lines: [root.periodLine, root.yearLine]
+          titles: History.RANGES.map(function(r) { return r.toUpperCase() }).concat(["52W"])
+          factLists: root.infoFactLists
+          retro: root.retro
+          foreground: root.foreground
+          dim: root.dim
+          upColor: root.upColor
+          downColor: root.downColor
+          fontFamily: root.fontFamily
         }
 
         // The list's name and its order, a group's gap over the rows.

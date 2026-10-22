@@ -44,7 +44,7 @@ test("a history is the closes oldest first, from the first candle's open", () =>
   const candles = B.parseCandles(fixture("kline-btcusdt-w.json"))
   const history = B.buildHistory("BTCUSDT", "5Y", candles)
   expect(history.bars).toHaveLength(4)
-  expect(history.bars[0]).toEqual({ t: candles[0].t, p: candles[0].close })
+  expect(history.bars[0]).toEqual({ t: candles[0].t, p: candles[0].close, h: candles[0].high, l: candles[0].low })
   expect(history.bars[3].t).toBeGreaterThan(history.bars[0].t)
   expect(history.baseline).toBe(candles[0].open)
   expect(history.step).toBe(7 * DAY)
@@ -126,4 +126,60 @@ test("the range steps along the row and stops at its ends", () => {
   expect(H.steppedRange("All", 1)).toBe("All")
   expect(H.steppedRange("YTD", -1)).toBe("6M")
   expect(H.normalizeRange("nope")).toBe("1D")
+})
+
+// ---- The range line ----
+
+const quoteOf = extra => ({ price: 81000, priceDigits: 1, firstTradeDate: 0, marketTime: NOW, ...extra })
+const line = (range, name, extra) => {
+  const history = B.buildHistory("BTCUSDT", range, B.parseCandles(fixture(name)))
+  return { history, line: H.rangeLine(history, quoteOf(extra), H.youngRoom(quoteOf(extra))) }
+}
+
+test("a range line has the range's low and high from the bars, and when each was", () => {
+  const { history, line: got } = line("1W", "kline-btcusdt-15.json")
+  expect(got.title).toBe("1W")
+  expect(got.range.high).toBe(Math.max(...history.bars.map(b => b.h)))
+  expect(got.range.low).toBe(Math.min(...history.bars.map(b => b.l)))
+  expect(got.range.price).toBe(81000)
+  expect(got.facts.map(f => f.label)).toEqual(["LOW", "HIGH"])
+  expect(got.facts[0].value).toMatch(/^\d{1,2} [A-Z]{3}$/)
+})
+
+test("a symbol younger than the range says since when, and how few bars it has", () => {
+  const { history } = line("5Y", "kline-btcusdt-w.json")
+  const launched = history.bars[0].t + 3 * DAY
+  const got = H.rangeLine(history, quoteOf({ firstTradeDate: launched }), H.youngRoom(quoteOf({ firstTradeDate: launched })))
+  expect(got.facts.map(f => f.label)).toEqual(["SINCE", "LOW", "HIGH", ""])
+  expect(got.facts[0].value).toMatch(/^\d{1,2} [A-Z]{3} \d{4}$/)
+  expect(got.facts[1].value).toMatch(/^[A-Z]{3} \d{4}$/)
+  expect(got.facts[3]).toMatchObject({ value: "4", after: "BARS" })
+})
+
+test("All never says since, and an old symbol on a short range has no young facts", () => {
+  const { history } = line("All", "kline-btcusdt-m.json")
+  const launched = history.bars[0].t
+  const got = H.rangeLine(history, quoteOf({ firstTradeDate: launched }), H.youngRoom(quoteOf({ firstTradeDate: launched })))
+  expect(got.facts.map(f => f.label)).not.toContain("SINCE")
+  expect(line("1W", "kline-btcusdt-15.json").line.facts.map(f => f.label)).not.toContain("SINCE")
+})
+
+test("the columns keep room for every fact any range can show, and none for what an old symbol can't", () => {
+  const widths = room => H.rangeFactLists(room).map(l => l.length)
+  const young = H.youngRoom(quoteOf({ firstTradeDate: NOW - 20 * DAY }))
+  expect(young.since).toContain("1M")
+  expect(young.since).not.toContain("1W")
+  expect(young.bars).toBe(true)
+  expect(Math.max(...widths(young))).toBe(4)
+  const old = H.youngRoom(quoteOf({ firstTradeDate: NOW - 4000 * DAY }))
+  expect(old.since).toEqual([])
+  expect(Math.max(...widths(old))).toBe(2)
+  expect(H.youngRoom(null).since).toHaveLength(Object.keys(H.SPECS).length)
+})
+
+test("the ranges' reach and bar size match what the adapter asks for", () => {
+  for (const [range, spec] of Object.entries(H.SPECS)) {
+    expect(B.RANGES[range].step).toBe(spec.step)
+    if (range !== "YTD") expect(B.RANGES[range].days).toBe(spec.days)
+  }
 })
