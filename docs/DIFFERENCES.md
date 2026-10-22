@@ -83,8 +83,6 @@ code, and move it here with a one-line pitch.
 - **`openWindow` and `toggleWindow` take no payload** (no symbol or range to
   show on open), and there is no `show`/`hide`/`next`/`prev` on the IPC
   target yet. `left out`
-- **The rows take the height the window has** (`Body.rowsRoom`), where the
-  original's chart gives way first. `PR?`
 - **A window out of sight (another workspace, a screen off) is treated as
   open**: the feed keeps every row fresh. `left out`
 - **The launcher icon is the pixel bull in Bitcoin orange**, so the two

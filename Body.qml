@@ -502,9 +502,26 @@ Item {
   // What the column holds besides the rows, while the rows show: the window
   // gives the rest of its height to the rows (`rowsRoom`).
   property real chromeHeight: 0
+  // The same less the chart, for the chart's own sizing: it never reads
+  // itself back.
+  property real chromeBesideChart: 0
   function measureChrome() {
-    if (rowsBlock.visible && body.implicitHeight > 0) root.chromeHeight = body.implicitHeight - rows.height
+    if (rowsBlock.visible && body.implicitHeight > 0) {
+      root.chromeHeight = body.implicitHeight - rows.height
+      root.chromeBesideChart = root.chromeHeight - chartBox.height
+    }
   }
+  // The least the chart may be, where it is set: the window sizes the chart
+  // to itself (`shownChartHeight`), giving way first as it gets short so
+  // three rows still show, and taking what whole rows leave over otherwise.
+  property int minChartHeight: 0
+  readonly property bool chartFitsSurface: minChartHeight > 0 && minChartHeight < chartHeight
+  readonly property int roomBesideChart: height - topMargin - margins - chromeBesideChart - chartHeight
+  readonly property int shownChartHeight: roomBesideChart < 3 * rowPitch - rowGap
+    ? chartHeight - Math.min(chartHeight - minChartHeight, 3 * rowPitch - rowGap - roomBesideChart)
+    : chartHeight + roomBesideChart - Math.max(0, Math.floor((roomBesideChart + rowGap) / rowPitch)) * rowPitch + rowGap
+  // The shortest the surface may be: its chrome at the least chart and three rows.
+  readonly property int smallestHeight: topMargin + margins + chromeBesideChart + minChartHeight + 3 * rowPitch - rowGap
   Connections {
     target: body
     function onImplicitHeightChanged() { root.measureChrome() }
@@ -673,10 +690,11 @@ Item {
     }
 
     Item {
+      id: chartBox
       visible: !root.showingHelp
       x: root.inset
       width: root.bandWidth
-      height: root.chartHeight
+      height: root.chartFitsSurface ? root.shownChartHeight : root.chartHeight
 
       DayChart {
         id: dayChart

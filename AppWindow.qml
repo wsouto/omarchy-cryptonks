@@ -47,7 +47,7 @@ Item {
     color: Commons.Color.background
     implicitWidth: Style.space(720)
     implicitHeight: Style.space(760)
-    minimumSize: Qt.size(Style.space(560), Style.space(480))
+    minimumSize: Qt.size(Style.space(560), root.body ? root.body.smallestHeight : Style.space(480))
     visible: false
 
     // A close by the compositor freezes the body as one of ours does.
@@ -88,6 +88,7 @@ Item {
           margins: Style.space(16)
           topMargin: Style.space(16)
           chartHeight: Style.space(220)
+          minChartHeight: Style.space(136)
           rowsRoom: Math.max(0, height - chromeHeight - topMargin - margins)
           service: root.service
           trendColors: root.trendColors
