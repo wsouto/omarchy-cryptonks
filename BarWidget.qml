@@ -83,7 +83,7 @@ BarWidget {
   // and the hero show it; its colour is its own sign as drawn, so an amount
   // that rounds to +0.00 takes none.
   readonly property var view: quote ? Figures.heroView(quote, 0, service ? service.changeMode : "pct") : null
-  readonly property color moveColor: !move ? dimColor : view.sign > 0 ? upColor : view.sign < 0 ? downColor : dimColor
+  readonly property color moveColor: !move || !view ? dimColor : view.sign > 0 ? upColor : view.sign < 0 ? downColor : dimColor
 
   function signOf(q) {
     var m = Change.sinceOpen(q)
@@ -91,7 +91,7 @@ BarWidget {
   }
 
   readonly property string priceText: quote ? Format.money(quote.price, quote.priceDigits) : ""
-  readonly property string changeText: (warns ? "! " : "") + (move ? Format.lookSigns(view.changeText, retro) : quote ? "—" : warns ? "No data" : "…")
+  readonly property string changeText: (warns ? "! " : "") + (move && view ? Format.lookSigns(view.changeText, retro) : quote ? "—" : warns ? "No data" : "…")
 
   // The day and animal the icon form shows. A new price that turns the same
   // symbol's day between the bull and the bear steps the animal

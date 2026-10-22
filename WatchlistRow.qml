@@ -46,8 +46,7 @@ Rectangle {
   property color downColor: Commons.Color.urgent
   property string fontFamily: Style.font.family
 
-  // The pointer is on the row, at (x, y) in the scene, and a click on it.
-  signal pointed(real x, real y)
+  // A click on the row. The pointer's place is the list's (`RowPointer`).
   signal featureRequested()
   // The ×, a right-click or a middle-click.
   signal removeRequested()
@@ -261,8 +260,7 @@ Rectangle {
     }
   }
 
-  // Moving the pointer puts the cursor on the row under it; a click
-  // features it, or on the × removes it, as a right or middle click does; a
+  // A click features the row, or on the × removes it, as a right or middle click does; a
   // left press moved 6 px carries it. A double-click is one click: its
   // second would land on whatever took the first one's place, the row
   // sliding up after a removal.
@@ -292,11 +290,7 @@ Rectangle {
       pressedOnRemove = event.button === Qt.LeftButton && onRemove(event.x, event.y)
     }
     onPositionChanged: function(event) {
-      if (!pressed || pressY < 0) {
-        var at = mapToItem(null, event.x, event.y)
-        row.pointed(at.x, at.y)
-        return
-      }
+      if (!pressed || pressY < 0) return
       if (!dragged) {
         if (Math.abs(event.y - pressY) < 6) return
         dragged = true

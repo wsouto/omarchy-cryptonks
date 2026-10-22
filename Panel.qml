@@ -121,6 +121,7 @@ Panel {
       root.clearNote()
       footer.settle()
       root.cancelDrag()
+      rowPointer.rest()
       rows.positionViewAtIndex(Math.max(0, root.shownRows.indexOf(root.featured)), ListView.Contain)
       motion.reset()
       header.settle()
@@ -162,16 +163,6 @@ Panel {
   function toggleHelp() {
     root.showingHelp = !root.showingHelp
     if (root.showingHelp) helpSheet.contentY = 0
-  }
-
-  // Where the pointer last was in the scene. Qt sends the hover again as
-  // rows move under a still pointer, a key's move or sort among them; that
-  // is no hand's move, so the cursor stays where the key put it.
-  property point pointerAt: Qt.point(-1, -1)
-  function pointTo(symbol, x, y) {
-    if (x === root.pointerAt.x && y === root.pointerAt.y) return
-    root.pointerAt = Qt.point(x, y)
-    if (root.opened) root.cursorSymbol = symbol
   }
 
   function moveCursor(delta) {
@@ -634,6 +625,21 @@ Panel {
             // A carried row is held where the pointer is, not scrolled away.
             interactive: root.dragSymbol === ""
             model: root.shownRows
+          // The rows shown again, behind search or the key sheet before: the
+          // pointer resting over them is no move (RowPointer.rest).
+          onVisibleChanged: if (visible) rowPointer.rest()
+
+          // The cursor to the row the pointer really moved onto. A carried
+          // row is the drag's, so the pointer moves no cursor then.
+          RowPointer {
+            id: rowPointer
+            onMoved: function(x, y) {
+              if (!root.opened || root.dragSymbol !== "") return
+              var seen = rows.mapFromItem(null, x, y)
+              var at = rows.indexAt(seen.x + rows.contentX, seen.y + rows.contentY)
+              if (at >= 0) root.cursorSymbol = root.shownRows[at]
+            }
+          }
 
             delegate: WatchlistRow {
               id: rowItem
@@ -669,8 +675,7 @@ Panel {
               upColor: root.upColor
               downColor: root.downColor
               fontFamily: root.fontFamily
-              onPointed: function(x, y) { root.pointTo(modelData, x, y) }
-              onFeatureRequested: root.feature(modelData)
+                onFeatureRequested: root.feature(modelData)
               onRemoveRequested: root.removeRow(modelData)
               onDragStarted: function(y) { root.beginDrag(modelData, y) }
               onDragMoved: function(y) { root.dragTo(y) }
