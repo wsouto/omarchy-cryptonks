@@ -1,5 +1,6 @@
 .pragma library
-// One refresh of one symbol: what to ask the exchange, and what its answers
+// One refresh of one symbol, and a run of several in one curl
+// (`planRun`, `readRun`): what to ask the exchange, and what its answers
 // mean for the feed: the quote to show, what to keep for the next refresh,
 // the words for what went wrong, and how long to leave the exchange alone.
 // Pure: the answers come already split by `Fetch.answers`, the adapter is
@@ -7,9 +8,9 @@
 // turns `wait` into a time. It names no exchange.
 //
 // What the feed keeps between refreshes is { symbol, instrument, candles,
-// day }: the instrument, up to a year of daily candles, and the 5-minute
-// candles of the UTC day the exchange last answered in, each oldest first.
-// All of it
+// day, candlesAt }: the instrument, up to a year of daily candles, and the
+// 5-minute candles of the UTC day the exchange last answered in, each oldest
+// first, and the exchange's time when the candles last came. All of it
 // belongs to `symbol`, and is dropped whole when the symbol changes, so one
 // symbol's decimals or year never dress another's price.
 
@@ -20,7 +21,7 @@ var YEAR = 365
 // What is kept for `symbol`: `kept` when it is that symbol's, else nothing.
 function keptFor(kept, symbol) {
   if (kept && kept.symbol === symbol) return kept
-  return { symbol: symbol, instrument: null, candles: null, day: null }
+  return { symbol: symbol, instrument: null, candles: null, day: null, candlesAt: 0 }
 }
 
 // How many daily candles to ask for at `now` (seconds). With none kept, a
@@ -44,14 +45,28 @@ function dayStart(day, now) {
   return newest >= today ? newest : today
 }
 
-// { urls, asked }: the URLs of the next run and the role of each, in order.
-// The instrument is asked for only when none is kept for this symbol: it
-// does not change by the minute.
-function plan(adapter, symbol, kept, now) {
+// Whether a refresh at `now` asks for candles as well as the price: when
+// none are kept, when the kept ones are `every` seconds old or more, and
+// when a new UTC day has begun since, so its open is never missing. A row's
+// line moves little in a minute, so the rows ask every 5 minutes, and the
+// featured symbol, whose line the pill and the hero draw, every minute.
+function candlesDue(kept, symbol, now, every) {
   var mine = keptFor(kept, symbol)
-  var urls = [adapter.quotesUrl([symbol]), adapter.dailyUrl(symbol, dailyCount(mine.candles, now)),
-    adapter.candlesUrl(symbol, dayStart(mine.day, now))]
-  var asked = ["quotes", "daily", "day"]
+  if (!mine.candles || !mine.day || !mine.candlesAt) return true
+  return now - mine.candlesAt >= every || Math.floor(now / DAY) > Math.floor(mine.candlesAt / DAY)
+}
+
+// { urls, asked }: the URLs of the next run and the role of each, in order.
+// The candles are asked for only with `candles`, and the instrument only
+// when none is kept for this symbol: it does not change by the minute.
+function plan(adapter, symbol, kept, now, candles) {
+  var mine = keptFor(kept, symbol)
+  var urls = [adapter.quotesUrl([symbol])]
+  var asked = ["quotes"]
+  if (candles !== false) {
+    urls.push(adapter.dailyUrl(symbol, dailyCount(mine.candles, now)), adapter.candlesUrl(symbol, dayStart(mine.day, now)))
+    asked.push("daily", "day")
+  }
   if (mine.instrument === null) {
     urls.push(adapter.instrumentUrl(symbol))
     asked.push("instrument")
@@ -105,7 +120,8 @@ function refusedWords(adapter, status) {
 // exchange said about each question, and last a price it did not send.
 function read(all, asked, symbol, kept, adapter) {
   var mine = keptFor(kept, symbol)
-  var out = { kept: { symbol: symbol, instrument: mine.instrument, candles: mine.candles, day: mine.day }, quote: null, problem: "", wait: 0 }
+  var out = { kept: { symbol: symbol, instrument: mine.instrument, candles: mine.candles, day: mine.day, candlesAt: mine.candlesAt },
+    quote: null, problem: "", wait: 0 }
   // No answer at all, not even "no network", means curl never ran or died
   // before its first URL: the exchange was never asked.
   if (all.length === 0) {
@@ -161,11 +177,70 @@ function read(all, asked, symbol, kept, adapter) {
     var today = Math.floor(quotes.time / DAY) * DAY
     out.kept.day = mergeCandles(out.kept.day, day).filter(function (c) { return c.t >= today })
   }
-  if (out.kept.instrument === null || quotes === null || candles === null || day === null || !(symbol in quotes.prices)) {
+  // A run that asked for the price alone builds on the candles kept.
+  var askedCandles = asked.indexOf("daily") >= 0
+  var haveCandles = askedCandles ? candles !== null && day !== null : !!out.kept.candles && !!out.kept.day
+  if (askedCandles && haveCandles && quotes !== null) out.kept.candlesAt = quotes.time
+  if (out.kept.instrument === null || quotes === null || !haveCandles || !(symbol in quotes.prices)) {
     out.problem = trouble || adapter.NAME + " sent no price for " + symbol
     return out
   }
 
   out.quote = adapter.buildQuote(out.kept.instrument, quotes.prices[symbol], quotes.time, out.kept.candles, out.kept.day)
+  return out
+}
+
+// ---- A run of several symbols ----
+
+// { urls, asked }: every symbol's URLs in one run, the featured one first so
+// the pill hears first; `asked` holds each URL's { symbol, role }. A
+// symbol's candles come every `rowEvery` seconds, the featured one's every
+// minute (`candlesDue`).
+function planRun(adapter, symbols, featured, kept, now, rowEvery) {
+  var order = symbols.indexOf(featured) >= 0 ? [featured].concat(symbols.filter(function (s) { return s !== featured })) : symbols
+  var urls = []
+  var asked = []
+  for (var i = 0; i < order.length; i++) {
+    var symbol = order[i]
+    var mine = kept[symbol] || null
+    var one = plan(adapter, symbol, mine, now, candlesDue(mine, symbol, now, symbol === featured ? 60 : rowEvery))
+    for (var j = 0; j < one.urls.length; j++) {
+      urls.push(one.urls[j])
+      asked.push({ symbol: symbol, role: one.asked[j] })
+    }
+  }
+  return { urls: urls, asked: asked }
+}
+
+// A run's answers read symbol by symbol (`read`): { kept, quotes, problems,
+// wait, waitProblem }, each of the first three by symbol, and the longest
+// wait any refusal asked for, with its words. A symbol the run never reached, as it stopped short,
+// says so; with no answer at all, every symbol blames curl, as `read` does.
+function readRun(all, asked, kept, adapter) {
+  var out = { kept: Object.assign({}, kept), quotes: {}, problems: {}, wait: 0, waitProblem: "" }
+  var mine = {}
+  for (var i = 0; i < asked.length; i++) {
+    var symbol = asked[i].symbol
+    if (!mine[symbol]) mine[symbol] = { answers: [], roles: [], first: i }
+    mine[symbol].roles.push(asked[i].role)
+  }
+  for (var k = 0; k < all.length; k++) {
+    var to = asked[all[k].index]
+    if (!to) continue
+    var m = mine[to.symbol]
+    m.answers.push(Object.assign({}, all[k], { index: all[k].index - m.first }))
+  }
+  for (var s in mine) {
+    var got = all.length > 0 && mine[s].answers.length === 0
+      ? { kept: keptFor(kept[s] || null, s), quote: null, problem: "The refresh stopped before every answer came", wait: 0 }
+      : read(mine[s].answers, mine[s].roles, s, kept[s] || null, adapter)
+    out.kept[s] = got.kept
+    out.quotes[s] = got.quote
+    out.problems[s] = got.problem
+    if (got.wait > out.wait) {
+      out.wait = got.wait
+      out.waitProblem = got.problem
+    }
+  }
   return out
 }

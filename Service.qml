@@ -1,7 +1,7 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
-// Service.qml. Changes: one feed, the featured symbol's, until the rows
-// come (roadmap step 7b); no lists, ranges, previews, fundamentals or
-// overnight feeds; the files are this project's own.
+// Service.qml. Changes: one feed for every symbol; no lists, ranges,
+// previews, fundamentals or overnight feeds; the files are this project's
+// own.
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -11,6 +11,9 @@ import "Settings.js" as Settings
 // and are written only here: the symbols, the featured one, the change mode
 // and the look, which the pill and the popup share. The last good quotes are
 // saved, so a restart shows a price at once, until its first answer.
+//
+// The featured symbol is kept fresh always, for the pill; every symbol of
+// All while the popup is open, for its rows.
 Item {
   id: root
 
@@ -32,24 +35,32 @@ Item {
   readonly property string featured: ready ? dataSettings.featured : ""
   readonly property string changeMode: dataSettings.changeMode
   readonly property bool retro: dataSettings.style === "retro"
+  // The popup says when it opens and closes.
+  property bool popupOpen: false
 
-  // The featured symbol's quote, as `PriceFeed` holds it.
-  readonly property var quote: feed.quote
-  readonly property string problem: feed.problem
-  readonly property bool fresh: feed.fresh
+  // Every symbol's quote and problem, as `PriceFeed` holds them, and the
+  // featured one's on their own.
+  readonly property var quotes: feed.quotes
+  readonly property var problems: feed.problems
+  readonly property var quote: feed.quotes[featured] || null
+  readonly property string problem: feed.problems[featured] || ""
+  readonly property bool fresh: !!feed.fresh[featured]
   function refresh() { feed.refresh() }
+
+  // A row clicked, a number key: the symbol the pill and the hero show.
+  function feature(symbol) {
+    if (root.library.indexOf(symbol) >= 0) root.persist({ featured: symbol })
+  }
 
   Screens { id: screenWatch }
 
   PriceFeed {
     id: feed
-    symbol: root.featured
+    symbols: !root.ready ? [] : root.popupOpen ? root.library : [root.featured]
+    featured: root.featured
     screens: screenWatch
     onAnswered: root.saveQuotes()
   }
-
-  // Another symbol shown starts from its saved quote.
-  onFeaturedChanged: feed.seed(root.savedQuotes[root.featured])
 
   // ---- The data file ----
 
@@ -117,7 +128,7 @@ Item {
     root.dataSettings = Settings.fileSettings(settings)
     if (!root.ready) {
       root.ready = true
-      feed.seed(root.savedQuotes[root.featured])
+      feed.seed(root.savedQuotes)
     }
   }
 
@@ -182,17 +193,10 @@ Item {
       return {}
     }
   }
-  // What is written: the saved quotes with each answer in, so a symbol not
-  // shown this session keeps its last price.
-  property var quotesToSave: ({})
-
   // Written as answers come, at most every 10 minutes: at once, then, if
   // more came meanwhile, as the wait ends.
   property bool quotesUnsaved: false
   function saveQuotes() {
-    var next = Object.assign({}, root.savedQuotes, root.quotesToSave)
-    next[feed.symbol] = feed.quote
-    root.quotesToSave = next
     root.quotesUnsaved = true
     if (!quotesWait.running) root.flushQuotes()
   }
@@ -201,7 +205,7 @@ Item {
     if (!root.quotesUnsaved) return
     root.quotesUnsaved = false
     var saved = {}
-    root.library.forEach(function(s) { if (root.quotesToSave[s]) saved[s] = root.quotesToSave[s] })
+    root.library.forEach(function(s) { if (feed.quotes[s]) saved[s] = feed.quotes[s] })
     quotesFile.setText(JSON.stringify({ version: 1, quotes: saved }) + "\n")
     quotesWait.restart()
   }

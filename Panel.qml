@@ -1,8 +1,8 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
-// Panel.qml and the hero part of StonksBody.qml. Changes: one symbol, the
-// featured one, so the body is the header, the hero and the day chart,
-// built here; the rows, lists, search, ranges, key sheet and footer come in
-// roadmap steps 7b to 11, with the keys that drive them. The change has two
+// Panel.qml and the hero and rows of StonksBody.qml and Watchlist.qml.
+// Changes: the body is the header, the hero, the day chart and the rows of
+// All, built here; the lists, search, order, ranges, key sheet and footer
+// come in roadmap steps 8 to 11, with the keys that drive them. The change has two
 // modes, percent and amount, both since 00:00 UTC.
 pragma ComponentBehavior: Bound
 
@@ -14,8 +14,8 @@ import "Figures.js" as Figures
 import "Format.js" as Format
 import "Tones.js" as Tones
 
-// The popup. Owns its lifecycle, keys, and what the hero shows at the moment
-// on screen; the chart's motion is `ChartMotion`'s, the data and the saved
+// The popup. Owns its lifecycle, keys, the rows' cursor, and what the hero
+// and the rows show at the moment on screen; the chart's motion is `ChartMotion`'s, the data and the saved
 // look and change mode the service's.
 Panel {
   id: root
@@ -38,6 +38,15 @@ Panel {
   readonly property var quote: service ? service.quote : null
   readonly property string symbol: service ? service.featured : ""
   readonly property string problem: service ? service.problem : ""
+  // All, in its manual order: the rows.
+  readonly property var library: service ? service.library : []
+  // The rows show up to six whole rows; more scroll.
+  readonly property int maxRows: 6
+  readonly property int rowGap: Style.space(2)
+  // The one cursor the keys and the pointer both move, as in the shell's own
+  // panels: the row you put it on, else the featured row.
+  property string cursorSymbol: ""
+  readonly property string cursorRow: library.indexOf(cursorSymbol) >= 0 ? cursorSymbol : symbol
   // The change's unit: "pct" or "abs", which c or a click on it switches.
   readonly property string changeMode: service ? service.changeMode : "pct"
   // The look, smooth or retro, which s or the look icon switches.
@@ -78,8 +87,11 @@ Panel {
     var opening = !root.opened
     var fading = opening && panel.visible
     root.controller.show()
+    if (root.service) root.service.popupOpen = true
     if (opening) {
       if (!fading) heldAnchor.hold()
+      root.cursorSymbol = ""
+      rows.positionViewAtIndex(Math.max(0, root.library.indexOf(root.symbol)), ListView.Contain)
       motion.reset()
       header.settle()
       motion.revealChart()
@@ -90,6 +102,7 @@ Panel {
   function close() {
     setCenterHoverRevealSuppressed(false)
     motion.freeze()
+    if (root.service) root.service.popupOpen = false
     root.controller.hide()
   }
 
@@ -111,6 +124,16 @@ Panel {
 
   function setStyle(style) {
     if (root.service) root.service.persist({ style: style })
+  }
+
+  function moveCursor(delta) {
+    var at = root.library.indexOf(root.cursorRow)
+    root.cursorSymbol = root.library[Math.max(0, Math.min(root.library.length - 1, at + delta))] || ""
+    rows.positionViewAtIndex(root.library.indexOf(root.cursorSymbol), ListView.Contain)
+  }
+
+  function feature(symbol) {
+    if (root.service && symbol) root.service.feature(symbol)
   }
 
   function cycleChangeMode() {
@@ -139,7 +162,11 @@ Panel {
       id: keyCatcher
       anchors.fill: parent
       clip: true
-      onMoveRequested: function(dx, dy) { if (dx !== 0) motion.nudgeScrub(dx) }
+      onMoveRequested: function(dx, dy) {
+        if (dy !== 0) root.moveCursor(dy)
+        if (dx !== 0) motion.nudgeScrub(dx)
+      }
+      onActivateRequested: root.feature(root.cursorRow)
       onCloseRequested: {
         if (motion.scrubT) motion.clearScrub()
         else root.close()
@@ -151,6 +178,7 @@ Panel {
         else if (t === "p") motion.replay()
         else if (t === "s") root.setStyle(root.retro ? "smooth" : "retro")
         else if (t === "r" && root.service) root.service.refresh()
+        else if (t >= "1" && t <= "9") root.feature(root.library[Number(t) - 1])
       }
 
       Column {
@@ -258,6 +286,41 @@ Panel {
             }
             onExited: if (!motion.replayRunning) motion.clearScrub()
             onClicked: motion.clearScrub()
+          }
+        }
+
+        // The rows of All, up to six whole rows; the wheel scrolls more.
+        // They show the day at the moment on screen, so a scrub moves them
+        // with the hero.
+        ListView {
+          id: rows
+          width: parent.width
+          height: Math.min(root.library.length, root.maxRows) * (Style.space(40) + root.rowGap) - root.rowGap
+          clip: true
+          spacing: root.rowGap
+          boundsBehavior: Flickable.StopAtBounds
+          model: root.library
+
+          delegate: WatchlistRow {
+            required property string modelData
+            symbol: modelData
+            width: rows.width
+            quote: root.service ? root.service.quotes[modelData] || null : null
+            view: quote ? Figures.heroView(quote, root.scrubT, root.changeMode) : null
+            problem: root.service ? root.service.problems[modelData] || "" : ""
+            featuredRow: modelData === root.symbol
+            cursor: modelData === root.cursorRow
+            retro: root.retro
+            scrubX: motion.scrubX
+            ground: root.ground
+            foreground: root.foreground
+            dim: root.dim
+            dimmer: root.dimmer
+            upColor: root.upColor
+            downColor: root.downColor
+            fontFamily: root.fontFamily
+            onPointed: if (root.opened) root.cursorSymbol = modelData
+            onFeatureRequested: root.feature(modelData)
           }
         }
       }

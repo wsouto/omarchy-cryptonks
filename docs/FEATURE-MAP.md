@@ -107,6 +107,10 @@ Recommend: the rows' lines refresh every 5 minutes, and the price every
 minute from the single all-tickers request. (Verified on 2026-10-22: that kline
 accepts a `start` at 00:00 UTC.). **Fine**.
 
+Changed in step 7b: each symbol asks for its own price, under 1 KB, since
+the all-tickers answer is 680 KB, about 1 GB a day at one a minute. Agreed
+on 2026-10-21.
+
 ## Lists
 
 | Feature | Original | Here |

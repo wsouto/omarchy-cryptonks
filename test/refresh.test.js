@@ -1,5 +1,5 @@
-// What one refresh's answers mean for the pill: the quote it shows, and the
-// words behind its "!". Runs are built from the answers Bybit really sent
+// What a refresh's answers mean for the pill and the rows: the quotes they
+// show, and the words behind a "!". Runs are built from the answers Bybit really sent
 // (test/fixtures/), joined as curl joins them, so they pass without a
 // network.
 import { test, expect } from "bun:test"
@@ -222,4 +222,59 @@ test("5-minute candles Bybit turned down give Bybit's own words, and no quote", 
   const got = read(text, LATER, btc())
   expect(got.problem).toBe("Bybit: kline refused")
   expect(got.quote).toBeNull()
+})
+
+// ---- A run of several symbols ----
+
+const readyKept = (symbol, candlesAt) =>
+  ({ symbol, instrument: { ...btc(), symbol }, candles: days(TODAY - 364 * DAY, 365), day: [candle(TODAY)], candlesAt })
+const rolesBy = plan => plan.asked.map(a => a.symbol + ":" + a.role)
+
+test("a row asks for its candles every 5 minutes, the featured symbol every minute", () => {
+  const kept = { BTCUSDT: readyKept("BTCUSDT", NOW - 90), ETHUSDT: readyKept("ETHUSDT", NOW - 90) }
+  const plan = R.planRun(B, ["ETHUSDT", "BTCUSDT"], "BTCUSDT", kept, NOW, 300)
+  // The featured symbol goes first, so the pill hears first.
+  expect(rolesBy(plan)).toEqual(["BTCUSDT:quotes", "BTCUSDT:daily", "BTCUSDT:day", "ETHUSDT:quotes"])
+  kept.ETHUSDT = readyKept("ETHUSDT", NOW - 300)
+  expect(rolesBy(R.planRun(B, ["ETHUSDT"], "BTCUSDT", kept, NOW, 300))).toEqual(["ETHUSDT:quotes", "ETHUSDT:daily", "ETHUSDT:day"])
+})
+
+test("each symbol asks for its own price, never Bybit's 680 KB list of all of them", () => {
+  const plan = R.planRun(B, ["BTCUSDT", "ETHUSDT"], "BTCUSDT", {}, NOW, 300)
+  const prices = plan.urls.filter((u, i) => plan.asked[i].role === "quotes")
+  expect(prices).toEqual([B.quotesUrl(["BTCUSDT"]), B.quotesUrl(["ETHUSDT"])])
+})
+
+test("a new UTC day asks for candles at once, so the day's open is never missing", () => {
+  expect(R.candlesDue(readyKept("ETHUSDT", TODAY - 60), "ETHUSDT", TODAY + 30, 300)).toBe(true)
+  expect(R.candlesDue(readyKept("ETHUSDT", NOW - 60), "ETHUSDT", NOW, 300)).toBe(false)
+})
+
+test("a price alone builds on the candles kept, and each symbol gets its own quote", () => {
+  const time = JSON.parse(body("tickers.json")).time / 1000
+  const today = Math.floor(time / DAY) * DAY
+  const daily = B.parseCandles(JSON.parse(body("kline-btcusdt-d.json")))
+  const kept = s => ({ symbol: s, instrument: { ...btc(), symbol: s }, candles: daily, day: [candle(today)], candlesAt: time - 60 })
+  const asked = [{ symbol: "BTCUSDT", role: "quotes" }, { symbol: "ETHUSDT", role: "quotes" }]
+  const text = answer(0, 200, body("tickers.json")) + answer(1, 200, body("tickers.json"))
+  const got = R.readRun(F.answers(text, B.limits), asked, { BTCUSDT: kept("BTCUSDT"), ETHUSDT: kept("ETHUSDT") }, B)
+  expect(got.problems).toEqual({ BTCUSDT: "", ETHUSDT: "" })
+  expect(got.quotes.BTCUSDT.price).toBe(84440.8)
+  expect(got.quotes.ETHUSDT.symbol).toBe("ETHUSDT")
+  expect(got.quotes.ETHUSDT.price).not.toBe(84440.8)
+})
+
+test("a run cut short says so for the symbols it never reached", () => {
+  const asked = [{ symbol: "BTCUSDT", role: "quotes" }, { symbol: "ETHUSDT", role: "quotes" }]
+  const got = R.readRun(F.answers(answer(0, 200, body("tickers.json")), B.limits), asked, {}, B)
+  expect(got.problems.ETHUSDT).toBe("The refresh stopped before every answer came")
+  expect(got.quotes.ETHUSDT).toBe(null)
+})
+
+test("a refusal pauses the whole run, with Bybit's reason", () => {
+  const asked = [{ symbol: "BTCUSDT", role: "quotes" }, { symbol: "ETHUSDT", role: "quotes" }]
+  const text = answer(0, 403, "") + answer(1, 403, "")
+  const got = R.readRun(F.answers(text, B.limits), asked, {}, B)
+  expect(got.wait).toBe(600)
+  expect(got.waitProblem).toContain("waiting 10 minutes")
 })

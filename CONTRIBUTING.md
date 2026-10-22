@@ -57,17 +57,20 @@ plugin. In short:
   data file `~/.config/omarchy/wsouto.crypto-stonks.json` (its keys and
   defaults are `Settings.js`'s), the saved quotes in
   `~/.cache/wsouto.crypto-stonks/quotes.json`, and the feed.
-- `PriceFeed.qml`: fetches the featured symbol once a minute and holds its
-  quote, while a screen is on (`Screens.qml`). `Refresh.js` is its rules:
-  what each refresh asks for, and what the answers mean.
+- `PriceFeed.qml`: fetches the featured symbol once a minute, and every
+  symbol while the popup is open, and holds their quotes, while a screen is
+  on (`Screens.qml`). `Refresh.js` is its rules: what each refresh asks
+  for, and what the answers mean.
+- `WatchlistRow.qml`: one of the popup's rows.
 - `adapters/<exchange>.js`: the only files that name an exchange's endpoints
   or fields. Each returns the quote record in
   [docs/QUOTE-RECORD.md](docs/QUOTE-RECORD.md). See
   [docs/ADAPTERS.md](docs/ADAPTERS.md).
 - The rule files (`*.js`) are pure functions, one concern each, with no
   drawing and no clock.
-- Only the feeds fetch. Today that is `PriceFeed.qml`, which keeps its own
-  pause; from roadmap step 7b each feed fetches through a `Gate.qml`.
+- Only the feeds fetch. Today that is `PriceFeed.qml`, one feed for every
+  symbol, which keeps its own pause. A second feed would share a
+  `Gate.qml`, as the original's do.
 
 ## Product rules
 
