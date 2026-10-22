@@ -46,7 +46,7 @@ the market rests have nothing to show here. The day is the UTC day instead
 | Feature | Original | Here | Why |
 | --- | --- | --- | --- |
 | Hero: symbol, listing line, price, change | yes | **Adapt** | The listing line says name, `Bybit` and `USDT` instead of a company, exchange and currency. |
-| Change shown as percent, amount, or "since the open" (`c`) | previous close is the base; "open" is the third | **Adapt** | Here the base is 00:00 UTC. For a market that never closes, the previous day's close and today's open are nearly the same number, so the third mode would repeat the first. Recommend two modes, percent and amount. |
+| Change shown as percent, amount, or "since the open" (`c`) | previous close is the base; "open" is the third | **Adapt** | Here the base is 00:00 UTC. For a market that never closes, the previous day's close and today's open are nearly the same number, so the third mode would repeat the first. Recommend two modes, percent and amount. **Agree on two modes.** |
 | Price in both looks (smooth, retro block digits) | yes | **Keep** | `Cells.js` comes back from Stonks when the retro look is built. |
 | Scrub: hover the chart and the price, change and rows follow | yes | **Keep** | |
 | Click the animal to replay the chart (`p`) | yes | **Keep** | |
@@ -74,7 +74,7 @@ in a single request (at most 1000 candles each):
 rule that a symbol younger than a range shows only its own life
 (`firstTradeDate` is on the record for this). BTCUSDT started in March 2020,
 so 10Y and All look alike for every perpetual. Recommend keeping both, as
-the original does for a young stock.
+the original does for a young stock. **It's good for me.**
 
 ## The info block under the chart
 
@@ -95,7 +95,7 @@ the original does for a young stock.
 | Remove with the x, right click, or `x`; undo in the footer (`u`) | yes | **Keep** | |
 | Reorder by drag or Shift+J/K; sort by symbol, name or change | yes | **Keep** | |
 | Rows stay on the day's move whatever the range | yes | **Keep** | |
-| Row name | company name | **Adapt** | The instrument list has `fullName` ("Bitcoin") as well as `baseCoin` ("BTC"). The quote record uses `baseCoin` today. Recommend `fullName`, falling back to `baseCoin`, so rows read like the original. |
+| Row name | company name | **Adapt** | The instrument list has `fullName` ("Bitcoin") as well as `baseCoin` ("BTC"). The quote record uses `baseCoin` today. Recommend `fullName`, falling back to `baseCoin`, so rows read like the original. **Agree.**|
 
 **A cost the original did not have.** Yahoo returns the day line of 20
 symbols in one request. Bybit has no batch kline: a row's day line is one
@@ -105,7 +105,7 @@ the heaviest thing here. The 5-minute candles of the UTC day also give the
 row its open, high, low and volume, so one request per row covers it.
 Recommend: the rows' lines refresh every 5 minutes, and the price every
 minute from the single all-tickers request. (To verify: that kline accepts a
-`start` at 00:00 UTC.)
+`start` at 00:00 UTC.). **Fine**.
 
 ## Lists
 
@@ -181,21 +181,41 @@ minute from the single all-tickers request. (To verify: that kline accepts a
 1. **Starter symbols.** The original starts with five so the pill has
    something to show. Recommend BTCUSDT, ETHUSDT, SOLUSDT, XRPUSDT and
    DOGEUSDT.
+
+-  **Perfect.**
+
 2. **Row name.** `fullName` ("Bitcoin") with `baseCoin` ("BTC") as the
    fallback? It changes the quote record by one field.
+
+- **Ok.**
+
 3. **Change modes.** Two (percent and amount, both since 00:00 UTC) or
    three, as the original?
+
+- **The 2 modes is sufficient**
+
 4. **The mark.** The original draws its own "STONKS" mark and wordmark. Keep
    it with the credit already in the README and LICENSE (the licence asks
    for the copyright notice, not the branding), or draw a mark of our own
    later?
+
+- **Help me with this one, I need more info.**
+
 5. **"Overdue" and "As of".** The original says "overdue" after 90 seconds
    with a refresh every minute or so. Keep 90 seconds?
+
+- **Yes.**
+
 6. **Funding.** A countdown to the next funding time (`nextFundingTime` is
    on the ticker) is the natural replacement for the market-status line.
    Later, as the notes say, or in this round?
+
+- **Later.**
+
 7. **Row lines.** Refresh the rows' day lines every 5 minutes and the prices
    every minute, as recommended above?
+
+- **Yes.**
 
 ## A suggested order
 
@@ -214,3 +234,5 @@ original's layers, they could be:
 | 12 | Boundary check, flow tests, README, publishing | a release |
 
 Nothing changes in `ROADMAP.md` until you have reviewed this.
+
+- **If there is something to change to improve our workflow, I'm open to suggestions, otherwise we can follow it as-is.**
