@@ -1,8 +1,7 @@
 .pragma library
 // Copied from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2, Tones.js.
-// Changes: only what this project uses is kept; the dimmer text level and the
-// chart's wash were removed until a screen needs them; secondary text checks
-// its contrast after rounding to "#rrggbb", not before. Kept as plain
+// Changes: only what this project uses is kept; secondary text checks its
+// contrast after rounding to "#rrggbb", not before. Kept as plain
 // JavaScript on purpose.
 // How the theme's colours are put to work: which colours are up and down,
 // and how much quieter secondary text is. Every colour comes in from the theme, except Stonks' own
@@ -48,6 +47,10 @@ function oklab(c) {
     a: 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
     b: 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s
   }
+}
+
+function oklabLightness(c) {
+  return oklab(c).L
 }
 
 // Closer than this in hue, a theme's green and red are no pair: two greens,
@@ -120,8 +123,9 @@ function mixed(from, to, share) {
 // Secondary text: the foreground mixed `share` of the way toward the ground
 // it sits on, so it is quieter on a light theme as on a dark one, but never
 // under `floor` contrast against that ground. Dim takes a third and keeps
-// body text's 4.5:1.
+// body text's 4.5:1; dimmer takes half and keeps 3:1.
 var DIM = { share: 0.32, floor: 4.5 }
+var DIMMER = { share: 0.5, floor: 3 }
 function secondary(foreground, ground, level) {
   // Judged as drawn: rounding to "#rrggbb" can cost the floor a hair.
   var at = function(share) { return hexColor(hexOf(mixed(foreground, ground, share))) }
@@ -138,4 +142,40 @@ function secondary(foreground, ground, level) {
 
 function dim(foreground, ground) {
   return secondary(foreground, ground, DIM)
+}
+
+function dimmer(foreground, ground) {
+  return secondary(foreground, ground, DIMMER)
+}
+
+// A wash is a colour at some alpha over the surface's ground. At one alpha a
+// dark red adds far less light than a light blue, so a down day's wash would
+// look half as present as an up day's. Each side's alpha is worked out from
+// the theme instead: the alpha at which its colour adds the same lightness,
+// OKLab's L, over the ground as the up colour does at the alpha the chart
+// sets.
+
+// The lightness `color` at `alpha` adds over `ground`, either way, mixed
+// channel by channel in sRGB, as a canvas composites it.
+function addedLightness(color, ground, alpha) {
+  return Math.abs(oklabLightness(mixed(ground, color, alpha)) - oklabLightness(ground))
+}
+
+// The alpha at which `color` over `ground` adds the lightness `reference`
+// adds at `alpha`: `alpha` itself for the reference. Never more than half
+// `ink`, the alpha of the line or cap it sits under, so the line and the
+// caps stay the most important thing: a pale up colour over a dark red
+// (Kanagawa) would otherwise take the red's stems to solid ink.
+function washAlpha(color, reference, ground, alpha, ink) {
+  var cap = ink / 2
+  var target = addedLightness(reference, ground, alpha)
+  if (addedLightness(color, ground, cap) <= target) return cap
+  var lo = 0
+  var hi = cap
+  for (var i = 0; i < 30; i++) {
+    var mid = (lo + hi) / 2
+    if (addedLightness(color, ground, mid) < target) lo = mid
+    else hi = mid
+  }
+  return (lo + hi) / 2
 }

@@ -1,6 +1,7 @@
-// What the pill writes and draws, and in which colours: Format.js's prices,
-// percents and side-bar stack, Chart.js's day line, Figures.js's arrow and
-// animal, and Tones.js's up, down and secondary text. Each test names what
+// What the pill and the popup write and draw, and in which colours:
+// Format.js's prices, percents, moves and side-bar stack, Chart.js's day
+// line and scrub, Figures.js's arrow, animal and hero, and Tones.js's up,
+// down and secondary text. Each test names what
 // a user would see go wrong in the bar.
 //
 // Run with `bun test` (test/check.sh does).
@@ -174,4 +175,36 @@ test("a stacked move is its sign and figure over %, the pill's figure rounded", 
   expect(Fmt.stackedPct(-0.04)).toEqual({ lines: ["0.0", "%"], sign: 0 })
   expect(Fmt.stackedPct(1234)).toEqual({ lines: ["+1.2", "K%"], sign: 1 })
   expect(Fmt.stackedPct(null)).toEqual({ lines: ["—"], sign: 0 })
+})
+
+// ---- The popup's hero and scrub ----
+
+test("the hero's change is since the day's open, in percent or in money", () => {
+  const q = { price: 84440.8, dayOpen: 82991, priceDigits: 1, points: [] }
+  expect(Fig.heroView(q, 0, "pct")).toMatchObject({ priceText: "84,440.8", changeText: "+1.75%", sign: 1, daySign: 1, time: null })
+  expect(Fig.heroView(q, 0, "abs")).toMatchObject({ changeText: "+1,449.80", sign: 1 })
+  const down = { price: 1.25, dayOpen: 1.5, priceDigits: 4, points: [] }
+  expect(Fig.heroView(down, 0, "abs").changeText).toBe(MINUS + "0.2500")
+})
+
+test("a hero with no open shows a dash and no colour, never a guessed change", () => {
+  const v = Fig.heroView({ price: 100, dayOpen: null, priceDigits: 2, points: [] }, 0, "pct")
+  expect(v).toMatchObject({ priceText: "100.00", changeText: "—", sign: 0, daySign: 0 })
+})
+
+test("a scrub shows the close of the candle it is on, and that candle's time", () => {
+  const q = { price: 120, dayOpen: 100, priceDigits: 2,
+    points: [{ t: D0, p: 101 }, { t: D0 + 300, p: 99 }, { t: D0 + 600, p: 110 }] }
+  const v = Fig.heroView(q, D0 + 450, "pct")
+  expect(v).toMatchObject({ priceText: "99.00", changeText: MINUS + "1.00%", sign: -1, time: D0 + 300 })
+  expect(Fmt.utcClock(v.time)).toBe("00:05")
+})
+
+test("the scrub runs across the UTC day and stops at the first and last candle", () => {
+  const q = { points: [{ t: D0 + 600, p: 1 }, { t: D0 + 3600, p: 2 }] }
+  expect(Ch.timeAtFraction(q, 0.5)).toBe(D0 + DAY / 2)
+  expect(Ch.fractionAtTime(q, D0 + DAY / 4)).toBe(0.25)
+  expect(Ch.fractionAtTime(q, D0 + DAY + 1)).toBe(-1)
+  expect(Ch.stepTime(q, D0 + 3600, 1)).toBe(D0 + 3600)
+  expect(Ch.stepTime(q, D0 + 900, -2)).toBe(D0 + 600)
 })

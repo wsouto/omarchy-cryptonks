@@ -48,6 +48,9 @@ plugin. In short:
 
 - `manifest.json`: the plugin's id, kinds, and the pill's settings.
 - `BarWidget.qml`: the pill in the bar.
+- `Panel.qml`: the popup a left click opens: `HeaderStatus.qml`, `Hero.qml`
+  and `DayChart.qml` draw it, and `ChartMotion.qml` holds its scrub, replay
+  and draw-in.
 - `PriceFeed.qml`: fetches the pill's symbol once a minute and holds its
   quote. `Refresh.js` is its rules: what each refresh asks for, and what the
   answers mean.
@@ -58,7 +61,7 @@ plugin. In short:
 - The rule files (`*.js`) are pure functions, one concern each, with no
   drawing and no clock.
 - Only the feeds fetch. Today that is `PriceFeed.qml`, which keeps its own
-  pause; from roadmap step 6 each feed fetches through a `Gate.qml`.
+  pause; from roadmap step 7 each feed fetches through a `Gate.qml`.
 
 ## Product rules
 
@@ -77,7 +80,7 @@ plugin. In short:
   nothing while every screen is off, and leave a site that refuses us alone
   for a while. Bybit bans an IP for at least 10 minutes after too many
   requests, so a refusal pauses us that long. (Not yet kept: the pill still
-  fetches while the screens are off. The shared service of roadmap step 6
+  fetches while the screens are off. The shared service of roadmap step 7
   adds it.)
 - **Mouse and keys.** Every flow works by mouse alone and by keys alone, and
   anything that looks clickable acts when clicked. A button says only what it

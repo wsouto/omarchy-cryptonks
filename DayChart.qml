@@ -1,0 +1,288 @@
+// Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
+// DayChart.qml. Changes: the day is the UTC day, so the extended hours, the
+// ticks at the bell and a day's breaks are gone; the dashed baseline is the
+// day's open, and the dot sits on the newest candle. Only the day is drawn
+// until the ranges come (roadmap step 9).
+import QtQuick
+import qs.Commons as Commons
+import "Chart.js" as Chart
+import "Tones.js" as Tones
+// The hero chart, one rule for the day and every range: a dashed baseline at
+// the price the change is measured from, and the line and the area between
+// it and the baseline in the up colour above and the down colour below, the
+// way the retro columns fall, and the dot on the newest candle.
+// Three layers, so each paints only when what it draws changes: the
+// baseline, the data's ink under a clip the draw-in widens, and the scrub.
+Item {
+  id: root
+
+  property var geometry: null
+  property color upColor: Commons.Color.foreground
+  property color downColor: Commons.Color.urgent
+  property color baselineColor: Tones.dimmer(Commons.Color.foreground, Commons.Color.background)
+  property color hairlineColor: Commons.Color.foreground
+  property var up: true
+  // 0..1 along the axis, or -1 when not scrubbing.
+  property real scrubX: -1
+  // How much of the ink has been drawn, 0..1. The baseline is always there;
+  // the line draws in from the left edge to the newest drawn print, and at
+  // 1 the whole chart shows.
+  property real reveal: 1
+  // A replay's place along the plot, 0..1, or -1 without one: the line draws
+  // in behind it, in the plot's own terms.
+  property real replayX: -1
+  // The dot ripples while refreshes land, the way Apple's does: three
+  // times as a new price arrives (`newestPrice`, the newest print's) or the
+  // surface opens, then it rests.
+  property bool live: false
+  property string newestPrice: ""
+  property bool surfaceOpen: true
+  // A closing surface: the live mark stops where it is, as the rest of the
+  // surface does; it ripples again as the surface opens.
+  property bool still: false
+  // The surface under the chart, which the wash is seen against.
+  property color ground: Commons.Color.background
+
+  readonly property bool directionKnown: typeof up === "boolean"
+  readonly property color aboveColor: directionKnown ? upColor : baselineColor
+  readonly property color belowColor: directionKnown ? downColor : baselineColor
+  readonly property int pad: 3
+  readonly property var lastPoint: drawable ? geometry.points[geometry.points.length - 1] : null
+  readonly property color dotColor: lastPoint && lastPoint.y > geometry.baselineY ? belowColor : aboveColor
+  // One print draws: the first print after midnight is a dot on its day.
+  readonly property bool drawable: !!geometry && !!geometry.points && geometry.points.length >= 1
+  // The baseline draws whenever there is a geometry.
+  readonly property bool hasBaseline: !!geometry && typeof geometry.baselineY === "number" && isFinite(geometry.baselineY)
+  // Where the ink ends, in pixels: the newest drawn print and its dot (the
+  // line's width and a half, and a pixel). The draw-in sweeps to here.
+  readonly property real inkLast: drawable ? geometry.points[geometry.points.length - 1].x : 0
+  readonly property real inkRight: Math.min(width, pad + inkLast * (width - pad * 2) + 4)
+  // The wash: the up colour's at 16%, and each side at the alpha that adds
+  // the same lightness over the ground (`Tones.washAlpha`), so a down day's
+  // reads as strongly as an up day's; never more than half the line's ink.
+  readonly property real aboveWash: Tones.washAlpha(aboveColor, upColor, ground, 0.16, 1)
+  readonly property real belowWash: Tones.washAlpha(belowColor, upColor, ground, 0.16, 1)
+
+  onGeometryChanged: { base.requestPaint(); ink.requestPaint(); marks.requestPaint() }
+  onBaselineColorChanged: { base.requestPaint(); ink.requestPaint() }
+  onAboveWashChanged: ink.requestPaint()
+  onBelowWashChanged: ink.requestPaint()
+  onAboveColorChanged: ink.requestPaint()
+  onBelowColorChanged: ink.requestPaint()
+  onHairlineColorChanged: marks.requestPaint()
+  onScrubXChanged: marks.requestPaint()
+
+  // Where along the axis `x` is, inside the pad the line is drawn within.
+  function fractionAt(x) {
+    return (x - pad) / (width - pad * 2)
+  }
+
+  Canvas {
+    id: base
+    anchors.fill: parent
+    onWidthChanged: requestPaint()
+    onHeightChanged: requestPaint()
+    onPaint: {
+      var ctx = getContext("2d")
+      ctx.clearRect(0, 0, width, height)
+      if (!root.hasBaseline) return
+      var by = root.pad + root.geometry.baselineY * (height - root.pad * 2)
+      ctx.strokeStyle = root.baselineColor
+      ctx.lineWidth = 1
+      ctx.lineCap = "round"
+      ctx.setLineDash([3, 4])
+      ctx.beginPath()
+      ctx.moveTo(root.pad, by)
+      ctx.lineTo(width - root.pad, by)
+      ctx.stroke()
+      ctx.setLineDash([])
+    }
+  }
+
+  // The draw-in widens this clip over ink that is already painted.
+  Item {
+    id: curtain
+    width: root.replayX >= 0 ? root.width * Math.min(1, root.replayX)
+      : root.reveal >= 1 ? root.width : root.inkRight * Math.max(0, root.reveal)
+    height: root.height
+    clip: true
+
+    Canvas {
+      id: ink
+      objectName: "ink"
+      width: root.width
+      height: root.height
+      onWidthChanged: requestPaint()
+      onHeightChanged: requestPaint()
+      onPaint: {
+        var ctx = getContext("2d")
+        ctx.clearRect(0, 0, width, height)
+        if (!root.drawable) return
+        var geometry = root.geometry
+        var pad = root.pad
+        var pts = geometry.points
+        var w = width - pad * 2
+        var h = height - pad * 2
+        var by = pad + geometry.baselineY * h
+
+        if (pts.length >= 2) {
+          ctx.fillStyle = sides(ctx, by, root.aboveWash, root.belowWash)
+          ctx.beginPath()
+          ctx.moveTo(pad + pts[0].x * w, by)
+          for (var i = 0; i < pts.length; i++) ctx.lineTo(pad + pts[i].x * w, pad + pts[i].y * h)
+          ctx.lineTo(pad + pts[pts.length - 1].x * w, by)
+          ctx.closePath()
+          ctx.fill()
+        }
+
+        ctx.lineJoin = "round"
+        ctx.lineCap = "round"
+        ctx.lineWidth = 2
+        ctx.strokeStyle = sides(ctx, by, 1, 1)
+        strokeLine(ctx, pts, pad, w, h)
+      }
+
+      // The above colour over the baseline and the below colour under it, in
+      // one pass: stroking each line twice, clipped to each side, doubled the
+      // paint. Two stops at one offset merge, so the second sits a hair below.
+      // The line's dim ink is one share of its own colour on both sides: it
+      // reads against the full line beside it, not against the other side.
+      function sides(ctx, by, aboveAlpha, belowAlpha) {
+        var stop = Math.max(0, Math.min(1, by / height))
+        var g = ctx.createLinearGradient(0, 0, 0, height)
+        g.addColorStop(stop, Qt.rgba(root.aboveColor.r, root.aboveColor.g, root.aboveColor.b, aboveAlpha))
+        g.addColorStop(Math.min(1, stop + 0.0001), Qt.rgba(root.belowColor.r, root.belowColor.g, root.belowColor.b, belowAlpha))
+        return g
+      }
+
+      // A day of one candle, its first five minutes, is a dot three times
+      // the line's width, so it reads at a glance. It never breathes: that is
+      // the live dot's alone.
+      function strokeLine(ctx, line, pad, w, h) {
+        if (line.length === 1) {
+          ctx.fillStyle = ctx.strokeStyle
+          ctx.beginPath()
+          ctx.arc(pad + line[0].x * w, pad + line[0].y * h, ctx.lineWidth * 1.5, 0, Math.PI * 2)
+          ctx.fill()
+          return
+        }
+        ctx.beginPath()
+        for (var j = 0; j < line.length; j++) {
+          var x = pad + line[j].x * w
+          var y = pad + line[j].y * h
+          if (j === 0) ctx.moveTo(x, y)
+          else ctx.lineTo(x, y)
+        }
+        ctx.stroke()
+      }
+    }
+  }
+
+  Canvas {
+    id: marks
+    objectName: "scrubMarks"
+    anchors.fill: parent
+    onWidthChanged: requestPaint()
+    onHeightChanged: requestPaint()
+    onPaint: {
+      var ctx = getContext("2d")
+      ctx.clearRect(0, 0, width, height)
+      if (!root.drawable || root.scrubX < 0) return
+      var pad = root.pad
+      var w = width - pad * 2
+      var h = height - pad * 2
+      var sx = pad + root.scrubX * w
+      ctx.strokeStyle = root.hairlineColor
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(sx, 0)
+      ctx.lineTo(sx, height)
+      ctx.stroke()
+      var sy = Chart.yAt(root.geometry.points, root.scrubX)
+      if (sy !== null) {
+        ctx.fillStyle = root.hairlineColor
+        ctx.beginPath()
+        ctx.arc(sx, pad + sy * h, 5, 0, Math.PI * 2)
+        ctx.fill()
+      }
+    }
+  }
+
+  // The dot on the newest candle lives outside the canvas so it can ripple
+  // without repainting the line: a core, and a halo that grows out and
+  // fades. While refreshes land a new price, or the dot's first showing (an
+  // open, a new chart, the end of a draw-in), starts three ripples, about
+  // 6 s, and a newer price during them starts the three over; then the halo
+  // rests, as it does while a refresh fails.
+  Item {
+    id: dot
+    visible: root.lastPoint !== null && root.reveal >= 1 && root.replayX < 0
+    x: root.lastPoint ? root.pad + root.lastPoint.x * (root.width - root.pad * 2) : 0
+    y: root.lastPoint ? root.pad + root.lastPoint.y * (root.height - root.pad * 2) : 0
+    // Hidden mid-ripple by an open's draw-in, it owes them still, and
+    // ripples once it shows; any other hide, a sheet over it, stops them
+    // for good.
+    onVisibleChanged: {
+      if (visible) root.ripple()
+      else {
+        if (ripples.running && root.opening && root.reveal < 1) root.rippleOwed = true
+        ripples.stop()
+      }
+    }
+
+    Rectangle {
+      id: halo
+      objectName: "liveHalo"
+      anchors.centerIn: parent
+      width: 14
+      height: 14
+      radius: 7
+      color: root.dotColor
+      opacity: 0.25
+    }
+
+    Rectangle {
+      anchors.centerIn: parent
+      width: 6
+      height: 6
+      radius: 3
+      color: root.dotColor
+    }
+
+    SequentialAnimation {
+      id: ripples
+      paused: running && root.still
+      loops: 3
+      onRunningChanged: if (!running) { halo.scale = 1; halo.opacity = 0.25; root.opening = false }
+
+      ParallelAnimation {
+        NumberAnimation { target: halo; property: "scale"; from: 1; to: 2.2; duration: 1400; easing.type: Easing.OutCubic }
+        NumberAnimation { target: halo; property: "opacity"; from: 0.35; to: 0; duration: 1400; easing.type: Easing.OutCubic }
+      }
+      PauseAnimation { duration: 600 }
+    }
+  }
+
+  // The price the last ripples were for, and an open's ripples owed until
+  // the dot can show them (`opening`, from the open until its ripples
+  // stop): a scrub's end, or refreshes landing again with the price the dot
+  // already rippled for, starts nothing.
+  property string rippledPrice: ""
+  property bool rippleOwed: false
+  property bool opening: false
+  function ripple() {
+    if (!root.live || !dot.visible || root.still) return
+    if (!root.rippleOwed && root.newestPrice === root.rippledPrice) return
+    // The restart's stop of a paused burst would end `opening`: an open's
+    // ripples keep it, whichever of the open's changes starts them.
+    var opening = root.opening
+    root.rippleOwed = false
+    root.rippledPrice = root.newestPrice
+    ripples.restart()
+    root.opening = opening
+  }
+  onNewestPriceChanged: ripple()
+  onSurfaceOpenChanged: if (surfaceOpen) { rippleOwed = true; opening = true; ripple() }
+  onLiveChanged: if (live) ripple(); else ripples.stop()
+  onStillChanged: if (!still) ripple()
+}

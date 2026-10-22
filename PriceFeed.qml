@@ -15,7 +15,7 @@ import "adapters/bybit.js" as Bybit
 // for), which an adapter or a rule file may not.
 //
 // For now it serves one symbol and lives inside the pill. When the list
-// arrives (roadmap step 6) it moves into a service shared by every screen,
+// arrives (roadmap step 7) it moves into a service shared by every screen,
 // and a `Gate.qml` replaces the small pause kept here.
 Item {
   id: root

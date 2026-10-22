@@ -57,7 +57,7 @@ test("an instrument carries what search and the record need", () => {
   const parsed = B.parseInstruments(fixture("instruments.json"))
   expect(instrument(parsed, "BTCUSDT")).toEqual({
     symbol: "BTCUSDT",
-    name: "BTC",
+    name: "Bitcoin",
     currency: "USDT",
     priceDigits: 2,
     firstTradeDate: 1584230400,
@@ -65,10 +65,16 @@ test("an instrument carries what search and the record need", () => {
   })
 })
 
+test("an instrument with no full name is named by its base coin", () => {
+  const json = clone(fixture("instruments.json"))
+  json.result.list.find(x => x.symbol === "BTCUSDT").fullName = ""
+  expect(instrument(B.parseInstruments(json), "BTCUSDT").name).toBe("BTC")
+})
+
 test("a USDC perpetual is left out, so every symbol is a base coin and USDT", () => {
   const parsed = B.parseInstruments(fixture("instruments.json"))
   expect(symbolsOf(parsed)).not.toContain("BTCPERP")
-  expect(parsed.instruments.every(i => i.symbol === i.name + "USDT" && i.currency === "USDT")).toBe(true)
+  expect(parsed.instruments.every(i => i.symbol.endsWith("USDT") && i.currency === "USDT")).toBe(true)
 })
 
 test("a list Bybit says is incomplete is marked truncated", () => {
@@ -178,7 +184,7 @@ test("the record is the one QUOTE-RECORD.md describes", () => {
   const record = B.buildQuote(btc(), q.prices.BTCUSDT, q.time, candles())
   expect(record).toEqual({
     symbol: "BTCUSDT",
-    name: "BTC",
+    name: "Bitcoin",
     exchange: "Bybit",
     instrumentType: "PERPETUAL",
     currency: "USDT",

@@ -72,7 +72,8 @@ function instrumentUrl(symbol) {
 
 // The instruments in scope, one entry each, as { instruments, truncated }.
 // A symbol is the base coin and USDT, such as BTCUSDT, which is what a person
-// types. `truncated` is true when Bybit says more instruments exist than it
+// types. Its name is Bybit's `fullName` ("Bitcoin"), as a row and the hero
+// say a company's name, or the base coin ("BTC") where Bybit sends none. `truncated` is true when Bybit says more instruments exist than it
 // sent (a non-empty nextPageCursor): the list is then incomplete, and whoever
 // shows it must say so rather than pass it off as whole.
 function parseInstruments(json) {
@@ -85,7 +86,7 @@ function parseInstruments(json) {
     var launched = num(x.launchTime)
     out.push({
       symbol: x.symbol,
-      name: x.baseCoin,
+      name: x.fullName || x.baseCoin,
       currency: x.quoteCoin,
       priceDigits: num(x.priceScale),
       firstTradeDate: launched === null ? null : Math.floor(launched / 1000),

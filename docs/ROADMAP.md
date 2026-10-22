@@ -29,7 +29,15 @@ The steps from 5 on follow the original's layers, as drawn in
       sparkline, arrow and icon forms, middle-click to cycle. You see: the
       pill in its default sparkline form.
 - [ ] **6. The popup.** Hero, day chart, scrub, the retro and smooth looks.
-      You see: click the pill and scrub BTCUSDT's day.
+      You see: click the pill and scrub BTCUSDT's day. Done in two parts:
+  - [x] **6a. Smooth.** Left click opens the popup: the animal and LIVE,
+        the hero (`BITCOIN · Bybit · USDT`, the price, the change since
+        00:00 UTC; `c` or a click switches percent and amount), the day
+        chart with its dashed open, the scrub (pointer, `h`/`l`, Escape),
+        and the replay (`p`, or click the animal). The row name is now
+        `fullName`.
+  - [ ] **6b. Retro.** The pixel chart, the block digits, the look icon
+        and `s`; the pill's retro line and digits.
 - [ ] **7. Rows.** The shared service, `Gate.qml`, the saved quotes,
       `Settings.js`, rows. You see: a list of rows.
 - [ ] **8. Lists and search.** Lists, search, order, undo, the key sheet.

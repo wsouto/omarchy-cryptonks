@@ -13,14 +13,16 @@ import "Tones.js" as Tones
 
 // The bar pill: one symbol and how far it has moved since 00:00 UTC, as the
 // day's line (the default), an arrow, text with the price, or the day's bull
-// or bear. Middle-click cycles the form, and each section of the bar keeps
-// its own. The data is `PriceFeed`'s; the pill only shows it. Until the
+// or bear. Left click opens the popup (`Panel.qml`), and middle-click cycles
+// the form, which each section of the bar keeps on its own. The data is
+// `PriceFeed`'s; the pill and the popup only show it. Until the
 // first answer it shows "…", and a refresh that failed puts a "!" on the
 // pill (the words are in the hover) while the last price stays.
 //
 // The forms, the animal's turn and the side bar's stack follow Stonks'
-// BarWidget.qml by Gaurav Chande (MIT, omarchy-stonks v1.0.2); its popup,
-// window, list and retro look come back in later steps.
+// BarWidget.qml by Gaurav Chande (MIT, omarchy-stonks v1.0.2), as does the
+// way the popup is loaded and opened; its window, list and retro look come
+// back in later steps.
 //
 // `BarWidget` comes from the Omarchy shell (qs.Ui). `moduleName` must equal
 // the id in manifest.json; the shell uses it to find this widget's settings.
@@ -149,6 +151,51 @@ BarWidget {
       : ring[(ring.indexOf(barStyle) + 1) % ring.length])
   }
 
+  // Shape contract for shell.summon/hide/toggle routing (Bar.findPanelWidget
+  // requires open/close/opened on the bar-widget root).
+  readonly property var panel: panelLoader.item
+  readonly property bool opened: panel ? panel.opened === true : false
+
+  function open() { if (panel) panel.open() }
+  function close() { if (panel) panel.close() }
+  function togglePanel() { if (panel) panel.toggle() }
+
+  readonly property real openPanelIndicatorWidth: content.implicitWidth
+  readonly property real openPanelIndicatorHeight: Math.max(Style.space(10), Math.round(Style.bar.iconSlot * 0.55))
+
+  readonly property bool popoutSwitchClosing: panel ? panel.popoutSwitchClosing === true : false
+
+  function closeForPopoutSwitch() {
+    if (panel) panel.closeForPopoutSwitch()
+  }
+
+  // The popup is loaded by its file: inside this file `Panel` names the
+  // shell's own type (qs.Ui), which ours is built on.
+  function injectPanel() {
+    var target = panelLoader.item
+    if (!target) return
+    target.bar = root.bar
+    target.settings = root.settings
+    target.anchorItem = button
+    target.hostWidget = root
+    target.feed = feed
+    target.trendColors = colors
+  }
+
+  onBarChanged: injectPanel()
+  onSettingsChanged: injectPanel()
+
+  Loader {
+    id: panelLoader
+    active: true
+    source: Qt.resolvedUrl("Panel.qml")
+    visible: false
+    onLoaded: {
+      root.injectPanel()
+      Qt.callLater(root.injectPanel)
+    }
+  }
+
   PriceFeed { id: feed }
 
   TrendColors { id: colors }
@@ -170,11 +217,13 @@ BarWidget {
     // The pill has no room to say what its change is measured from, or why
     // a "!" stands there, so the hover does; the icon names nothing, so its
     // hover also says what the other forms show, the symbol and its change.
-    tooltipText: (root.iconOnly ? root.symbol + " " + root.changeText + " · " : "")
+    // None while the popup is open: the bubble lands on the card's header.
+    tooltipText: root.opened ? "" : (root.iconOnly ? root.symbol + " " + root.changeText + " · " : "")
       + "Change since 00:00 UTC" + (root.warns ? " · ! " + root.problem : "")
 
     onPressed: function(b) {
       if (b === Qt.MiddleButton) root.cycleBarStyle()
+      else if (b === Qt.LeftButton) root.togglePanel()
     }
 
     Row {

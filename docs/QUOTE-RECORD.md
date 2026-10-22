@@ -8,7 +8,7 @@ supply is `null`, never a guess.
 | Field | Meaning | Source on Bybit |
 | --- | --- | --- |
 | `symbol` | the exchange's own symbol, such as `BTCUSDT` | instruments info `symbol` |
-| `name` | display name | instruments info `baseCoin`, such as `BTC` |
+| `name` | display name | instruments info `fullName`, such as `Bitcoin`, or `baseCoin` (`BTC`) when it is empty |
 | `exchange` | which adapter produced it, such as `Bybit` | the adapter |
 | `instrumentType` | `PERPETUAL` for now | the adapter |
 | `currency` | the quote currency, such as `USDT`; never converted | instruments info `quoteCoin` |

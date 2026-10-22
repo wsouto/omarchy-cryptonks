@@ -1,8 +1,9 @@
 .pragma library
 // Copied from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2, Format.js.
-// Changes: only what this project uses is kept, writing a price and a percent
-// and stacking them for a side bar; the clock times, durations, money moves
-// and range texts were removed until a screen needs them. A stacked symbol
+// Changes: only what this project uses is kept, writing a price, a percent, a
+// move in money and a UTC clock, and stacking them for a side bar; the local
+// clock times, durations and range texts were removed until a screen needs
+// them. A stacked symbol
 // splits at its quote currency, as the original splits BTC-USD at its dash.
 // Kept as plain JavaScript on purpose.
 // How numbers are checked and written: prices, changes and their signs.
@@ -49,6 +50,29 @@ function money(value, digits) {
   var abs = Math.abs(value)
   var shown = isFiniteNumber(digits) ? digits : moneyDigits(abs)
   return (shownSign(value, shown) < 0 ? MINUS : "") + grouped(abs.toFixed(shown))
+}
+
+// A move in money takes the listing's decimals, never fewer than two, and
+// none from 10,000 up, where a cent no longer says anything.
+function moveDigits(abs, digits) {
+  return abs >= 10000 ? 0 : Math.max(2, isFiniteNumber(digits) ? digits : 2)
+}
+
+function signedMoney(value, digits) {
+  if (!isFiniteNumber(value)) return "—"
+  var shown = moveDigits(Math.abs(value), digits)
+  return signText(shownSign(value, shown)) + money(Math.abs(value), shown)
+}
+
+function pad2(n) {
+  return n < 10 ? "0" + n : String(n)
+}
+
+// A time of the UTC day, "14:35": the day here is the UTC day, so its
+// moments are said in UTC whatever the machine's zone.
+function utcClock(t) {
+  var d = new Date(t * 1000)
+  return pad2(d.getUTCHours()) + ":" + pad2(d.getUTCMinutes())
 }
 
 function pct(value) {
