@@ -22,6 +22,8 @@ supply is `null`, never a guess.
 | `high52w`, `low52w` | high and low of the last 365 daily candles | kline `D` |
 | `firstTradeDate` | when the symbol launched, so a young symbol's ranges are honest | instruments info `launchTime` (ms; divide by 1000) |
 | `fundingInterval` | minutes between funding payments, such as `480` | instruments info `fundingInterval` |
+| `fundingRate` | estimated rate for the next settlement, a fraction (`0.0001` = 0.01%); positive: longs pay shorts | ticker `fundingRate` |
+| `nextFundingTime` | when that settlement is, in seconds | ticker `nextFundingTime` (ms; divide by 1000) |
 | `points` | the day's line: each 5-minute candle of today's UTC day as `{ t, p }`, its start in seconds and its close; `[]` with none | kline `5` from 00:00 UTC |
 
 **Change since 00:00 UTC** = `price - dayOpen`, and as a percent of `dayOpen`.
@@ -56,5 +58,5 @@ Read from Bybit's [instruments-info page](https://bybit-exchange.github.io/docs/
 - **TradFi perpetuals** (stock-like contracts) are out entirely: crypto only.
   They appear in the same list with a non-empty `marketRegion` or
   `underlyingTicker`, and the adapter rejects any instrument that has either.
-- `fundingInterval` (minutes) is kept on the record, for the funding feature
-  later.
+- `fundingInterval` (minutes) is kept on the record; the 1D info line shows
+  `fundingRate` and the time left to `nextFundingTime`.

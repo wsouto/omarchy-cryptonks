@@ -101,6 +101,22 @@ function dayLine(quote) {
   }
 }
 
+// A perpetual's funding, for the hero's listing line: the rate the next
+// settlement would pay (positive, longs pay shorts; negative, shorts pay
+// longs) in the tone of its sign, and the time left to that settlement.
+function fundingFact(quote) {
+  var known = Format.isFiniteNumber(quote.fundingRate)
+  var sign = known ? Format.shownSign(quote.fundingRate * 100, 4) : 0
+  var left = Format.isFiniteNumber(quote.nextFundingTime) && Format.isFiniteNumber(quote.marketTime)
+    ? Format.untilText(quote.nextFundingTime - quote.marketTime) : ""
+  return {
+    label: "FUNDING",
+    value: known ? Format.fundingRate(quote.fundingRate) : "",
+    after: known ? left : "",
+    tone: sign > 0 ? "up" : sign < 0 ? "down" : ""
+  }
+}
+
 // A perpetual has no market cap or P/E, so VOL stands here in their place,
 // under OPEN: the day's volume in the base coin and its worth in the quote
 // coin, as "51K BTC ($4.2B)". Its slot is as wide as 999.9M and $999.9B.

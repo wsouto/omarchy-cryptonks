@@ -117,8 +117,11 @@ function quotesUrl(symbols) {
   return url
 }
 
-// { time, prices }: when Bybit answered, in seconds, and the last traded
-// price by symbol. A ticker with no price is left out. The ticker also holds
+// { time, prices, funding }: when Bybit answered, in seconds, the last
+// traded price by symbol, and its funding by symbol as { rate, nextTime }:
+// the estimated rate for the next settlement (a fraction, 0.0001 = 0.01%)
+// and when that is, in seconds; either is null when Bybit sends none. A
+// ticker with no price is left out. The ticker also holds
 // a rolling 24-hour change, which is not used: the day here starts at
 // 00:00 UTC, from the daily candle.
 function parseQuotes(json) {
@@ -126,12 +129,16 @@ function parseQuotes(json) {
   var time = num(json && json.time)
   if (!r || !Array.isArray(r.list) || time === null) return null
   var prices = {}
+  var funding = {}
   for (var i = 0; i < r.list.length; i++) {
     var t = r.list[i]
     var price = num(t && t.lastPrice)
-    if (t && t.symbol && price !== null) prices[t.symbol] = price
+    if (!t || !t.symbol || price === null) continue
+    prices[t.symbol] = price
+    var next = num(t.nextFundingTime)
+    funding[t.symbol] = { rate: num(t.fundingRate), nextTime: next !== null && next > 0 ? Math.floor(next / 1000) : null }
   }
-  return { time: Math.floor(time / 1000), prices: prices }
+  return { time: Math.floor(time / 1000), prices: prices, funding: funding }
 }
 
 // ---- Candles -----------------------------------------------------------
@@ -227,7 +234,7 @@ function buildHistory(symbol, range, candles) {
 // The record of docs/QUOTE-RECORD.md for one symbol: its instrument entry
 // (from parseInstruments), its latest `price` and `marketTime` (from
 // parseQuotes), its daily `candles`, and `dayCandles`, its 5-minute candles
-// (both from parseCandles).
+// (both from parseCandles), and its `funding` (from parseQuotes).
 //
 // The day figures belong to today's UTC day, so they come only from a newest
 // candle that starts at today's 00:00 UTC. A newest candle from another day
@@ -236,7 +243,7 @@ function buildHistory(symbol, range, candles) {
 // candles, or fewer for a young symbol, which `firstTradeDate` tells. The
 // day line, `points`, is each 5-minute candle of today's UTC day at its
 // start and close, so a candle of yesterday never draws on today's line.
-function buildQuote(instrument, price, marketTime, candles, dayCandles) {
+function buildQuote(instrument, price, marketTime, candles, dayCandles, funding) {
   if (!instrument || price === null || marketTime === null) return null
   var list = candles || []
   var last = list.length ? list[list.length - 1] : null
@@ -269,6 +276,8 @@ function buildQuote(instrument, price, marketTime, candles, dayCandles) {
     low52w: low,
     firstTradeDate: instrument.firstTradeDate,
     fundingInterval: instrument.fundingInterval,
+    fundingRate: funding ? funding.rate : null,
+    nextFundingTime: funding ? funding.nextTime : null,
     points: points
   }
 }

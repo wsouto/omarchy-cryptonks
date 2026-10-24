@@ -58,7 +58,11 @@ Item {
       + String(quote.name).toUpperCase()
     : (freshnessText !== "" ? "! " + freshnessText : "")
   readonly property string listingMeta: quote ? " · " + quote.exchange + " · " + quote.currency : ""
-  readonly property real listingRoom: Math.max(0, listingRow.width - symbolText.implicitWidth - Style.space(8))
+  // The funding at the line's right end: its sign in text and tone, and the
+  // time to its settlement; nothing when Bybit sent none.
+  readonly property var funding: quote ? Figures.fundingFact(quote) : null
+  readonly property real fundingWidth: funding && funding.value !== "" ? fundingRow.implicitWidth + Style.space(12) : 0
+  readonly property real listingRoom: Math.max(0, listingRow.width - symbolText.implicitWidth - Style.space(8) - fundingWidth)
   // The day here starts at 00:00 UTC, and the screen says so, so the change
   // is never taken for an exchange's rolling 24 hours. A scrub says its own
   // moment in the header instead.
@@ -165,6 +169,33 @@ Item {
     text: root.listingMeta
     color: listingText.color
     font: listingText.font
+  }
+
+  Row {
+    id: fundingRow
+    visible: root.fundingWidth > 0
+    x: parent.width - width
+    y: symbolText.baselineOffset - fundingValue.baselineOffset
+    spacing: Style.space(6)
+    Text {
+      textFormat: Text.PlainText
+      text: "FUNDING"
+      color: root.dim
+      font: listingText.font
+    }
+    Text {
+      id: fundingValue
+      textFormat: Text.PlainText
+      text: root.funding ? Format.lookSigns(root.funding.value, root.retro) : ""
+      color: !root.funding ? root.foreground : root.funding.tone === "up" ? root.upColor : root.funding.tone === "down" ? root.downColor : root.foreground
+      font: listingText.font
+    }
+    Text {
+      textFormat: Text.PlainText
+      text: root.funding ? root.funding.after : ""
+      color: root.dim
+      font: listingText.font
+    }
   }
 
   Text {

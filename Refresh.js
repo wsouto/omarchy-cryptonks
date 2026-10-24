@@ -225,7 +225,7 @@ function read(all, asked, symbol, kept, adapter) {
     return out
   }
 
-  out.quote = adapter.buildQuote(out.kept.instrument, quotes.prices[symbol], quotes.time, out.kept.candles, out.kept.day)
+  out.quote = adapter.buildQuote(out.kept.instrument, quotes.prices[symbol], quotes.time, out.kept.candles, out.kept.day, quotes.funding[symbol])
   out.problem = slip
   return out
 }

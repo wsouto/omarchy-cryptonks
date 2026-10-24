@@ -60,6 +60,20 @@ function lookSigns(text, retro) {
   return retro ? String(text).replace("+", "▲").replace(MINUS, "▼") : text
 }
 
+// A funding rate (a fraction) as a signed percent to four places, as
+// "+0.0100%"; "—" when unknown. One that rounds to nothing takes no sign.
+function fundingRate(rate) {
+  if (!isFiniteNumber(rate)) return "—"
+  return signText(shownSign(rate * 100, 4)) + Math.abs(rate * 100).toFixed(4) + "%"
+}
+
+// Seconds left as "3h12m", or "12m" under the hour; "" when none are left.
+function untilText(seconds) {
+  if (!isFiniteNumber(seconds) || seconds <= 0) return ""
+  var minutes = Math.ceil(seconds / 60)
+  return minutes >= 60 ? Math.floor(minutes / 60) + "h" + pad2(minutes % 60) + "m" : minutes + "m"
+}
+
 // A move in money takes the listing's decimals, never fewer than two, and
 // none from 10,000 up, where a cent no longer says anything.
 function moveDigits(abs, digits) {

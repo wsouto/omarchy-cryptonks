@@ -46,6 +46,7 @@ the market rests have nothing to show here. The day is the UTC day instead
 | Feature | Original | Here | Why |
 | --- | --- | --- | --- |
 | Hero: symbol, listing line, price, change | yes | **Adapt** | The listing line says name, `Bybit` and `USDT` instead of a company, exchange and currency. |
+| Funding rate on the listing line | no | **Add** | A perpetual pays it every few hours; sign, tone and time to settlement show at the line's right end. |
 | Change shown as percent, amount, or "since the open" (`c`) | previous close is the base; "open" is the third | **Adapt** | Here the base is 00:00 UTC. For a market that never closes, the previous day's close and today's open are nearly the same number, so the third mode would repeat the first. Recommend two modes, percent and amount. **Agree on two modes.** |
 | Price in both looks (smooth, retro block digits) | yes | **Keep** | `Cells.js` comes back from Stonks when the retro look is built. |
 | Scrub: hover the chart and the price, change and rows follow | yes | **Keep** | |

@@ -132,8 +132,14 @@ The steps from 5 on follow the original's layers, as drawn in
       install from. Optional after it: the version watch and its footer note
       ("a newer version is out"), which need the repository.
 
-Not planned yet: portfolio, API keys, a second exchange, WebSocket, funding
-rate. They are in the design notes and can come after step 13.
+- [x] **14. Funding rate.** The tickers call already carries each symbol's
+      estimated funding rate and next settlement; the hero's listing line
+      shows them, signed and toned by the sign, with the time left. You see:
+      `FUNDING ▲0.0073% 3h22m` beside the coin's name. Not done: a baseline
+      (0.01% per 8 hours) for an "elevated" state, and funding on the rows.
+
+Not planned yet: portfolio, API keys, a second exchange, WebSocket. They are
+in the design notes and can come after step 13.
 
 ## Rules for the code
 

@@ -86,3 +86,11 @@ test("a quote from another UTC day names its day; with no quote only a failure s
   expect(F.freshnessWarns(F.freshness("x", true, quoted, NOW))).toBe(true)
   expect(F.freshnessWarns(F.freshness("", false, quoted, NOW))).toBe(false)
 })
+
+test("funding reads its sign in text and tone, and the time left to settle", () => {
+  const f = (rate, next) => F.fundingFact({ marketTime: 1000, fundingRate: rate, nextFundingTime: next })
+  expect(f(0.0001, 1000 + 3 * 3600 + 12 * 60)).toMatchObject({ label: "FUNDING", value: "+0.0100%", after: "3h12m", tone: "up" })
+  expect(f(-0.00019795, 1000 + 600)).toMatchObject({ value: "\u22120.0198%", after: "10m", tone: "down" })
+  expect(f(0, 1000 + 600)).toMatchObject({ value: "0.0000%", tone: "" })
+  expect(f(null, null)).toMatchObject({ value: "", after: "" })
+})

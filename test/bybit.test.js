@@ -121,6 +121,22 @@ test("the last traded price by symbol, and when Bybit answered in seconds", () =
     ["AAPLUSDT", "BTCPERP", "BTCUSDT", "BTCUSDT-06NOV26", "ETHUSDT", "OPENAIUSDT"])
 })
 
+test("funding by symbol: the next rate and when it settles, in seconds", () => {
+  const f = B.parseQuotes(fixture("tickers.json")).funding
+  expect(f.AAPLUSDT).toEqual({ rate: -0.00019795, nextTime: 1792627200 })
+  expect(f.BTCUSDT.rate).toBe(0.00003087)
+})
+
+test("an empty funding rate or time is null, and the quote carries the funding", () => {
+  const json = clone(fixture("tickers.json"))
+  const t = json.result.list.find(x => x.symbol === "ETHUSDT")
+  t.fundingRate = ""; t.nextFundingTime = ""
+  const q = B.parseQuotes(json)
+  expect(q.funding.ETHUSDT).toEqual({ rate: null, nextTime: null })
+  expect(B.buildQuote(btc(), 1, q.time, candles(), [], { rate: 0.0001, nextTime: 5 })).toMatchObject({ fundingRate: 0.0001, nextFundingTime: 5 })
+  expect(B.buildQuote(btc(), 1, q.time, candles())).toMatchObject({ fundingRate: null, nextFundingTime: null })
+})
+
 test("a ticker with no price is left out", () => {
   const json = clone(fixture("tickers.json"))
   json.result.list.find(t => t.symbol === "ETHUSDT").lastPrice = ""
@@ -200,6 +216,8 @@ test("the record is the one QUOTE-RECORD.md describes", () => {
     low52w: 81150,
     firstTradeDate: 1584230400,
     fundingInterval: 480,
+    fundingRate: null,
+    nextFundingTime: null,
     points: []
   })
 })

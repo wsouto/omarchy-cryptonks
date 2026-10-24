@@ -33,6 +33,12 @@ const keep = instrument => instrument ? { symbol: instrument.symbol, instrument,
 const read = (text, asked = FIRST, instrument = null, symbol = "BTCUSDT") =>
   R.read(F.answers(text, B.limits), asked, symbol, keep(instrument), B)
 
+test("the quote carries the symbol's funding from the tickers", () => {
+  const got = read(whole())
+  expect(got.quote.fundingRate).toBe(0.00003087)
+  expect(got.quote.nextFundingTime).toBeGreaterThan(0)
+})
+
 test("a whole run gives the quote and keeps the instrument", () => {
   const got = read(whole())
   expect(got.problem).toBe("")

@@ -104,3 +104,9 @@ code, and move it here with a one-line pitch.
 - **The data-file notice is shorter** ("Can't read the data file · fix or
   remove it to save"), since the file's name is longer here than in the
   popup's width. The footer has no hint and no update notices. `crypto`
+- **The hero's listing line has FUNDING at its right end** (the original has
+  none): the perpetual's estimated funding rate for the next settlement,
+  signed (`+0.0100%`, `▲` in retro; positive, longs pay shorts), toned up or
+  down by its sign, and the time left to settlement (`3h12m`). The name gives
+  way to it before the symbol, exchange or currency do. It comes from the
+  tickers call that already gives the price. `crypto`
