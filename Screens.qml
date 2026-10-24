@@ -4,7 +4,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Quickshell
 import Quickshell.Hyprland
 
 // Hyprland's screens: whether every one is off (DPMS) as Hyprland last

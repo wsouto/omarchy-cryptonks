@@ -14,7 +14,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Commons
 import qs.Commons as Commons
-import qs.Ui
 import "Figures.js" as Figures
 import "Settings.js" as Settings
 import "Format.js" as Format
