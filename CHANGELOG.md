@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- VOL's value sits next to its label again, as in the original, instead of
+  starting under 24H OPEN's.
 - 1D is the last 24 hours, as on the exchanges, instead of the UTC day from
   00:00: the chart always fills, and the change, high, low and volume are the
   exchange's own 24-hour figures, so they match its app. Labels say "24H"

@@ -109,9 +109,7 @@ Each entry: **what**, **why**, and a tag.
   rate or open interest could take the other slot later. `crypto`
 - **VOL is the base coin's volume over 24 hours** (BTC for BTCUSDT), under
   1,000 to four digits, and its worth in the quote coin: "51K BTC ($4.2B)".
-  The coin is the symbol without its quote currency. The labels of a column
-  pad to the widest on show (`InfoTable`), so VOL's value starts under
-  24H OPEN's. `crypto`
+  The coin is the symbol without its quote currency. `crypto`
 
 ## Lists
 
