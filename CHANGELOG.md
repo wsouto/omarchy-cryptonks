@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The chart says "Loading <exchange>…" until the feed first answers for the
+  symbol, such as after stepping to another exchange.
 - The exchange's name on the hero is a pill: click it, or press `e`, to step
   to the next exchange.
 - OKX USDT perpetual swaps as a third exchange, `"exchange": "OKX"` in the data

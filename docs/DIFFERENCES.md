@@ -44,6 +44,9 @@ Each entry: **what**, **why**, and a tag.
   missing or unknown); the whole plugin reads one exchange at a time. A
   symbol the other exchange doesn't list shows its problem line until you
   switch back. `crypto`
+- **A "Loading <exchange>…" label over the chart** until the feed first
+  answers for the symbol (no quote yet, or one saved from an earlier session),
+  so a switch never shows a bare chart. `crypto`
 - **Each exchange keeps its own data**: a switch puts the feed's instruments,
   candles, quotes and charts aside for the exchange left, for the session,
   so switching back asks only what is due. The saved quotes file holds each

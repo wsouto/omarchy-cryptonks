@@ -756,6 +756,30 @@ Item {
         onExited: if (!motion.replayRunning) motion.clearScrub()
         onClicked: motion.clearScrub()
       }
+
+      // Until the feed first answers for this symbol (a new exchange, a new
+      // session), the chart is empty or a saved one: say it is on its way.
+      Rectangle {
+        visible: !!root.service && root.symbol !== "" && root.problem === ""
+          && (!root.quote || (!!root.freshness && root.freshness.state === "saved"))
+        anchors.centerIn: parent
+        width: loadingText.implicitWidth + Style.space(32)
+        height: loadingText.implicitHeight + Style.space(20)
+        radius: root.retro ? 0 : Style.cornerRadius
+        color: root.ground
+        border.width: 1
+        border.color: root.dimmer
+
+        Text {
+          id: loadingText
+          anchors.centerIn: parent
+          textFormat: Text.PlainText
+          text: "Loading " + (root.service ? root.service.exchange : "") + "…"
+          color: root.foreground
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.bodySmall
+        }
+      }
     }
 
     // The chart's range, from the day to all of the symbol's life.
