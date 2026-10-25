@@ -180,9 +180,9 @@ Item {
       width: exchangeText.implicitWidth + Style.space(8)
       height: exchangeText.implicitHeight
       radius: height / 2
-      color: "transparent"
-      border.width: 1
-      border.color: pillArea.containsMouse ? root.foreground : root.dim
+      // A button: filled, brighter on hover, darker while pressed.
+      color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b,
+        pillArea.pressed ? 0.25 : pillArea.containsMouse ? 0.18 : 0.1)
       Text {
         id: exchangeText
         anchors.centerIn: parent
