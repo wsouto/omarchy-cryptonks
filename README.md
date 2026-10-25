@@ -1,7 +1,7 @@
 # Cryptonks
 
 Cryptonks puts a crypto watchlist in your Omarchy 4 bar. A small pill
-shows how a coin is doing today. Click it for that coin's chart and your
+shows how a coin has done over the last 24 hours. Click it for that coin's chart and your
 lists, and step through the chart to see the price at any moment on it.
 
 <img src="media/popup.png" width="480" alt="The Cryptonks popup: BTCUSDT at 81,507.80, down 1.13%, over a week's chart, the ranges, the low and high lines, and a list of five symbols">
@@ -10,7 +10,7 @@ lists, and step through the chart to see the price at any moment on it.
   SOLUSDT. Set `"exchange": "Binance"` or `"OKX"` in the data file to read
   that one; Bybit is the default. One exchange at a time.
 - Charts from one day to all time.
-- The day runs from 00:00 UTC, since crypto never closes.
+- 1D is the last 24 hours, as on the exchange, since crypto never closes.
 - Lists of your own, such as a portfolio or a theme.
 - Two looks, smooth and retro, in your theme's colours.
 - No account and no API key.
@@ -50,7 +50,7 @@ you don't follow.
 
 <img src="media/pill.png" width="240" alt="The pill's four forms: a sparkline, an arrow, the symbol with its change, and the day's bear">
 
-The pill shows today's move for the coin you last looked at, in one of four
+The pill shows the 24-hour move for the coin you last looked at, in one of four
 forms: a sparkline, an arrow, the price as text, or the day's animal, the
 bull on an up day and the bear on a down one. Middle-click it to change its
 form. On a bar at the side of the screen it shows the animal, and a
@@ -68,16 +68,16 @@ cursor, and `→` steps forward. Click the bull, or on a down day the bear, to
 replay the chart.
 
 Pick a range under the chart, from 1D to ALL, with a click or `[` and `]`. The
-chart then shows that range, even after a restart. The rows stay on the day's
+chart then shows that range, even after a restart. The rows stay on the 24 hours'
 move. On 1D, press `c` to see the change as a percent or an amount. A longer
 range always shows the percent.
 
-The change is measured from 00:00 UTC, not from Bybit's own rolling 24
-hours, so the two can differ. The pill's hover and the header say so.
+The change is the exchange's own 24-hour change: the price against the price
+24 hours ago, the same figure its app shows.
 
 Under the ranges, two lines place the price between its low and high: for
-the day or the range, and for the past 52 weeks. Beside them are the open
-and the volume since 00:00 UTC, in the coin and in dollars, or a range's low
+the last 24 hours or the range, and for the past 52 weeks. Beside them are
+the price 24 hours ago and the 24 hours' volume, in the coin and in dollars, or a range's low
 and high dates. A symbol younger than a range shows only its own life, so
 every perpetual's 10Y and ALL look alike.
 
@@ -181,7 +181,7 @@ missing, too alike, or too faint.
 | `Shift+W` | Manage lists: rename, reorder, delete |
 | `m` | Tick the selected row's lists |
 | `,` `.` | Previous or next list |
-| `c` | Show the day's change as a percent or an amount |
+| `c` | Show the 24-hour change as a percent or an amount |
 | `e` | Switch to the next exchange |
 | `s` | Switch between smooth and retro |
 | `r` | Refresh |
@@ -209,8 +209,8 @@ same.
   far over what Cryptonks asks; a 403 from it means it is not available where
   you are.
 - **A price looks wrong.** It is Bybit's last traded price for the USDT
-  perpetual, not a spot price, and it is never converted. The change runs from
-  00:00 UTC. Bybit's own "24h change" is a rolling 24 hours.
+  perpetual, not a spot price, and it is never converted. The change is the
+  exchange's rolling 24 hours.
 - **The header says "Loading BTCUSDT 1W".** The range's candles are on their
   way.
 - **The header says "1W unavailable", with RETRY beside it.** Bybit didn't
@@ -240,7 +240,7 @@ same.
   list of contracts in `~/.cache/wsouto.cryptonks/`. The shell keeps the
   pill's form on its bar entry in `~/.config/omarchy/shell.json`.
 - **Limits:** every request has a time limit of 10 seconds and a size cap.
-  Prices refresh every minute. A row's day line comes every 5 minutes, and the
+  Prices refresh every minute. A row's 24-hour line comes every 5 minutes, and the
   symbol on the pill and in the popup's chart every minute. A window no screen
   shows fetches nothing. Bybit allows far more requests than this, and a
   refusal is left alone for as long as it asks.

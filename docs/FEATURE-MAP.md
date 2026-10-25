@@ -22,8 +22,9 @@ Almost everything in the original that is not fidelity comes from one fact:
 a stock market opens and closes, and a perpetual future does not. So the
 original's market sessions, pre-market, after-hours, overnight prices,
 exchange calendars, "market opens in 2h" and the animal that sleeps while
-the market rests have nothing to show here. The day is the UTC day instead
-(roadmap decision 3), and the screen says "since 00:00 UTC".
+the market rests have nothing to show here. 1D is the last 24 hours instead,
+as the exchanges show it, and the screen says "24H". (Until 2026-10-25 it was
+the UTC day from 00:00, which left the chart nearly empty after midnight.)
 
 ## The pill
 
@@ -47,11 +48,11 @@ the market rests have nothing to show here. The day is the UTC day instead
 | --- | --- | --- | --- |
 | Hero: symbol, listing line, price, change | yes | **Adapt** | The listing line says name, `Bybit` and `USDT` instead of a company, exchange and currency. |
 | Funding rate on the listing line | no | **Add** | A perpetual pays it every few hours; sign, tone and time to settlement show at the line's right end. |
-| Change shown as percent, amount, or "since the open" (`c`) | previous close is the base; "open" is the third | **Adapt** | Here the base is 00:00 UTC. For a market that never closes, the previous day's close and today's open are nearly the same number, so the third mode would repeat the first. Recommend two modes, percent and amount. **Agree on two modes.** |
+| Change shown as percent, amount, or "since the open" (`c`) | previous close is the base; "open" is the third | **Adapt** | Here the base is the price 24 hours ago. For a market that never closes, the previous day's close and today's open are nearly the same number, so the third mode would repeat the first. Recommend two modes, percent and amount. **Agree on two modes.** |
 | Price in both looks (smooth, retro block digits) | yes | **Keep** | `Cells.js` comes back from Stonks when the retro look is built. |
 | Scrub: hover the chart and the price, change and rows follow | yes | **Keep** | |
 | Click the animal to replay the chart (`p`) | yes | **Keep** | |
-| Day chart, one rule for the day and every range, dashed baseline | yes | **Keep** | The day is the UTC day, from 5-minute candles (at most 288). |
+| Day chart, one rule for the day and every range, dashed baseline | yes | **Keep** | The last 24 hours, from 5-minute candles (288). |
 | Market status line (opens in, closes in, after hours, closed) | yes | **Drop** | No sessions. |
 | Pre-market, after-hours, overnight price line under the price | Yahoo and Robinhood | **Drop** | No sessions. Robinhood is not used at all. |
 | The day's named moments, such as "Power hour" | tied to US sessions | **Drop** | A crypto day has no such moments. The funding times could be a later equivalent. |
@@ -81,9 +82,9 @@ the original does for a young stock. **It's good for me.**
 
 | Feature | Original | Here | Why |
 | --- | --- | --- | --- |
-| Day range rule (low to high, price between) | yes | **Keep** | From the UTC day's candle (`dayLow`, `dayHigh`). |
+| Day range rule (low to high, price between) | yes | **Keep** | The exchange's 24-hour figures (`low24h`, `high24h`). |
 | 52-week rule | yes | **Keep** | From 365 daily candles (`low52w`, `high52w`). |
-| Open and volume, or a range's low and high dates | yes | **Keep** | `dayOpen`, `volume`. |
+| Open and volume, or a range's low and high dates | yes | **Keep** | `open24h`, `volume24h`. |
 | Market cap and P/E | Yahoo | **Drop** | A perpetual has neither. |
 | What takes their place | | **Later** | Funding rate, open interest and turnover are on Bybit's ticker. You said no extras this round, so the slot stays empty or shows the turnover we already hold. |
 
@@ -194,7 +195,7 @@ on 2026-10-21.
 
 - **Ok.**
 
-3. **Change modes.** Two (percent and amount, both since 00:00 UTC) or
+3. **Change modes.** Two (percent and amount, both over the last 24 hours) or
    three, as the original?
 
 - **The 2 modes is sufficient**

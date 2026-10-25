@@ -163,6 +163,13 @@ The steps from 5 on follow the original's layers, as drawn in
         treats a symbol the call doesn't return. Add a key for it to
         `KeySheet.js` and the pill to [DIFFERENCES.md](DIFFERENCES.md).
 
+- [x] **16. Rolling 24 hours.** 1D was the UTC day from 00:00, so the chart
+      was nearly empty after midnight UTC. Now the line is the 24 hours up to
+      the newest candle, and the change, high, low and volume are each
+      exchange's ticker figures (`open24h` … `turnover24h`); the saved quotes
+      go to version 3. You see: a full chart at any hour, and the same % as
+      the exchange's app.
+
 Coinbase is left out for now: its perpetuals trade in USDC on Coinbase
 International, so it needs a decision on those or spot first.
 
