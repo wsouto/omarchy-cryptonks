@@ -181,10 +181,10 @@ Item {
     Rectangle {
       width: exchangeText.implicitWidth + Style.space(16)
       height: exchangeText.implicitHeight + Style.space(4)
-      radius: height / 2
-      // A button: filled, brighter on hover, darker while pressed.
-      color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b,
-        pillArea.pressed ? 0.25 : pillArea.containsMouse ? 0.18 : 0.1)
+      color: "transparent"
+      border.width: 1
+      // Brighter border on hover, and while pressed.
+      border.color: pillArea.pressed || pillArea.containsMouse ? root.foreground : root.dim
       Text {
         id: exchangeText
         anchors.centerIn: parent
