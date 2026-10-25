@@ -32,7 +32,7 @@ test("the 1D line is the 24 hours' range with the price between, then their turn
   const line = F.dayLine(full)
   expect(line.title).toBe("1D")
   expect(line.range).toMatchObject({ low: 79, high: 85, price: 82, lowText: "79.0", highText: "85.0", lowTone: "", highTone: "" })
-  expect(line.facts.map(f => [f.label, f.value])).toEqual([["VOL", "$1.5B"]])
+  expect(line.facts.map(f => [f.label, f.value])).toEqual([["VOL", "1.5B"]])
   expect(F.dayLine(null)).toBeNull()
 })
 
@@ -49,6 +49,7 @@ test("the 52-week line is the year's low and high, toned where the 24 hours set 
   expect(line.range).toMatchObject({ low: 70, high: 90, highTone: "", lowTone: "" })
   expect(F.yearLine({ ...full, high24h: 90 }).range.highTone).toBe("up")
   expect(F.yearLine({ ...full, low52w: null }).range.lowText).toBe("")
+  expect(F.yearLine({ ...full, price: 82000, low52w: 57758.6, high52w: 116380.2 }).range).toMatchObject({ lowText: "57,759", highText: "116,380" })
 })
 
 // ---- Freshness ----

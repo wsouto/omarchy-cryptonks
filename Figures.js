@@ -119,13 +119,13 @@ function fundingFact(quote) {
 }
 
 // The 1D line's VOL: the 24 hours' turnover, their worth in the quote coin,
-// as "$4.2B", which is the volume Bybit's ticker shows. Its slot is as wide
-// as $999.9B, and stays when the exchange sent none.
+// as "4.2B", which is the volume Bybit's ticker shows. Its slot is as wide
+// as 999.9B, and stays when the exchange sent none.
 function volumeFact(quote) {
   return {
     label: "VOL",
-    value: Format.isFiniteNumber(quote.turnover24h) ? "$" + Format.compactNumber(quote.turnover24h) : "",
-    widest: Format.widest("$999.9B")
+    value: Format.isFiniteNumber(quote.turnover24h) ? Format.compactNumber(quote.turnover24h) : "",
+    widest: Format.widest("999.9B")
   }
 }
 

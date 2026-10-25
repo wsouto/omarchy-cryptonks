@@ -166,9 +166,13 @@ function statsDate(history, t, withYear, asDay) {
   return d.getUTCDate() + " " + month + (withYear || spansYears(history) ? " " + d.getUTCFullYear() : "")
 }
 
-// The widest date `statsDate` writes: a two-digit day and the year.
-function statsDateWidest(step) {
-  return step > 86400 ? "MMM 8888" : "88 MMM 8888"
+// The widest date `statsDate` writes: a week's or a month's with its year, a
+// day's or an hour's with a two-digit day but no year, which it takes only
+// when the range crosses one; then the slot grows. `withYear`, as SINCE,
+// always has it. The original sizes a day's with the year: next to a coin's
+// prices that left HIGH no room.
+function statsDateWidest(step, withYear) {
+  return step > 86400 ? "MMM 8888" : withYear ? "88 MMM 8888" : "88 MMM"
 }
 
 // A range line's facts for bars of `step` seconds: when the symbol is
@@ -177,7 +181,7 @@ function statsDateWidest(step) {
 // after them. `values` holds what each says, "" when not known.
 function rangeFacts(step, since, bars, values) {
   var facts = []
-  if (since) facts.push({ label: "SINCE", value: values.since || "", widest: statsDateWidest(86400) })
+  if (since) facts.push({ label: "SINCE", value: values.since || "", widest: statsDateWidest(86400, true) })
   facts.push({ label: "LOW", value: values.low || "", widest: statsDateWidest(step) })
   facts.push({ label: "HIGH", value: values.high || "", widest: statsDateWidest(step) })
   if (since && bars) facts.push({ label: "", value: values.bars || "", after: "BARS", widest: "8" })

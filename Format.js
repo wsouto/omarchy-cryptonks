@@ -5,7 +5,7 @@
 // and a UTC clock, the retro look's signs, and stacking a
 // symbol, a percent and a move in money for a side bar; the local
 // clock times, durations and range texts were removed until a screen needs
-// them. A stacked symbol
+// them. An info line's range drops the decimals from a thousand. A stacked symbol
 // splits at its quote currency, as the original splits BTC-USD at its dash.
 // Kept as plain JavaScript on purpose.
 // How numbers are checked and written: prices, changes and their signs.
@@ -128,15 +128,17 @@ function infoRange(low, high, price, digits) {
   high = known(high)
   price = known(price)
   var largest = [low, high, price].reduce(function (m, v) { return v === null ? m : Math.max(m, Math.abs(v)) }, -1)
+  // From a thousand the cents are dropped: a coin's long prices leave the line no room.
+  var places = largest >= 1000 ? 0 : digits
   return {
     low: low,
     high: high,
     price: price,
-    lowText: low === null ? "" : money(low, digits),
-    highText: high === null ? "" : money(high, digits),
+    lowText: low === null ? "" : money(low, places),
+    highText: high === null ? "" : money(high, places),
     lowTone: "",
     highTone: "",
-    widest: largest < 0 ? "" : widest(money(largest, digits))
+    widest: largest < 0 ? "" : widest(money(largest, places))
   }
 }
 

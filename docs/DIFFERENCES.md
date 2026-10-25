@@ -110,8 +110,13 @@ Each entry: **what**, **why**, and a tag.
 - **The 1D line has VOL and no open**, where the original has OPEN and VOL:
   next to an open, a coin's long prices leave VOL no room, and the hero's
   24-hour change already says where the price was. `crypto`
-- **VOL is the 24 hours' turnover**, their worth in the quote coin ("$4.2B"),
+- **VOL is the 24 hours' turnover**, their worth in the quote coin ("4.2B"),
   not the volume in the base coin, as Bybit's ticker shows it. `crypto`
+- **The info lines' prices drop their decimals from 1,000** ("116,380"), and a
+  range line's date slot is sized without the year, which a day's date takes
+  only when the range crosses one. Next to a coin's long prices the original's
+  widths left the range lines no room for HIGH. When a range crosses New Year
+  HIGH can still drop out. `crypto`
 
 ## Lists
 
