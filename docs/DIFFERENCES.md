@@ -110,9 +110,8 @@ Each entry: **what**, **why**, and a tag.
 - **The 1D line has VOL and no open**, where the original has OPEN and VOL:
   next to an open, a coin's long prices leave VOL no room, and the hero's
   24-hour change already says where the price was. `crypto`
-- **VOL is the base coin's volume over 24 hours** (BTC for BTCUSDT), under
-  1,000 to four digits, and its worth in the quote coin: "51K BTC ($4.2B)".
-  The coin is the symbol without its quote currency. `crypto`
+- **VOL is the 24 hours' turnover**, their worth in the quote coin ("$4.2B"),
+  not the volume in the base coin, as Bybit's ticker shows it. `crypto`
 
 ## Lists
 

@@ -118,21 +118,14 @@ function fundingFact(quote) {
   }
 }
 
-// The 1D line's VOL: the 24 hours' volume in the base coin and its worth in
-// the quote coin, as "51K BTC ($4.2B)". Its slot is as wide as 999.9M and
-// $999.9B, and stays when the exchange sent none.
+// The 1D line's VOL: the 24 hours' turnover, their worth in the quote coin,
+// as "$4.2B", which is the volume Bybit's ticker shows. Its slot is as wide
+// as $999.9B, and stays when the exchange sent none.
 function volumeFact(quote) {
-  var coin = quote.currency && quote.symbol.slice(-quote.currency.length) === quote.currency
-    ? quote.symbol.slice(0, -quote.currency.length) : ""
-  var text = function(volume, worth) {
-    return Format.compactNumber(volume) + (coin !== "" ? " " + coin : "") + (worth !== null ? " ($" + worth + ")" : "")
-  }
-  var known = Format.isFiniteNumber(quote.volume24h)
-  var worth = Format.isFiniteNumber(quote.turnover24h)
   return {
     label: "VOL",
-    value: known ? text(quote.volume24h, worth ? Format.compactNumber(quote.turnover24h) : null) : "",
-    widest: Format.widest(text(999.9e6, worth ? "999.9B" : null))
+    value: Format.isFiniteNumber(quote.turnover24h) ? "$" + Format.compactNumber(quote.turnover24h) : "",
+    widest: Format.widest("$999.9B")
   }
 }
 

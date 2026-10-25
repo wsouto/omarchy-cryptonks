@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   every range. The 24-hour open is no longer shown.
 - VOL's value sits next to its label again, as in the original, instead of
   starting under 24H OPEN's.
+- VOL shows the 24 hours' turnover in the quote coin, such as `$4.2B`, as
+  Bybit's ticker does, instead of `51K BTC ($4.2B)`.
 - 1D is the last 24 hours, as on the exchanges, instead of the UTC day from
   00:00: the chart always fills, and the change, high, low and volume are the
   exchange's own 24-hour figures, so they match its app. Labels say "24H"
