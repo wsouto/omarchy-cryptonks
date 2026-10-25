@@ -425,3 +425,68 @@ test("a 451 names both of its causes, as a 403 does for Bybit", () => {
   const got = nRead(answer(0, 451), ["quotes"])
   expect(got.problem).toBe("Binance refused us (too many requests from this IP, or Binance is not available where you are): waiting 10 minutes")
 })
+
+// ---- An exchange that answers a page of candles at a time: OKX ----
+
+const O = load("adapters/okx.js")
+const obody = name => body("okx-" + name)
+const oBtc = () => O.parseInstruments(JSON.parse(obody("instruments.json"))).instruments.find(i => i.symbol === "BTCUSDT")
+// OKX's older page: the same shape, its candles a day earlier each.
+const olderPage = () => JSON.stringify({ code: "0", msg: "", data: [
+  ["1792627200000", "81000", "81500", "80500", "81380.9", "100", "1", "81000", "1"],
+  ["1792540800000", "80000", "81100", "79900", "81000", "100", "1", "80000", "1"]] })
+const oRead = (text, asked, kept = keep(oBtc())) => R.read(F.answers(text, O.limits), asked, "BTCUSDT", kept, O)
+
+test("a year of days is asked as two pages, with the older page's role numbered", () => {
+  const now = 1792887309
+  const first = R.plan(O, "BTCUSDT", keep(oBtc()), now, true, true, "", false)
+  expect(first.asked).toEqual(["quotes", "funding", "year", "year#1", "day"])
+  expect(first.urls[2]).toContain("/market/candles")
+  expect(first.urls[3]).toContain("/market/history-candles")
+  // Bybit has no pages, so its roles are as they were.
+  expect(R.plan(B, "BTCUSDT", keep(btc()), now, true, true, "", false).asked).toEqual(["quotes", "year", "day"])
+})
+
+test("a long range is asked as a page for each 300 candles", () => {
+  const now = 1792887309
+  const got = R.plan(O, "BTCUSDT", keep(oBtc()), now, false, false, "1W", false)
+  expect(got.asked).toEqual(["quotes", "funding", "history:1W", "history:1W#1", "history:1W#2"])
+})
+
+test("the pages of a year are joined into the candles kept, oldest first", () => {
+  const text = answer(0, 200, obody("ticker-btc.json")) + answer(1, 200, obody("funding-btc.json"))
+    + answer(2, 200, obody("candles-btc-d.json")) + answer(3, 200, olderPage()) + answer(4, 200, obody("candles-btc-5.json"))
+  const got = oRead(text, ["quotes", "funding", "year", "year#1", "day"])
+  expect(got.problem).toBe("")
+  expect(got.kept.year).toBe(true)
+  expect(got.kept.candles.map(c => c.t)).toEqual([1792540800, 1792627200, 1792713600, 1792800000, 1792886400])
+  expect(got.quote.price).toBe(80744.5)
+  expect(got.quote.fundingRate).toBe(0.0000244791294062)
+})
+
+test("a year whose older page did not come keeps no year and gives no half quote", () => {
+  const text = answer(0, 200, obody("ticker-btc.json")) + answer(1, 200, obody("funding-btc.json"))
+    + answer(2, 200, obody("candles-btc-d.json")) + answer(3, 500) + answer(4, 200, obody("candles-btc-5.json"))
+  const got = oRead(text, ["quotes", "funding", "year", "year#1", "day"])
+  expect(got.kept.year).toBeFalsy()
+  expect(got.quote).toBeNull()
+  expect(got.problem).toBe("OKX sent an error (HTTP 500)")
+})
+
+test("a range's pages are joined into its line; one missing is a slip, not a line", () => {
+  const first = obody("candles-btc-d.json")
+  const whole = answer(0, 200, obody("ticker-btc.json")) + answer(1, 200, obody("funding-btc.json"))
+    + answer(2, 200, first) + answer(3, 200, olderPage())
+  const got = oRead(whole, ["quotes", "funding", "history:1Y", "history:1Y#1"], { ...keep(oBtc()), candles: [], day: [] })
+  expect(got.history.bars.length).toBe(5)
+  expect(got.history.baseline).toBe(80000)
+  const lacking = oRead(answer(0, 200, obody("ticker-btc.json")) + answer(1, 200, obody("funding-btc.json")) + answer(2, 200, first),
+    ["quotes", "funding", "history:1Y", "history:1Y#1"], { ...keep(oBtc()), candles: [], day: [] })
+  expect(lacking.history).toBeNull()
+  expect(lacking.problem).toBe("The refresh stopped before every answer came")
+})
+
+test("OKX's own words are shown for a question it refused with HTTP 200", () => {
+  const text = answer(0, 200, obody("error.json")) + answer(1, 200, obody("funding-btc.json"))
+  expect(oRead(text, ["quotes", "funding"]).problem).toContain("OKX: Instrument ID")
+})

@@ -49,8 +49,21 @@ Each entry: **what**, **why**, and a tag.
 - **Each exchange has a symbol list of its own** (`instruments-<exchange>.json`
   in the cache), and a switch empties the quotes kept, so one exchange's
   price is never shown as the other's. `crypto`
+- **OKX** (`adapters/okx.js`): a symbol stays `BTCUSDT`, mapped to OKX's
+  `BTC-USDT-SWAP`; the name is the base coin; funding is a request of its own
+  and has no interval (`fundingInterval` null); stock, commodity and index
+  swaps (`instCategory` other than 1) and the inverse and USDC swaps are left
+  out; coins that OKX names without Bybit's `1000` prefix (PEPE, not
+  1000PEPE) are different symbols. `crypto`
+- **OKX answers 300 candles at most**, so a year of days (the 52W figures and
+  the 1Y range), 2Y, 1W on 15-minute candles, 1M on hourly ones, YTD past day
+  300 and 10Y are several requests, the older ones from OKX's history
+  endpoint (`dailyMore`, `historyMore`, `Refresh.js`). A page that fails
+  fails the whole question, so a range is never drawn short. `crypto`
+- **OKX's volume is read in the base coin** (`volCcy`), as its own `vol`
+  counts contracts of a size that differs by coin. `crypto`
 - **Rate limits**: Bybit 600 requests per 5 s, Binance 2400 weight per
-  minute, both per IP and free; see [ADAPTERS.md](ADAPTERS.md). `crypto`
+  minute, OKX 10 to 40 requests per 2 seconds for each instrument, all per IP and free; see [ADAPTERS.md](ADAPTERS.md). `crypto`
 
 ## Ranges (step 9)
 

@@ -1,12 +1,13 @@
 .pragma library
 .import "adapters/bybit.js" as Bybit
 .import "adapters/binance.js" as Binance
+.import "adapters/okx.js" as Okx
 
 // The exchanges this project can read, in the order a click steps through
 // them, and the one that is meant when a name is unknown. Pure: it only
 // picks an adapter by its name.
 
-var ADAPTERS = [Bybit, Binance]
+var ADAPTERS = [Bybit, Binance, Okx]
 
 function names() {
   return ADAPTERS.map(function (a) { return a.NAME })

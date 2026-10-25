@@ -6,9 +6,9 @@ lists, and step through the chart to see the price at any moment on it.
 
 <img src="media/popup.png" width="480" alt="The Cryptonks popup: BTCUSDT at 81,507.80, down 1.13%, over a week's chart, the ranges, the low and high lines, and a list of five symbols">
 
-- Bybit or Binance USDT perpetual futures, such as BTCUSDT, ETHUSDT, and
-  SOLUSDT. Set `"exchange": "Binance"` in the data file to read Binance; Bybit
-  is the default. One exchange at a time.
+- Bybit, Binance or OKX USDT perpetual futures, such as BTCUSDT, ETHUSDT, and
+  SOLUSDT. Set `"exchange": "Binance"` or `"OKX"` in the data file to read
+  that one; Bybit is the default. One exchange at a time.
 - Charts from one day to all time.
 - The day runs from 00:00 UTC, since crypto never closes.
 - Lists of your own, such as a portfolio or a theme.
@@ -204,7 +204,9 @@ same.
   are somewhere Bybit doesn't serve, there is nothing to do. Binance does the
   same with 418 (too many requests) or 451 (not available in your country),
   and its limit is 2400 request weight a minute, which Cryptonks stays far
-  under.
+  under. OKX's limits are 10 to 40 requests per 2 seconds for each coin, also
+  far over what Cryptonks asks; a 403 from it means it is not available where
+  you are.
 - **A price looks wrong.** It is Bybit's last traded price for the USDT
   perpetual, not a spot price, and it is never converted. The change runs from
   00:00 UTC. Bybit's own "24h change" is a rolling 24 hours.

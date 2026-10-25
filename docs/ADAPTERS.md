@@ -26,6 +26,7 @@ change it)
 | `buildQuote(instrument, price, marketTime, candles, dayCandles)` | the record of [QUOTE-RECORD.md](QUOTE-RECORD.md) |
 | `said(json)` | the words an exchange gave when it turned a question down, "" if none |
 | `fundingUrl(symbol)` and `parseFunding(json)` | optional: for an exchange that sends the funding rate apart from the price, `{ symbol: { rate, nextTime } }` |
+| `dailyMore(symbol, count, now)` and `historyMore(symbol, range, now)` | optional: for an exchange that answers only a page of candles at a time, the URLs of the older pages, newest first, asked as `year#1`, `daily#1`, `history:<range>#1` and read with the first page; a page that fails fails the whole question |
 | `runCap` | optional: the size cap of a run, when an answer it asks for is larger than a year of candles |
 | `limits` | request limits, which statuses mean "refused", for how long, and why in words |
 
@@ -67,3 +68,28 @@ your country. The feed leaves Binance alone for as long as it asks, and 10
 minutes for a 418 or 451. Compare Bybit's: 600 requests per 5 seconds, then
 403 and a ban of 10 minutes or more.
 Source: <https://developers.binance.com/docs/derivatives/usds-margined-futures/general-info>.
+
+**Third adapter: OKX** (`adapters/okx.js`), V5 API, USDT perpetual swaps
+(`https://www.okx.com`, no key). A symbol is the base coin and USDT, as on the
+others; OKX's own id is `BTC-USDT-SWAP`.
+
+| Need | Endpoint | Limit (per IP and instrument ID) |
+| --- | --- | --- |
+| Symbol list, tick size, listing time | `GET /api/v5/public/instruments?instType=SWAP` (about 520 USDT swaps, 40 KB compressed on 2026-10-24; `&instId=` narrows it to one) | 20 per 2 s |
+| Last price | `GET /api/v5/market/ticker?instId=` | 20 per 2 s |
+| Funding rate, next settlement | `GET /api/v5/public/funding-rate?instId=` | 10 per 2 s |
+| Newest candles, the day's 5-minute ones | `GET /api/v5/market/candles` (**300 at most**, newest first) | 40 per 2 s |
+| Older candles | `GET /api/v5/market/history-candles` with `after` (300 at most) | 20 per 2 s |
+
+Free and keyless; the limits are the docs' (checked 2026-10-24), per IP and
+per instrument ID, so one symbol's requests don't count against another's. A
+minute asks a symbol for one price and one funding (2 requests), and the
+featured symbol's day and year candles (2 to 3 more, a 365-day year being two
+pages); the first read of a range costs 1 to 3 pages (1W and 1M 3, 2Y 3, 1Y 2,
+the rest 1). Even a first load of one symbol is 7 requests in a burst against
+limits of 10 to 40 per 2 seconds. Past a limit OKX answers HTTP 429, or HTTP
+200 with code `50011` ("Rate limit reached"), which shows as OKX's own words
+on that refresh and is asked again the next minute. 403 is what OKX's front
+gives an IP it blocks (restricted countries), and pauses the feed for 10
+minutes.
+Source: <https://www.okx.com/docs-v5/en/#overview-rate-limits>.

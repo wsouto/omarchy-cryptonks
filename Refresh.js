@@ -82,18 +82,59 @@ function plan(adapter, symbol, kept, now, candles, year, range, force) {
   }
   if (candles !== false) {
     var count = dailyCount(mine, now, year)
-    urls.push(adapter.dailyUrl(symbol, count), adapter.candlesUrl(symbol, dayStart(mine.day, now)))
-    asked.push(year && !mine.year ? "year" : "daily", "day")
+    var base = year && !mine.year ? "year" : "daily"
+    urls.push(adapter.dailyUrl(symbol, count))
+    asked.push(base)
+    morePages(adapter.dailyMore ? adapter.dailyMore(symbol, count, now) : null, base, urls, asked)
+    urls.push(adapter.candlesUrl(symbol, dayStart(mine.day, now)))
+    asked.push("day")
   }
   if (range && range !== "1D" && (force || History.due(range, mine.histories[range] && mine.histories[range].at, now))) {
     urls.push(adapter.historyUrl(symbol, range, now))
     asked.push("history:" + range)
+    morePages(adapter.historyMore ? adapter.historyMore(symbol, range, now) : null, "history:" + range, urls, asked)
   }
   if (mine.instrument === null) {
     urls.push(adapter.instrumentUrl(symbol))
     asked.push("instrument")
   }
   return { urls: urls, asked: asked }
+}
+
+// The further pages of a question the exchange answers only 300 candles at a
+// time (the adapter's `dailyMore`, `historyMore`): the older candles' URLs,
+// each asked as the question's role and its place, "year#1", "year#2".
+function morePages(more, base, urls, asked) {
+  if (!more) return
+  for (var i = 0; i < more.length; i++) {
+    urls.push(more[i])
+    asked.push(base + "#" + (i + 1))
+  }
+}
+
+// The roles of one question: its own, then its pages.
+function pagesOf(asked, base) {
+  return asked.filter(function (r) { return r === base || r.indexOf(base + "#") === 0 })
+}
+
+// The candles of every page of one question, as { candles, bad }: `candles`
+// all of them oldest first, or null when a page did not come or can't be
+// read; `bad` the first page that came but can't be read, else null (a
+// page that did not come has been explained by its HTTP status).
+function readPages(adapter, json, roles) {
+  var all = []
+  var bad = null
+  var missing = false
+  for (var i = 0; i < roles.length; i++) {
+    if (!json[roles[i]]) { missing = true; continue }
+    var page = adapter.parseCandles(json[roles[i]])
+    if (page === null) {
+      if (bad === null) bad = json[roles[i]]
+      continue
+    }
+    all = mergeCandles(all, page)
+  }
+  return { candles: missing || bad !== null ? null : all, bad: bad, missing: missing }
 }
 
 // The kept candles with the fresh ones in, oldest first: a fresh candle
@@ -206,25 +247,27 @@ function read(all, asked, symbol, kept, adapter) {
     var apart = adapter.parseFunding(json.funding)
     if (apart !== null) quotes.funding = apart
   }
-  var wanted = asked.filter(function (role) { return role.indexOf("history:") === 0 })[0]
-  if (wanted && !json[wanted] && !slip) slip = "The refresh stopped before every answer came"
-  if (wanted && json[wanted]) {
+  var wantedRoles = asked.filter(function (role) { return role.indexOf("history:") === 0 && role.indexOf("#") < 0 })
+  var wanted = wantedRoles[0]
+  if (wanted) {
     var range = wanted.slice("history:".length)
-    var ranged = adapter.parseCandles(json[wanted])
-    if (ranged === null) slip = slip || said(adapter, json[wanted])
-    else if (ranged.length === 0) slip = slip || adapter.NAME + " sent no candles for " + symbol + " over " + range
+    var ranged = readPages(adapter, json, pagesOf(asked, wanted))
+    if (ranged.bad !== null) slip = slip || said(adapter, ranged.bad)
+    else if (ranged.missing) slip = slip || "The refresh stopped before every answer came"
+    else if (ranged.candles.length === 0) slip = slip || adapter.NAME + " sent no candles for " + symbol + " over " + range
     else {
       var histories = Object.assign({}, mine.histories)
-      histories[range] = { candles: ranged, at: quotes ? quotes.time : 0 }
+      histories[range] = { candles: ranged.candles, at: quotes ? quotes.time : 0 }
       out.kept.histories = histories
-      out.history = adapter.buildHistory(symbol, range, ranged)
+      out.history = adapter.buildHistory(symbol, range, ranged.candles)
     }
   }
-  var daily = json.daily || json.year
-  var candles = daily ? adapter.parseCandles(daily) : null
-  if (daily && candles === null) trouble = trouble || said(adapter, daily)
+  var dailyBase = asked.indexOf("year") >= 0 ? "year" : asked.indexOf("daily") >= 0 ? "daily" : ""
+  var dailyGot = dailyBase ? readPages(adapter, json, pagesOf(asked, dailyBase)) : { candles: null, bad: null }
+  var candles = dailyGot.candles
+  if (dailyGot.bad !== null) trouble = trouble || said(adapter, dailyGot.bad)
   if (candles !== null) out.kept.candles = mergeCandles(out.kept.candles, candles).slice(-YEAR)
-  if (candles !== null && json.year) out.kept.year = true
+  if (candles !== null && dailyBase === "year") out.kept.year = true
   var day = json.day ? adapter.parseCandles(json.day) : null
   if (json.day && day === null) trouble = trouble || said(adapter, json.day)
   // Only the day the exchange answered in is kept: at midnight the line

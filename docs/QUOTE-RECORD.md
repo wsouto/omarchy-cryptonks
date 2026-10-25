@@ -41,6 +41,15 @@ sends no full name), `priceDigits` is `pricePrecision`, `firstTradeDate` is
 Bybit's), and `fundingInterval` is `null`: Binance sends it only in a list of
 the contracts that differ from 8 hours, which nothing here reads.
 
+**On OKX** (`adapters/okx.js`): `symbol` is the base coin and `USDT` (OKX's
+`instId` is `BTC-USDT-SWAP`), `name` the base coin, `priceDigits` the decimals
+of `tickSz`, `firstTradeDate` is `listTime`, `price` is ticker `last`,
+`marketTime` its `ts`, `fundingRate` and `nextFundingTime` are funding-rate
+`fundingRate` and `fundingTime` (the settlement to come; OKX's
+`nextFundingTime` is the one after), the candles are `1Dutc` days, `volume` is
+the candle's `volCcy` (base coin) and `turnover` its `volCcyQuote`, and
+`fundingInterval` is `null`.
+
 ## Which symbols are in scope
 
 Read from Bybit's [instruments-info page](https://bybit-exchange.github.io/docs/v5/market/instrument) on 2026-10-21:

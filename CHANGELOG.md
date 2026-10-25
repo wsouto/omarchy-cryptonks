@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- OKX USDT perpetual swaps as a third exchange, `"exchange": "OKX"` in the data
+  file. OKX answers 300 candles at a time, so a year and the long ranges are
+  read in several pages.
 - Binance USDT perpetuals as a second exchange, picked by the `exchange` key of
   the data file (`"Bybit"` or `"Binance"`; Bybit stays the default). Each
   exchange keeps its own symbol list, and a switch clears the quotes kept.
