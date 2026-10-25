@@ -1,6 +1,6 @@
 // Copied from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2, InfoTable.qml.
 // Changes: the facts are one run against the right edge, a space apart,
-// instead of each in its column.
+// sized by the widest run, instead of each in its column.
 pragma ComponentBehavior: Bound
 
 import QtQuick
@@ -14,11 +14,11 @@ import "Tones.js" as Tones
 // (`Figures.dayLine`, `History.rangeLine`, `Fundamentals.yearLine`). The
 // columns are shared, so the two rules stand in one column. Each column is
 // as wide as the widest figure its slots can hold at the listing's digits,
-// never today's: each fact's as the widest any line puts there on any
-// range (`factLists`), and the title column as the widest of `titles`. So
+// never today's: the facts' as the widest run any line makes on any range
+// (`factLists`), and the title column as the widest of `titles`. So
 // the rule's length never changes; the cost is a rule as short on the day
 // as on the widest range. The rule takes the room the columns leave, so the
-// table spans the band's width at any width; a trailing column that does
+// table spans the band's width at any width; a trailing fact that does
 // not fit is left out whole, never cut. The facts are drawn as one run
 // against the right edge, a space apart, so they move with their text.
 Item {
@@ -68,23 +68,31 @@ Item {
 
   readonly property var layout: {
     var price = 0
-    var facts = []
-    var widen = function(list) {
-      for (var f = 0; f < list.length; f++) facts[f] = Math.max(facts[f] || 0, factWidth(list[f]))
-    }
+    var lists = factLists.slice()
     for (var i = 0; i < 2; i++) {
       var line = lines ? lines[i] : null
       if (!line) continue
       price = Math.max(price, valueWidth(line.range.widest), valueWidth(line.range.lowText), valueWidth(line.range.highText))
-      widen(line.facts)
+      lists.push(line.facts)
     }
-    for (var l = 0; l < factLists.length; l++) widen(factLists[l])
+    // The widest run any list's first n facts make, a space apart.
+    var space = valueWidth(" ")
+    var run = function(n) {
+      var widest = 0
+      for (var l = 0; l < lists.length; l++) {
+        var w = 0
+        for (var k = 0; k < Math.min(n, lists[l].length); k++) w += (k ? space : 0) + factWidth(lists[l][k])
+        widest = Math.max(widest, w)
+      }
+      return widest
+    }
+    var most = 0
+    for (var m = 0; m < lists.length; m++) most = Math.max(most, lists[m].length)
     var fixed = function(n) {
-      var t = titleWidth + gap + price * 2 + innerGap * 2
-      for (var k = 0; k < n; k++) t += gap + facts[k]
-      return t
+      var w = run(n)
+      return titleWidth + gap + price * 2 + innerGap * 2 + (w ? gap + w : 0)
     }
-    var shown = facts.length
+    var shown = most
     while (shown > 0 && fixed(shown) + minRule > width) shown--
     var rule = Math.max(minRule, width - fixed(shown))
     // Whole cells on the grain, so retro's last cell ends where smooth's
