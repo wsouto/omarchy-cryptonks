@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- VOL is on the 1D line, in place of 24H OPEN, so it shows only on 1D, as in
+  the original; it was on the 52-week line, where it read the same 24 hours on
+  every range. The 24-hour open is no longer shown.
 - VOL's value sits next to its label again, as in the original, instead of
   starting under 24H OPEN's.
 - 1D is the last 24 hours, as on the exchanges, instead of the UTC day from

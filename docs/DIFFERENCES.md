@@ -104,14 +104,15 @@ Each entry: **what**, **why**, and a tag.
   next range loads: the chart is empty and the header says "Loading BTCUSDT
   1W", then it draws in. A range that failed says "1W unavailable" with
   RETRY, which asks again as `r` does. `left out`
-- **The info block has no market cap or P/E**: VOL stands in their place, on
-  the 52-week line under 24H OPEN, where the original has MKT CAP and P/E. Funding
-  rate or open interest could take the other slot later. `crypto`
+- **The info block has no market cap or P/E**: the 52-week line has no facts,
+  as the original's has none for a symbol that is not an equity. Funding rate
+  or open interest could take the slots later. `crypto`
+- **The 1D line has VOL and no open**, where the original has OPEN and VOL:
+  next to an open, a coin's long prices leave VOL no room, and the hero's
+  24-hour change already says where the price was. `crypto`
 - **VOL is the base coin's volume over 24 hours** (BTC for BTCUSDT), under
   1,000 to four digits, and its worth in the quote coin: "51K BTC ($4.2B)".
-  The coin is the symbol without its quote currency. It is always the 24
-  hours', on every range: the original's VOL is the day's, on the day line
-  only, but next to 24H OPEN there is no room for it at a coin's prices. `crypto`
+  The coin is the symbol without its quote currency. `crypto`
 
 ## Lists
 

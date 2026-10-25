@@ -84,10 +84,10 @@ function rangeView(history, quote, scrubT, range) {
 }
 
 // The info block's first line on 1D: the 24 hours' low and high with the
-// price's place between them, then the price 24 hours ago. An end that is
-// also the 52 weeks' takes that direction's tone, as the 52-week line's
-// does. 24H OPEN keeps its slot when the exchange sent none. With no quote
-// there is no line.
+// price's place between them, then their volume (`volumeFact`) where the
+// original has OPEN and VOL: next to an open, a coin's prices leave VOL no
+// room. An end that is also the 52 weeks' takes that direction's tone, as
+// the 52-week line's does. With no quote there is no line.
 function dayLine(quote) {
   if (!quote) return null
   var range = Format.infoRange(quote.low24h, quote.high24h, quote.price, quote.priceDigits)
@@ -97,7 +97,7 @@ function dayLine(quote) {
     title: "1D",
     range: range,
     facts: [
-      { label: "24H OPEN", value: Format.isFiniteNumber(quote.open24h) ? Format.money(quote.open24h, quote.priceDigits) : "", widest: range.widest }
+      volumeFact(quote)
     ]
   }
 }
@@ -118,9 +118,9 @@ function fundingFact(quote) {
   }
 }
 
-// A perpetual has no market cap or P/E, so VOL stands here in their place,
-// under 24H OPEN: the 24 hours' volume in the base coin and its worth in the quote
-// coin, as "51K BTC ($4.2B)". Its slot is as wide as 999.9M and $999.9B.
+// The 1D line's VOL: the 24 hours' volume in the base coin and its worth in
+// the quote coin, as "51K BTC ($4.2B)". Its slot is as wide as 999.9M and
+// $999.9B, and stays when the exchange sent none.
 function volumeFact(quote) {
   var coin = quote.currency && quote.symbol.slice(-quote.currency.length) === quote.currency
     ? quote.symbol.slice(0, -quote.currency.length) : ""
@@ -138,7 +138,7 @@ function volumeFact(quote) {
 
 // The info block's second line: the last year's low and high, which already
 // hold the 24 hours', so an end the 24 hours set is theirs and takes its tone.
-// Its one fact is VOL.
+// A perpetual has no market cap or P/E, so it has no facts.
 function yearLine(quote) {
   if (!quote) return null
   var range = Format.infoRange(quote.low52w, quote.high52w, quote.price, quote.priceDigits)
@@ -148,7 +148,7 @@ function yearLine(quote) {
   return {
     title: "52W",
     range: range,
-    facts: [volumeFact(quote)]
+    facts: []
   }
 }
 
