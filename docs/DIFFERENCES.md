@@ -43,6 +43,12 @@ Each entry: **what**, **why**, and a tag.
   exchange's last quotes (version 2, `{ exchange: { symbol: quote } }`;
   version 1 is still read), so a first switch shows that exchange's last
   prices at once. Candles are not saved. `crypto`
+- **Fewer requests per symbol**: the exchange's instrument list, fetched at
+  start, on a switch and when search opens (once a day, saved per
+  exchange), gives each symbol its instrument, so none is asked for alone.
+  A row's day (open, high, low, volume) is folded from its 5-minute
+  candles; only the featured symbol asks for daily candles, for its 52-week
+  range. `crypto`
 - **The exchange pill**: the exchange's name on the hero's listing line is a
   pill; a click, or `e`, steps to the next exchange and wraps to the first.
   The setting is saved in the data file. A symbol the new exchange doesn't

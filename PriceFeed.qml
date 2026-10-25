@@ -38,6 +38,12 @@ Item {
   // The last quotes saved, { exchange: { symbol: quote } }, each shown until
   // its first answer.
   property var saved: ({})
+  // The exchange's instruments by symbol (`SymbolList.bySymbol`): a symbol
+  // in it is not asked for its own. While the list is on its way
+  // (`listing`), no run goes, so the first one need not ask them.
+  property var listed: ({})
+  property bool listing: false
+  onListingChanged: if (!listing) Qt.callLater(request, false)
   property var symbols: []
   property string featured: ""
   // `Screens.qml`, or null, as in a harness, to fetch whatever the screens.
@@ -148,7 +154,7 @@ Item {
   // while one is out, or while the screens answer, keeps what it owes.
   function request(all) {
     if (all) root.whole = true
-    if (root.symbols.length === 0 || nowSeconds() < pausedUntil) return
+    if (root.symbols.length === 0 || root.listing || nowSeconds() < pausedUntil) return
     if (proc.running) {
       root.again = true
       return
@@ -169,6 +175,7 @@ Item {
     root.whole = false
     root.pending = []
     if (list.length === 0) return
+    root.kept = Refresh.withListed(root.kept, list, root.listed)
     var next = Refresh.planRun(root.adapter, list, featured, kept, nowSeconds(), rowEvery, want, forced)
     root.forced = false
     asked = next.asked

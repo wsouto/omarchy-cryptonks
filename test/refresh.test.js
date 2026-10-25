@@ -134,10 +134,8 @@ test("the featured symbol's first refresh asks for the instrument and a year of 
   expect(plan.urls[3]).toContain("symbol=BTCUSDT")
 })
 
-test("a row's first refresh asks for two days, not a year", () => {
-  const plan = R.plan(B, "BTCUSDT", null, NOW)
-  expect(roles(plan)).toEqual(FIRST)
-  expect(limitOf(plan)).toBe(2)
+test("a row's first refresh asks for no daily candles: its day comes from the 5-minute ones", () => {
+  expect(roles(R.plan(B, "BTCUSDT", null, NOW))).toEqual(["quotes", "day", "instrument"])
 })
 
 test("a row that becomes featured asks for its year once", () => {
@@ -157,8 +155,8 @@ test("once a year is kept, each minute asks for two candles and no instrument", 
 })
 
 test("after days asleep, a refresh asks for every day missed", () => {
-  const kept = { symbol: "BTCUSDT", instrument: btc(), candles: days(TODAY - 367 * DAY, 365) }
-  expect(limitOf(R.plan(B, "BTCUSDT", kept, NOW))).toBe(4)
+  const kept = { symbol: "BTCUSDT", instrument: btc(), candles: days(TODAY - 367 * DAY, 365), year: true }
+  expect(limitOf(R.plan(B, "BTCUSDT", kept, NOW, true, true))).toBe(4)
 })
 
 test("what was kept for another symbol is asked for again", () => {
@@ -238,6 +236,43 @@ test("the quote's line is today's candles, and only today's are kept", () => {
   expect(got.quote.points.length).toBe(day.result.list.length)
 })
 
+test("a row's day is its 5-minute candles folded: open, close, extremes and sums", () => {
+  const day = JSON.parse(body("kline-btcusdt-5.json"))
+  const tickers = JSON.parse(body("tickers.json"))
+  tickers.time = day.time
+  const today = Math.floor(day.time / 1000 / DAY) * DAY
+  const fives = B.parseCandles(day).filter(c => c.t >= today)
+  const text = answer(0, 200, JSON.stringify(tickers)) + answer(1, 200, JSON.stringify(day))
+  const got = R.read(F.answers(text, B.limits), ["quotes", "day"], "BTCUSDT", keep(btc()), B)
+  expect(got.problem).toBe("")
+  expect(got.quote.dayOpen).toBe(fives[0].open)
+  expect(got.quote.dayHigh).toBe(Math.max(...fives.map(c => c.high)))
+  expect(got.quote.dayLow).toBe(Math.min(...fives.map(c => c.low)))
+  expect(got.quote.volume).toBeCloseTo(fives.reduce((a, c) => a + c.volume, 0))
+  expect(got.kept.candles).toBeNull()
+})
+
+test("today's folded candle replaces a daily one kept from when the row was featured", () => {
+  const c = (t, open, high, low, close) => ({ t, open, high, low, close, volume: 1, turnover: 2 })
+  expect(R.dayCandle([c(TODAY - FIVE, 1, 1, 1, 1), c(TODAY, 5, 9, 4, 6), c(TODAY + FIVE, 6, 7, 2, 3)], TODAY))
+    .toEqual([{ t: TODAY, open: 5, high: 9, low: 2, close: 3, volume: 2, turnover: 4 }])
+  expect(R.dayCandle([], TODAY)).toEqual([])
+  expect(R.dayCandle(null, TODAY)).toEqual([])
+})
+
+test("an instrument from the exchange's list is not asked for; one not in it still is", () => {
+  const listed = { BTCUSDT: btc() }
+  const kept = R.withListed({}, ["BTCUSDT", "NEWUSDT"], listed)
+  expect(kept.BTCUSDT.instrument).toEqual(btc())
+  expect(kept.NEWUSDT).toBeUndefined()
+  const plan = R.planRun(B, ["BTCUSDT", "NEWUSDT"], "BTCUSDT", kept, NOW, 300)
+  expect(rolesBy(plan)).toEqual(["BTCUSDT:quotes", "BTCUSDT:year", "BTCUSDT:day", "NEWUSDT:quotes", "NEWUSDT:day", "NEWUSDT:instrument"])
+  // A kept instrument is never replaced, and no list leaves all to ask.
+  const mine = { BTCUSDT: { symbol: "BTCUSDT", instrument: { ...btc(), name: "kept" } } }
+  expect(R.withListed(mine, ["BTCUSDT"], listed).BTCUSDT.instrument.name).toBe("kept")
+  expect(R.withListed({}, ["BTCUSDT"], null)).toEqual({})
+})
+
 test("5-minute candles Bybit turned down give Bybit's own words, and no quote", () => {
   const text = answer(0, 200, body("tickers.json")) + answer(1, 200, body("kline-btcusdt-d.json")) + answer(2, 200, '{"retCode":10001,"retMsg":"kline refused"}')
   const got = read(text, LATER, btc())
@@ -257,7 +292,7 @@ test("a row asks for its candles every 5 minutes, the featured symbol every minu
   // The featured symbol goes first, so the pill hears first.
   expect(rolesBy(plan)).toEqual(["BTCUSDT:quotes", "BTCUSDT:daily", "BTCUSDT:day", "ETHUSDT:quotes"])
   kept.ETHUSDT = readyKept("ETHUSDT", NOW - 300)
-  expect(rolesBy(R.planRun(B, ["ETHUSDT"], "BTCUSDT", kept, NOW, 300))).toEqual(["ETHUSDT:quotes", "ETHUSDT:daily", "ETHUSDT:day"])
+  expect(rolesBy(R.planRun(B, ["ETHUSDT"], "BTCUSDT", kept, NOW, 300))).toEqual(["ETHUSDT:quotes", "ETHUSDT:day"])
 })
 
 test("each symbol asks for its own price, never Bybit's 680 KB list of all of them", () => {
@@ -386,7 +421,7 @@ const nRead = (text, asked = ["quotes", "funding", "daily", "day"]) =>
 
 test("an exchange with a funding URL is asked for the funding with the price", () => {
   const plan = R.plan(N, "BTCUSDT", null, 1792886132, true, false, "", false)
-  expect(plan.asked).toEqual(["quotes", "funding", "daily", "day", "instrument"])
+  expect(plan.asked).toEqual(["quotes", "funding", "day", "instrument"])
   expect(plan.urls[1]).toContain("premiumIndex?symbol=BTCUSDT")
   expect(R.plan(B, "BTCUSDT", null, 1792886132, true, false, "", false).asked).not.toContain("funding")
 })

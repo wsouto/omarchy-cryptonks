@@ -41,6 +41,8 @@ Item {
 
   // The exchange every screen reads, and its adapter.
   readonly property string exchange: dataSettings.exchange
+  // The new exchange's list, after its file is read (`SymbolList`).
+  onExchangeChanged: if (root.ready) Qt.callLater(symbolSource.want)
   readonly property var adapter: Exchanges.byName(exchange)
   readonly property var library: dataSettings.symbols
   readonly property string featured: ready ? dataSettings.featured : ""
@@ -216,6 +218,8 @@ Item {
       : Settings.normalizeSymbols(root.symbols.concat([root.featured, root.previewSymbol]))
     featured: root.featured
     saved: root.savedQuotes
+    listed: symbolSource.bySymbol
+    listing: symbolSource.status === "loading"
     // Only the popup and the window show a range, and it shows the hero's symbol.
     want: root.ready && root.shown && root.range !== "1D" ? { symbol: root.previewSymbol || root.featured, range: root.range } : null
     screens: screenWatch
@@ -289,6 +293,7 @@ Item {
     if (!root.ready) {
       root.ready = true
       feed.seed()
+      symbolSource.want()
     }
   }
 

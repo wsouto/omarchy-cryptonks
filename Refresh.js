@@ -53,21 +53,24 @@ function dayStart(day, now) {
 }
 
 // Whether a refresh at `now` asks for candles as well as the price: when
-// none are kept, when the kept ones are `every` seconds old or more, and
-// when a new UTC day has begun since, so its open is never missing. A row's
-// line moves little in a minute, so the rows ask every 5 minutes, and the
-// featured symbol, whose line the pill and the hero draw, every minute.
-function candlesDue(kept, symbol, now, every) {
+// none are kept (the daily ones only with `daily`, the featured symbol's),
+// when the kept ones are `every` seconds old or more, and when a new UTC day
+// has begun since, so its open is never missing. A row's line moves little
+// in a minute, so the rows ask every 5 minutes, and the featured symbol,
+// whose line the pill and the hero draw, every minute.
+function candlesDue(kept, symbol, now, every, daily) {
   var mine = keptFor(kept, symbol)
-  if (!mine.candles || !mine.day || !mine.candlesAt) return true
+  if (!mine.day || !mine.candlesAt || (daily && !mine.candles)) return true
   return now - mine.candlesAt >= every || Math.floor(now / DAY) > Math.floor(mine.candlesAt / DAY)
 }
 
 // { urls, asked }: the URLs of the next run and the role of each, in order.
-// The candles are asked for only with `candles`, a year of them with `year`
-// (`dailyCount`), and the instrument only when none is kept for this
-// symbol: it does not change by the minute. A year's daily candles are asked
-// as "year", the rest as "daily". A `range` other than the day is asked for
+// The candles are asked for only with `candles`, and the daily ones only
+// with `year`, the featured symbol's, which needs a year of them for its
+// 52-week high and low (`dailyCount`): a row's day comes from its 5-minute
+// candles (`dayCandle`). The instrument is asked only when none is kept for
+// this symbol: it does not change by the minute. A year's daily candles are
+// asked as "year", the rest as "daily". A `range` other than the day is asked for
 // as "history:<range>" when none is kept or the kept one is due again
 // (`History.due`), or with `force`, a refresh you asked for.
 function plan(adapter, symbol, kept, now, candles, year, range, force) {
@@ -81,11 +84,13 @@ function plan(adapter, symbol, kept, now, candles, year, range, force) {
     asked.push("funding")
   }
   if (candles !== false) {
-    var count = dailyCount(mine, now, year)
-    var base = year && !mine.year ? "year" : "daily"
-    urls.push(adapter.dailyUrl(symbol, count))
-    asked.push(base)
-    morePages(adapter.dailyMore ? adapter.dailyMore(symbol, count, now) : null, base, urls, asked)
+    if (year) {
+      var count = dailyCount(mine, now, year)
+      var base = mine.year ? "daily" : "year"
+      urls.push(adapter.dailyUrl(symbol, count))
+      asked.push(base)
+      morePages(adapter.dailyMore ? adapter.dailyMore(symbol, count, now) : null, base, urls, asked)
+    }
     urls.push(adapter.candlesUrl(symbol, dayStart(mine.day, now)))
     asked.push("day")
   }
@@ -135,6 +140,24 @@ function readPages(adapter, json, roles) {
     all = mergeCandles(all, page)
   }
   return { candles: missing || bad !== null ? null : all, bad: bad, missing: missing }
+}
+
+// Today's daily candle, folded from the 5-minute candles of `day` from
+// `today` (00:00 UTC, seconds), as [candle]; [] with none. Its open is the
+// first one's, its close the last one's, its high and low the extremes, and
+// its volume and turnover the sums: the same figures as the exchange's own
+// daily candle, without asking for it.
+function dayCandle(day, today) {
+  var mine = (day || []).filter(function (c) { return c.t >= today && c.t < today + DAY })
+  if (mine.length === 0) return []
+  var out = { t: today, open: mine[0].open, high: mine[0].high, low: mine[0].low, close: mine[mine.length - 1].close, volume: 0, turnover: 0 }
+  for (var i = 0; i < mine.length; i++) {
+    out.high = Math.max(out.high, mine[i].high)
+    out.low = Math.min(out.low, mine[i].low)
+    out.volume += mine[i].volume
+    out.turnover += mine[i].turnover
+  }
+  return [out]
 }
 
 // The kept candles with the fresh ones in, oldest first: a fresh candle
@@ -276,21 +299,39 @@ function read(all, asked, symbol, kept, adapter) {
     var today = Math.floor(quotes.time / DAY) * DAY
     out.kept.day = mergeCandles(out.kept.day, day).filter(function (c) { return c.t >= today })
   }
-  // A run that asked for the price alone builds on the candles kept.
-  var askedCandles = asked.indexOf("daily") >= 0 || asked.indexOf("year") >= 0
-  var haveCandles = askedCandles ? candles !== null && day !== null : !!out.kept.candles && !!out.kept.day
+  // A run that asked for the price alone builds on the candles kept. A row
+  // asks no daily candles: its day alone is enough.
+  var askedCandles = asked.indexOf("day") >= 0
+  var haveCandles = askedCandles ? (!dailyBase || candles !== null) && day !== null : !!out.kept.day
   if (askedCandles && haveCandles && quotes !== null) out.kept.candlesAt = quotes.time
   if (out.kept.instrument === null || quotes === null || !haveCandles || !(symbol in quotes.prices)) {
     out.problem = trouble || adapter.NAME + " sent no price for " + symbol
     return out
   }
 
-  out.quote = adapter.buildQuote(out.kept.instrument, quotes.prices[symbol], quotes.time, out.kept.candles, out.kept.day, quotes.funding[symbol])
+  // Today's daily candle is always the one folded from the 5-minute ones, so
+  // a row that was featured never shows its day as it was then.
+  var daily = mergeCandles(out.kept.candles, dayCandle(out.kept.day, Math.floor(quotes.time / DAY) * DAY))
+  out.quote = adapter.buildQuote(out.kept.instrument, quotes.prices[symbol], quotes.time, daily, out.kept.day, quotes.funding[symbol])
   out.problem = slip
   return out
 }
 
 // ---- A run of several symbols ----
+
+// `kept` with the instrument of each of `symbols` that has none, from
+// `listed`, the exchange's list by symbol, so it is not asked for. A symbol
+// not in the list is left to ask, and that answer says if it is not listed.
+function withListed(kept, symbols, listed) {
+  var out = Object.assign({}, kept)
+  for (var i = 0; i < symbols.length; i++) {
+    var s = symbols[i]
+    var mine = keptFor(out[s] || null, s)
+    if (mine.instrument !== null || !listed || !listed[s]) continue
+    out[s] = Object.assign({}, mine, { instrument: listed[s] })
+  }
+  return out
+}
 
 // The symbols newly in `after`, not in `before`, in `after`'s order: a
 // symbol joining the feed (a preview, an add, an undo) is asked for in a
@@ -319,7 +360,7 @@ function planRun(adapter, symbols, featured, kept, now, rowEvery, want, force) {
   for (var i = 0; i < order.length; i++) {
     var symbol = order[i]
     var mine = kept[symbol] || null
-    var one = plan(adapter, symbol, mine, now, candlesDue(mine, symbol, now, symbol === featured ? 60 : rowEvery), symbol === featured,
+    var one = plan(adapter, symbol, mine, now, candlesDue(mine, symbol, now, symbol === featured ? 60 : rowEvery, symbol === featured), symbol === featured,
       want && want.symbol === symbol ? want.range : "", force)
     for (var j = 0; j < one.urls.length; j++) {
       urls.push(one.urls[j])

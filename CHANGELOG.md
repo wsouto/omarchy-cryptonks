@@ -28,6 +28,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   last saved prices of the exchange show at once. The saved quotes file
   (`~/.cache/wsouto.cryptonks/quotes.json`) is now version 2, one map per
   exchange; a version 1 file is still read.
+- Fewer requests per symbol: the exchange's instrument list (one request, kept
+  a day) is read at start and on a switch, so no symbol asks for its own
+  instrument; and a row takes today's open, high, low and volume from its
+  5-minute candles, so only the featured symbol asks for daily candles. The
+  instrument list file is now version 2 and names its exchange.
+
+### Fixed
+
+- After a switch to an exchange with no saved instrument list, search showed
+  the previous exchange's list.
 
 ## [0.1.0]
 
