@@ -47,8 +47,8 @@ Each entry: **what**, **why**, and a tag.
 - **Each exchange keeps its own data**: a switch puts the feed's instruments,
   candles, quotes and charts aside for the exchange left, for the session,
   so switching back asks only what is due. The saved quotes file holds each
-  exchange's last quotes (version 2, `{ exchange: { symbol: quote } }`;
-  version 1 is still read), so a first switch shows that exchange's last
+  exchange's last quotes (version 3, `{ exchange: { symbol: quote } }`;
+  older files are not read), so a first switch shows that exchange's last
   prices at once. Candles are not saved. `crypto`
 - **Fewer requests per symbol**: the exchange's instrument list, fetched at
   start, on a switch and when search opens (once a day, saved per

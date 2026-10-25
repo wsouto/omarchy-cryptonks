@@ -33,8 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Switching exchanges is faster: each exchange's prices, candles and charts are
   kept for the session, so switching back asks only for what is due, and the
   last saved prices of the exchange show at once. The saved quotes file
-  (`~/.cache/wsouto.cryptonks/quotes.json`) is now version 2, one map per
-  exchange; a version 1 file is still read.
+  (`~/.cache/wsouto.cryptonks/quotes.json`) is now version 3, one map per
+  exchange, holding the 24-hour record; an older file is not read, so the
+  saved prices are gone once until the first refresh.
 - Fewer requests per symbol: the exchange's instrument list (one request, kept
   a day) is read at start and on a switch, so no symbol asks for its own
   instrument; and a row takes its 24 hours' open, high, low and volume from

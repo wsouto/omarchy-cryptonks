@@ -10,20 +10,17 @@ const Q = load("SavedQuotes.js")
 const btc = { symbol: "BTCUSDT", exchange: "Bybit", price: 1 }
 const eth = { symbol: "ETHUSDT", exchange: "OKX", price: 2 }
 
-test("an old file still shows its prices, each under its own exchange", () => {
-  expect(Q.byExchange({ version: 1, quotes: { BTCUSDT: btc, ETHUSDT: eth } }))
-    .toEqual({ Bybit: { BTCUSDT: btc }, OKX: { ETHUSDT: eth } })
-})
-
-test("a version 2 file is read as written", () => {
+test("a version 3 file is read as written", () => {
   const quotes = { Bybit: { BTCUSDT: btc } }
-  expect(Q.byExchange({ version: 2, quotes })).toEqual(quotes)
+  expect(Q.byExchange({ version: 3, quotes })).toEqual(quotes)
 })
 
-test("a file that can't be read, or from a later version, shows no prices", () => {
+test("an older file, one that can't be read, or a later version shows no prices", () => {
+  expect(Q.byExchange({ version: 1, quotes: { BTCUSDT: btc, ETHUSDT: eth } })).toEqual({})
+  expect(Q.byExchange({ version: 2, quotes: { Bybit: { BTCUSDT: btc } } })).toEqual({})
   expect(Q.byExchange(null)).toEqual({})
-  expect(Q.byExchange({ version: 3, quotes: {} })).toEqual({})
-  expect(Q.byExchange({ version: 1 })).toEqual({})
+  expect(Q.byExchange({ version: 4, quotes: {} })).toEqual({})
+  expect(Q.byExchange({ version: 3 })).toEqual({})
 })
 
 test("saving one exchange's quotes keeps the others", () => {
