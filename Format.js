@@ -121,7 +121,8 @@ function widest(text) {
 
 // An info line's range: its low and high, each null and "" when not known,
 // the price whose place it marks, and the widest a price of the listing's
-// takes at its decimals, from the largest price the line knows.
+// takes at its decimals, from the largest price the line knows, and those
+// decimals (`places`) for a price written beside it.
 function infoRange(low, high, price, digits) {
   var known = function (v) { return isFiniteNumber(v) ? v : null }
   low = known(low)
@@ -134,6 +135,7 @@ function infoRange(low, high, price, digits) {
     low: low,
     high: high,
     price: price,
+    places: places,
     lowText: low === null ? "" : money(low, places),
     highText: high === null ? "" : money(high, places),
     lowTone: "",

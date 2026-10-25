@@ -183,7 +183,7 @@ function rangeFacts(step, since, bars, values) {
   var facts = []
   if (since) facts.push({ label: "SINCE", value: values.since || "", widest: statsDateWidest(86400, true) })
   facts.push({ label: "LOW", value: values.low || "", widest: statsDateWidest(step) })
-  facts.push({ label: "HIGH", value: values.high || "", widest: statsDateWidest(step) })
+  facts.push({ label: "HIGH", value: values.high || "", widest: statsDateWidest(step), edge: true })
   if (since && bars) facts.push({ label: "", value: values.bars || "", after: "BARS", widest: "8" })
   return facts
 }

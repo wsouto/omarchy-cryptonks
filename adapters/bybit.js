@@ -144,7 +144,7 @@ function parseQuotes(json) {
     prices[t.symbol] = price
     var next = num(t.nextFundingTime)
     funding[t.symbol] = { rate: num(t.fundingRate), nextTime: next !== null && next > 0 ? Math.floor(next / 1000) : null }
-    stats[t.symbol] = { open: num(t.prevPrice24h), high: num(t.highPrice24h), low: num(t.lowPrice24h), volume: num(t.volume24h), turnover: num(t.turnover24h) }
+    stats[t.symbol] = { open: num(t.prevPrice24h), high: num(t.highPrice24h), low: num(t.lowPrice24h), volume: num(t.volume24h), turnover: num(t.turnover24h), openInterest: num(t.openInterestValue) }
   }
   return { time: Math.floor(time / 1000), prices: prices, funding: funding, stats: stats }
 }
@@ -276,6 +276,7 @@ function buildQuote(instrument, price, marketTime, candles, lineCandles, funding
     low24h: num(day.low),
     volume24h: num(day.volume),
     turnover24h: num(day.turnover),
+    openInterest: num(day.openInterest),
     high52w: high,
     low52w: low,
     firstTradeDate: instrument.firstTradeDate,

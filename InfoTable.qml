@@ -1,6 +1,7 @@
 // Copied from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2, InfoTable.qml.
-// Changes: the facts are one run against the right edge, a space apart,
-// sized by the widest run, instead of each in its column.
+// Changes: a fact list is cut at its edge fact (HIGH, VOL, OI): the facts
+// before it stand in columns counted back from the run, the edge fact and
+// those after it are one run against the right edge, a space apart.
 pragma ComponentBehavior: Bound
 
 import QtQuick
@@ -18,9 +19,8 @@ import "Tones.js" as Tones
 // (`factLists`), and the title column as the widest of `titles`. So
 // the rule's length never changes; the cost is a rule as short on the day
 // as on the widest range. The rule takes the room the columns leave, so the
-// table spans the band's width at any width; a trailing fact that does
-// not fit is left out whole, never cut. The facts are drawn as one run
-// against the right edge, a space apart, so they move with their text.
+// table spans the band's width at any width; a column that does not fit is
+// left out whole, never cut, the farthest from the edge first.
 Item {
   id: root
 
@@ -66,33 +66,49 @@ Item {
     return widest
   }
 
+  // A fact list cut at its edge fact: the facts before it stand in columns,
+  // it and those after it as one run against the right edge.
+  function split(facts) {
+    var e = facts.length
+    for (var k = 0; k < facts.length; k++) {
+      if (facts[k].edge) { e = k; break }
+    }
+    return { cols: facts.slice(0, e), run: facts.slice(e) }
+  }
+
   readonly property var layout: {
     var price = 0
     var lists = factLists.slice()
+    var own = []
     for (var i = 0; i < 2; i++) {
       var line = lines ? lines[i] : null
-      if (!line) continue
+      if (!line) { own.push(null); continue }
       price = Math.max(price, valueWidth(line.range.widest), valueWidth(line.range.lowText), valueWidth(line.range.highText))
       lists.push(line.facts)
+      own.push(split(line.facts))
     }
-    // The widest run any list's first n facts make, a space apart.
+    // The run is as wide as the widest any list makes, a space apart. The
+    // columns are counted from the run back (0 is the one beside it), each as
+    // wide as the widest fact any list puts there, so LOW and OPEN share one.
     var space = valueWidth(" ")
-    var run = function(n) {
-      var widest = 0
-      for (var l = 0; l < lists.length; l++) {
-        var w = 0
-        for (var k = 0; k < Math.min(n, lists[l].length); k++) w += (k ? space : 0) + factWidth(lists[l][k])
-        widest = Math.max(widest, w)
+    var runWidth = 0
+    var columns = []
+    for (var l = 0; l < lists.length; l++) {
+      var part = split(lists[l])
+      var w = 0
+      for (var k = 0; k < part.run.length; k++) w += (k ? space : 0) + factWidth(part.run[k])
+      runWidth = Math.max(runWidth, w)
+      for (var j = 0; j < part.cols.length; j++) {
+        columns[j] = Math.max(columns[j] || 0, factWidth(part.cols[part.cols.length - 1 - j]))
       }
-      return widest
     }
-    var most = 0
-    for (var m = 0; m < lists.length; m++) most = Math.max(most, lists[m].length)
     var fixed = function(n) {
-      var w = run(n)
-      return titleWidth + gap + price * 2 + innerGap * 2 + (w ? gap + w : 0)
+      var t = titleWidth + gap + price * 2 + innerGap * 2 + (runWidth ? gap + runWidth : 0)
+      for (var c = 0; c < n; c++) t += gap + columns[c]
+      return t
     }
-    var shown = most
+    // The farthest columns go first when the width is short, whole.
+    var shown = columns.length
     while (shown > 0 && fixed(shown) + minRule > width) shown--
     var rule = Math.max(minRule, width - fixed(shown))
     // Whole cells on the grain, so retro's last cell ends where smooth's
@@ -102,7 +118,42 @@ Item {
     var lowX = titleWidth + gap
     var ruleX = lowX + price + innerGap
     var highX = ruleX + rule + innerGap
-    return { price: price, rule: rule, lowX: lowX, ruleX: ruleX, highX: highX, shown: shown }
+    var columnXs = []
+    var x = width - runWidth
+    for (var d = 0; d < shown; d++) {
+      x -= gap + columns[d]
+      columnXs.push(x)
+    }
+    return { price: price, rule: rule, lowX: lowX, ruleX: ruleX, highX: highX, shown: shown, columnXs: columnXs, parts: own }
+  }
+
+  // One fact: its label, its value and what follows the value.
+  component Fact: Row {
+    id: fact
+    required property var f
+    visible: f.value !== ""
+    spacing: root.innerGap
+
+    Text {
+      visible: text !== ""
+      textFormat: Text.PlainText
+      text: fact.f.label
+      color: root.dim
+      font: root.labelFont
+    }
+    Text {
+      textFormat: Text.PlainText
+      text: fact.f.value
+      color: root.foreground
+      font: root.valueFont
+    }
+    Text {
+      visible: text !== ""
+      textFormat: Text.PlainText
+      text: fact.f.after || ""
+      color: root.dim
+      font: root.labelFont
+    }
   }
 
   implicitHeight: lineHeight * 2 + rowGap
@@ -157,42 +208,35 @@ Item {
         font: root.valueFont
       }
 
-      // The facts as one run against the right edge, a space apart; one not
-      // known draws nothing and takes no room.
+      readonly property var parts: root.layout.parts[index]
+
+      // The facts before the edge fact in their columns, left-aligned; a
+      // fact not known draws nothing but keeps its column.
+      Repeater {
+        model: row.parts ? row.parts.cols : []
+
+        Fact {
+          required property var modelData
+          required property int index
+          readonly property int slot: row.parts.cols.length - 1 - index
+          f: modelData
+          visible: f.value !== "" && slot < root.layout.shown
+          x: root.layout.columnXs[slot] || 0
+        }
+      }
+
+      // The edge fact and those after it as one run against the right edge,
+      // a space apart; one not known draws nothing and takes no room.
       Row {
         anchors.right: parent.right
         spacing: root.valueWidth(" ")
 
         Repeater {
-          model: row.line ? Math.min(row.line.facts.length, root.layout.shown) : 0
+          model: row.parts ? row.parts.run : []
 
-          Row {
-            id: fact
-            required property int index
-            readonly property var f: row.line.facts[index]
-            visible: f.value !== ""
-            spacing: root.innerGap
-
-            Text {
-              visible: text !== ""
-              textFormat: Text.PlainText
-              text: fact.f.label
-              color: root.dim
-              font: root.labelFont
-            }
-            Text {
-              textFormat: Text.PlainText
-              text: fact.f.value
-              color: root.foreground
-              font: root.valueFont
-            }
-            Text {
-              visible: text !== ""
-              textFormat: Text.PlainText
-              text: fact.f.after || ""
-              color: root.dim
-              font: root.labelFont
-            }
+          Fact {
+            required property var modelData
+            f: modelData
           }
         }
       }

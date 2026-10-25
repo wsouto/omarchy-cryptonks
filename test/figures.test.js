@@ -32,20 +32,24 @@ test("the 1D line is the 24 hours' range with the price between, then their turn
   const line = F.dayLine(full)
   expect(line.title).toBe("1D")
   expect(line.range).toMatchObject({ low: 79, high: 85, price: 82, lowText: "79.0", highText: "85.0", lowTone: "", highTone: "" })
-  expect(line.facts.map(f => [f.label, f.value])).toEqual([["VOL", "1.5B"]])
+  expect(line.facts.map(f => [f.label, f.value])).toEqual([["OPEN", "80.0"], ["VOL", "1.5B"]])
+  expect(line.facts.map(f => !!f.edge)).toEqual([false, true])
   expect(F.dayLine(null)).toBeNull()
 })
 
 test("a day end that is also the year's is toned, and an unknown figure leaves its slot empty", () => {
   expect(F.dayLine({ ...full, high24h: 90 }).range.highTone).toBe("up")
   expect(F.dayLine({ ...full, low24h: 70 }).range.lowTone).toBe("down")
-  expect(F.dayLine({ ...full, turnover24h: null }).facts.map(f => f.value)).toEqual([""])
+  expect(F.dayLine({ ...full, turnover24h: null }).facts.map(f => f.value)).toEqual(["80.0", ""])
+  expect(F.dayLine({ ...full, open24h: null }).facts.map(f => f.value)).toEqual(["", "1.5B"])
+  expect(F.dayLine({ ...full, price: 82000, open24h: 80123.4, low24h: 79000, high24h: 85000 }).facts[0].value).toBe("80,123")
 })
 
-test("the 52-week line is the year's low and high, toned where the 24 hours set one, with no facts", () => {
+test("the 52-week line is the year's low and high, toned where the 24 hours set one, with the open interest as its fact", () => {
   const line = F.yearLine(full)
   expect(line).toMatchObject({ title: "52W" })
-  expect(line.facts).toEqual([])
+  expect(line.facts.map(f => [f.label, f.value, !!f.edge])).toEqual([["OI", "", true]])
+  expect(F.yearLine({ ...full, openInterest: 3.1e9 }).facts[0].value).toBe("3.1B")
   expect(line.range).toMatchObject({ low: 70, high: 90, highTone: "", lowTone: "" })
   expect(F.yearLine({ ...full, high24h: 90 }).range.highTone).toBe("up")
   expect(F.yearLine({ ...full, low52w: null }).range.lowText).toBe("")

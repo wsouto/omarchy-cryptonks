@@ -288,6 +288,7 @@ function buildQuote(instrument, price, marketTime, candles, lineCandles, funding
     low24h: num(day.low),
     volume24h: num(day.volume),
     turnover24h: num(day.turnover),
+    openInterest: null,
     high52w: high,
     low52w: low,
     firstTradeDate: instrument.firstTradeDate,

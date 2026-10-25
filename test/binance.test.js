@@ -186,6 +186,7 @@ test("the record has Binance's own 24-hour figures, and funding", () => {
   expect(q.low24h).toBe(79178.6)
   expect(q.volume24h).toBe(106084.847)
   expect(q.turnover24h).toBe(8510918698.12)
+  expect(q.openInterest).toBeNull()
   expect(q.high52w).toBe(84330)
   expect(q.low52w).toBe(79178.6)
   expect(q.fundingRate).toBe(0.00009435)

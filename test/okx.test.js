@@ -242,6 +242,7 @@ test("the record has OKX's own 24-hour figures, and funding", () => {
   expect(q.volume24h).toBe(59810.7146)
   // OKX sends no quote-coin volume for a swap: the base volume at the last price.
   expect(q.turnover24h).toBeCloseTo(59810.7146 * 80744.5, 4)
+  expect(q.openInterest).toBeNull()
   expect(q.high52w).toBe(82047.6)
   expect(q.low52w).toBe(79168)
   expect(q.fundingRate).toBe(0.0000244791294062)

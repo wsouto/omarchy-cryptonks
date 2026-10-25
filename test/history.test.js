@@ -144,6 +144,7 @@ test("a range line has the range's low and high from the bars, and when each was
   expect(got.range.price).toBe(81000)
   expect(got.facts.map(f => f.label)).toEqual(["LOW", "HIGH"])
   expect(got.facts[0].value).toMatch(/^\d{1,2} [A-Z]{3}$/)
+  expect(got.facts.map(f => !!f.edge)).toEqual([false, true])
 })
 
 test("a symbol younger than the range says since when, and how few bars it has", () => {

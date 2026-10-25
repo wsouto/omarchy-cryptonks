@@ -19,6 +19,7 @@ supply is `null`, never a guess.
 | `high24h`, `low24h` | high and low of the last 24 hours | ticker `highPrice24h`, `lowPrice24h` |
 | `volume24h` | base-coin volume of the last 24 hours | ticker `volume24h` |
 | `turnover24h` | quote-currency volume of the last 24 hours | ticker `turnover24h` |
+| `openInterest` | worth of the open contracts, in the quote currency; `null` where the ticker does not send it (Binance, OKX) | ticker `openInterestValue` |
 | `high52w`, `low52w` | high and low of the last 365 daily candles | kline `D` |
 | `firstTradeDate` | when the symbol launched, so a young symbol's ranges are honest | instruments info `launchTime` (ms; divide by 1000) |
 | `fundingInterval` | minutes between funding payments, such as `480` | instruments info `fundingInterval` |

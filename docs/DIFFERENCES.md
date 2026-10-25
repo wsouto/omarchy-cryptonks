@@ -107,12 +107,13 @@ Each entry: **what**, **why**, and a tag.
   next range loads: the chart is empty and the header says "Loading BTCUSDT
   1W", then it draws in. A range that failed says "1W unavailable" with
   RETRY, which asks again as `r` does. `left out`
-- **The info block has no market cap or P/E**: the 52-week line has no facts,
-  as the original's has none for a symbol that is not an equity. Funding rate
-  or open interest could take the slots later. `crypto`
-- **The 1D line has VOL and no open**, where the original has OPEN and VOL:
-  next to an open, a coin's long prices leave VOL no room, and the hero's
-  24-hour change already says where the price was. `crypto`
+- **The info block has no market cap or P/E**: the 52-week line has the
+  perpetual's open interest ("OI 3.1B", the worth of the open contracts in the
+  quote coin) where the original's equity has them. Only Bybit sends it with
+  its ticker; on Binance and OKX the slot stays empty. `crypto`
+- **The 1D line's OPEN is the price 24 hours ago**, not a session's open, and
+  is written without decimals from 1,000 like the line's other prices, so it
+  fits next to VOL. `crypto`
 - **VOL is the 24 hours' turnover**, their worth in the quote coin ("4.2B"),
   not the volume in the base coin, as Bybit's ticker shows it. `crypto`
 - **The info lines' prices drop their decimals from 1,000** ("116,380"), and a
@@ -120,10 +121,11 @@ Each entry: **what**, **why**, and a tag.
   only when the range crosses one. Next to a coin's long prices the original's
   widths left the range lines no room for HIGH. When a range crosses New Year
   HIGH can still drop out. `crypto`
-- **The info lines' facts are one run against the right edge**, a space
-  apart ("LOW 24 OCT HIGH 2 OCT"), where the original puts each in its own
-  column, so they move as their dates change; the rule still never does
-  (`InfoTable.qml` changed). Your choice. `PR?`
+- **The info lines' last fact stands against the right edge** (HIGH, VOL, OI;
+  with BARS after HIGH, a run a space apart) and the facts before it in
+  columns counted back from it, so LOW and OPEN share one. The original has
+  every fact in a column of its own; ours keeps HIGH at the edge of coins'
+  long prices. The rule never moves (`InfoTable.qml` changed). Your choice. `PR?`
 
 ## Lists
 

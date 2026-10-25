@@ -123,7 +123,7 @@ test("the last traded price by symbol, and when Bybit answered in seconds", () =
 
 test("the rolling 24 hours by symbol: Bybit's open, high, low and both volumes", () => {
   const quotes = B.parseQuotes(fixture("tickers.json"))
-  expect(quotes.stats.BTCUSDT).toEqual({ open: 83020.1, high: 84880, low: 82588, volume: 64531.325, turnover: 5416309860.8932 })
+  expect(quotes.stats.BTCUSDT).toEqual({ open: 83020.1, high: 84880, low: 82588, volume: 64531.325, turnover: 5416309860.8932, openInterest: 5395695598.64 })
   const json = clone(fixture("tickers.json"))
   json.result.list.find(x => x.symbol === "ETHUSDT").prevPrice24h = ""
   expect(B.parseQuotes(json).stats.ETHUSDT.open).toBeNull()
@@ -220,6 +220,7 @@ test("the record is the one QUOTE-RECORD.md describes", () => {
     low24h: 82588,
     volume24h: 64531.325,
     turnover24h: 5416309860.8932,
+    openInterest: 5395695598.64,
     high52w: 84880,
     low52w: 81150,
     firstTradeDate: 1584230400,
@@ -238,6 +239,7 @@ test("no 24-hour stats give null figures, not a guess", () => {
   expect(record.low24h).toBeNull()
   expect(record.volume24h).toBeNull()
   expect(record.turnover24h).toBeNull()
+  expect(record.openInterest).toBeNull()
   expect(record.high52w).toBe(84880)
   expect(record.price).toBe(84440.8)
 })

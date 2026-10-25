@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The 1D line shows OPEN again (the price 24 hours ago), and the 52-week line
+  the perpetual's open interest (`OI`), on Bybit.
 - The chart says "Loading <exchange>…" until the feed first answers for the
   symbol, such as after stepping to another exchange.
 - The exchange's name on the hero is a pill: click it, or press `e`, to step
@@ -25,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The info lines' last fact (HIGH, VOL, OI) stands against the right edge and
+  the ones before it (LOW, OPEN) in columns, with room between them.
 - VOL is on the 1D line, in place of 24H OPEN, so it shows only on 1D, as in
   the original; it was on the 52-week line, where it read the same 24 hours on
   every range. The 24-hour open is no longer shown.

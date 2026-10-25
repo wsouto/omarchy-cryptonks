@@ -84,9 +84,8 @@ function rangeView(history, quote, scrubT, range) {
 }
 
 // The info block's first line on 1D: the 24 hours' low and high with the
-// price's place between them, then their volume (`volumeFact`) where the
-// original has OPEN and VOL: next to an open, a coin's prices leave VOL no
-// room. An end that is also the 52 weeks' takes that direction's tone, as
+// price's place between them, then the price 24 hours ago (OPEN, with no
+// cents from 1,000) and their volume (`volumeFact`). An end that is also the 52 weeks' takes that direction's tone, as
 // the 52-week line's does. With no quote there is no line.
 function dayLine(quote) {
   if (!quote) return null
@@ -97,6 +96,11 @@ function dayLine(quote) {
     title: "1D",
     range: range,
     facts: [
+      {
+        label: "OPEN",
+        value: Format.isFiniteNumber(quote.open24h) ? Format.money(quote.open24h, range.places) : "",
+        widest: range.widest
+      },
       volumeFact(quote)
     ]
   }
@@ -125,13 +129,26 @@ function volumeFact(quote) {
   return {
     label: "VOL",
     value: Format.isFiniteNumber(quote.turnover24h) ? Format.compactNumber(quote.turnover24h) : "",
-    widest: Format.widest("999.9B")
+    widest: Format.widest("999.9B"),
+    edge: true
+  }
+}
+
+// The 52-week line's one fact: the open interest, the worth of the contracts
+// still open, in the quote coin. Under VOL, at the right edge. Only Bybit
+// sends it with its ticker; elsewhere the slot stays empty.
+function openInterestFact(quote) {
+  return {
+    label: "OI",
+    value: Format.isFiniteNumber(quote.openInterest) ? Format.compactNumber(quote.openInterest) : "",
+    widest: Format.widest("999.9B"),
+    edge: true
   }
 }
 
 // The info block's second line: the last year's low and high, which already
 // hold the 24 hours', so an end the 24 hours set is theirs and takes its tone.
-// A perpetual has no market cap or P/E, so it has no facts.
+// A perpetual has no market cap or P/E; its open interest takes the slot.
 function yearLine(quote) {
   if (!quote) return null
   var range = Format.infoRange(quote.low52w, quote.high52w, quote.price, quote.priceDigits)
@@ -141,7 +158,7 @@ function yearLine(quote) {
   return {
     title: "52W",
     range: range,
-    facts: []
+    facts: [openInterestFact(quote)]
   }
 }
 
