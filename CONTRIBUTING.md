@@ -61,7 +61,8 @@ plugin. In short:
 - `PriceFeed.qml`: fetches the featured symbol once a minute, and every
   symbol while the popup is open, and holds their quotes, while a screen is
   on (`Screens.qml`). `Refresh.js` is its rules: what each refresh asks
-  for, and what the answers mean.
+  for, and what the answers mean. What it keeps, in memory and on disk, is
+  in [docs/CACHE.md](docs/CACHE.md).
 - `WatchlistRow.qml`: one of the popup's rows.
 - `adapters/<exchange>.js`: the only files that name an exchange's endpoints
   or fields. Each returns the quote record in
