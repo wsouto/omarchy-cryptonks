@@ -168,17 +168,19 @@ Item {
     id: metaRow
     visible: root.exchangeName !== ""
     x: listingText.x + listingText.leftPadding + listingText.contentWidth
-    y: symbolText.baselineOffset - dotText.baselineOffset
+    // The pill is taller than the text by its padding; the text stays on the name's baseline.
+    y: symbolText.baselineOffset - dotText.baselineOffset - Style.space(2)
     Text {
       id: dotText
+      y: Style.space(2)
       textFormat: Text.PlainText
       text: " · "
       color: listingText.color
       font: listingText.font
     }
     Rectangle {
-      width: exchangeText.implicitWidth + Style.space(8)
-      height: exchangeText.implicitHeight
+      width: exchangeText.implicitWidth + Style.space(16)
+      height: exchangeText.implicitHeight + Style.space(4)
       radius: height / 2
       // A button: filled, brighter on hover, darker while pressed.
       color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b,
@@ -201,6 +203,7 @@ Item {
     }
     Text {
       textFormat: Text.PlainText
+      y: Style.space(2)
       text: " · " + (root.quote ? root.quote.currency : "")
       color: listingText.color
       font: listingText.font
