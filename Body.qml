@@ -487,6 +487,10 @@ Item {
     }
   }
 
+  function stepExchange() {
+    if (root.service) root.service.stepExchange()
+  }
+
   function cycleChangeMode() {
     if (root.service) root.service.persist({ changeMode: root.changeMode === "pct" ? "abs" : "pct" })
   }
@@ -590,6 +594,7 @@ Item {
     }
     root.showingHelp = false
     if (t === "c") root.cycleChangeMode()
+    else if (t === "e") root.stepExchange()
     else if (t === "[") root.stepRange(-1)
     else if (t === "]") root.stepRange(1)
     else if (t === "p") motion.replay()
@@ -670,6 +675,7 @@ Item {
         downColor: root.downColor
         fontFamily: root.fontFamily
         onChangeClicked: root.cycleChangeMode()
+        onExchangeClicked: root.stepExchange()
       }
 
       HelpSheet {

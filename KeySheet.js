@@ -23,6 +23,7 @@ function sheet(order) {
   if (manual) rows.push({ key: "J K", does: "Move the row up or down" })
   var mouse = [
     { key: "pill", does: "Click opens this · middle-click changes form" },
+    { key: "exchange", does: "Click the exchange's name to step to the next" },
     { key: "row", does: "Click shows its chart · right-click removes it" }
   ]
   mouse.push({ key: "", does: manual ? "Ctrl-click opens its lists · drag moves it" : "Ctrl-click opens its lists" })
@@ -43,6 +44,7 @@ function sheet(order) {
         { key: "s", does: "Switch smooth and retro" },
         // A range's change is always the percentage.
         { key: "c", does: "Switch the day's % and amount" },
+        { key: "e", does: "Switch to the next exchange" },
         { key: "r", does: "Refresh" }
       ]}
     ],

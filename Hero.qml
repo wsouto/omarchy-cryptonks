@@ -1,5 +1,6 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
-// Hero.qml. Changes: the listing line says the coin's name, the exchange and USDT;
+// Hero.qml. Changes: the listing line says the coin's name, the exchange (a pill
+// that steps to the next) and USDT;
 // the change is since 00:00 UTC, and its caption says so at rest, or names
 // the range; there is no extended-hours print; the freshness words have no
 // trading phase.
@@ -57,7 +58,7 @@ Item {
     ? (scrubbing || freshnessText === "" ? "" : (Figures.freshnessWarns(freshness) ? "! " : "") + freshnessText + " · ")
       + String(quote.name).toUpperCase()
     : (freshnessText !== "" ? "! " + freshnessText : "")
-  readonly property string listingMeta: quote ? " · " + quote.exchange + " · " + quote.currency : ""
+  readonly property string exchangeName: quote ? quote.exchange : ""
   // The funding at the line's right end: its sign in text and tone, and the
   // time to its settlement; nothing when Bybit sent none.
   readonly property var funding: quote ? Figures.fundingFact(quote) : null
@@ -94,6 +95,7 @@ Item {
   readonly property int captionDrop: naturalCell + Style.space(4) + Math.ceil(captionMetrics.capitalHeight)
 
   signal changeClicked()
+  signal exchangeClicked()
 
   // An unmoved figure is neither colour.
   function signColor(sign) {
@@ -145,7 +147,7 @@ Item {
     Text {
       id: listingText
       leftPadding: Style.space(8)
-      width: Math.min(implicitWidth, leftPadding + Math.max(0, root.listingRoom - metaText.implicitWidth))
+      width: Math.min(implicitWidth, leftPadding + Math.max(0, root.listingRoom - metaRow.implicitWidth))
       anchors.baseline: symbolText.baseline
       textFormat: Text.PlainText
       text: root.listingLead
@@ -160,15 +162,49 @@ Item {
 
   // The exchange and currency start where the name's drawn text ends, not
   // where its box does: a name cut short draws narrower than its box, and
-  // the gap read as a double space before the dot.
-  Text {
-    id: metaText
+  // the gap read as a double space before the dot. The exchange is a pill:
+  // a click steps to the next one.
+  Row {
+    id: metaRow
+    visible: root.exchangeName !== ""
     x: listingText.x + listingText.leftPadding + listingText.contentWidth
-    y: symbolText.baselineOffset - baselineOffset
-    textFormat: Text.PlainText
-    text: root.listingMeta
-    color: listingText.color
-    font: listingText.font
+    y: symbolText.baselineOffset - dotText.baselineOffset
+    Text {
+      id: dotText
+      textFormat: Text.PlainText
+      text: " · "
+      color: listingText.color
+      font: listingText.font
+    }
+    Rectangle {
+      width: exchangeText.implicitWidth + Style.space(8)
+      height: exchangeText.implicitHeight
+      radius: height / 2
+      color: "transparent"
+      border.width: 1
+      border.color: pillArea.containsMouse ? root.foreground : root.dim
+      Text {
+        id: exchangeText
+        anchors.centerIn: parent
+        textFormat: Text.PlainText
+        text: root.exchangeName
+        color: listingText.color
+        font: listingText.font
+      }
+      MouseArea {
+        id: pillArea
+        anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        onClicked: root.exchangeClicked()
+      }
+    }
+    Text {
+      textFormat: Text.PlainText
+      text: " · " + (root.quote ? root.quote.currency : "")
+      color: listingText.color
+      font: listingText.font
+    }
   }
 
   Row {

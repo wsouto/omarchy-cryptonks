@@ -153,7 +153,7 @@ The steps from 5 on follow the original's layers, as drawn in
   - [x] **15b. OKX.** `adapters/okx.js`; OKX answers 300 candles a request,
         so `Refresh.js` reads a question in pages (`dailyMore`,
         `historyMore`).
-  - [ ] **15c. The exchange pill.** The exchange's name on the hero's listing
+  - [x] **15c. The exchange pill.** The exchange's name on the hero's listing
         line (`BITCOIN · Bybit · USDT`) becomes a pill; a click steps to the
         next exchange, and past the last it returns to the first. Needs two
         exchanges, so it comes after 15a. The exchange is one setting for the

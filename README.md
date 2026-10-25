@@ -182,6 +182,7 @@ missing, too alike, or too faint.
 | `m` | Tick the selected row's lists |
 | `,` `.` | Previous or next list |
 | `c` | Show the day's change as a percent or an amount |
+| `e` | Switch to the next exchange |
 | `s` | Switch between smooth and retro |
 | `r` | Refresh |
 | `?` | Open the key sheet |

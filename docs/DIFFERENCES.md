@@ -36,7 +36,12 @@ Each entry: **what**, **why**, and a tag.
   `exchange` key of the data file (`"Bybit"` or `"Binance"`, Bybit when
   missing or unknown); the whole plugin reads one exchange at a time. A
   symbol the other exchange doesn't list shows its problem line until you
-  switch back (hiding it comes with the exchange pill, step 15c). `crypto`
+  switch back. `crypto`
+- **The exchange pill**: the exchange's name on the hero's listing line is a
+  pill; a click, or `e`, steps to the next exchange and wraps to the first.
+  The setting is saved in the data file. A symbol the new exchange doesn't
+  list is kept in the lists and shows "NO DATA FOR THIS SYMBOL" (the feed's
+  own treatment of a symbol that gets no answer); it is not hidden. `crypto`
 - **Binance has no coin names**: a row's name is the base coin ("BTC"), not
   "Bitcoin". `crypto`
 - **Binance's funding comes in a request of its own** (`premiumIndex`), asked

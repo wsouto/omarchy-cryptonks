@@ -155,6 +155,10 @@ Item {
     root.persist({ list: name })
   }
 
+  function stepExchange() {
+    root.persist({ exchange: Exchanges.next(root.exchange) })
+  }
+
   function stepList(delta) {
     root.switchList(Settings.steppedList(root.dataSettings, delta))
   }

@@ -250,6 +250,14 @@ test("a list holding all of All leaves them: All keeps a symbol", () => {
   expect(S.withListDeleted(base, "A").symbols).toEqual(["BTCUSDT"])
 })
 
+test("the exchange pill steps through the exchanges and returns to the first", () => {
+  const E = load("Exchanges.js")
+  expect(E.next("Bybit")).toBe("Binance")
+  expect(E.next("Binance")).toBe("OKX")
+  expect(E.next("OKX")).toBe("Bybit")
+  expect(E.next("Kraken")).toBe("Binance")
+})
+
 test("the exchange is one the plugin knows, else Bybit", () => {
   expect(S.fileSettings({ exchange: "Binance" }).exchange).toBe("Binance")
   expect(S.fileSettings({ exchange: "Kraken" }).exchange).toBe("Bybit")

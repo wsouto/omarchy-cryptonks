@@ -20,6 +20,12 @@ function byName(name) {
   return ADAPTERS[0]
 }
 
+// The exchange after `name`, the first one after the last.
+function next(name) {
+  var at = names().indexOf(normalize(name))
+  return ADAPTERS[(at + 1) % ADAPTERS.length].NAME
+}
+
 function normalize(name) {
   return byName(name).NAME
 }
