@@ -33,6 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The info lines write prices from 1,000 without decimals (`116,380`), and
   the range lines size their dates without the year, so HIGH shows on the
   ranges again next to large coin prices.
+- The info lines' facts sit together against the right edge, a space apart,
+  instead of each in its own column.
 - 1D is the last 24 hours, as on the exchanges, instead of the UTC day from
   00:00: the chart always fills, and the change, high, low and volume are the
   exchange's own 24-hour figures, so they match its app. Labels say "24H"

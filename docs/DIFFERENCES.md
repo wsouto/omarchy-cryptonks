@@ -117,6 +117,10 @@ Each entry: **what**, **why**, and a tag.
   only when the range crosses one. Next to a coin's long prices the original's
   widths left the range lines no room for HIGH. When a range crosses New Year
   HIGH can still drop out. `crypto`
+- **The info lines' facts are one run against the right edge**, a space
+  apart ("LOW 24 OCT HIGH 2 OCT"), where the original puts each in its own
+  column, so they move as their dates change; the rule still never does
+  (`InfoTable.qml` changed). Your choice. `PR?`
 
 ## Lists
 

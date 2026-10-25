@@ -1,5 +1,6 @@
 // Copied from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2, InfoTable.qml.
-// Changes: none.
+// Changes: the facts are one run against the right edge, a space apart,
+// instead of each in its column.
 pragma ComponentBehavior: Bound
 
 import QtQuick
@@ -15,10 +16,11 @@ import "Tones.js" as Tones
 // as wide as the widest figure its slots can hold at the listing's digits,
 // never today's: each fact's as the widest any line puts there on any
 // range (`factLists`), and the title column as the widest of `titles`. So
-// a refresh moves only the tick, and a range change nothing; the cost is a
-// rule as short on the day as on the widest range. The rule takes the room
-// the columns leave, so the table spans the band's width at any width; a
-// trailing column that does not fit is left out whole, never cut.
+// the rule's length never changes; the cost is a rule as short on the day
+// as on the widest range. The rule takes the room the columns leave, so the
+// table spans the band's width at any width; a trailing column that does
+// not fit is left out whole, never cut. The facts are drawn as one run
+// against the right edge, a space apart, so they move with their text.
 Item {
   id: root
 
@@ -92,15 +94,7 @@ Item {
     var lowX = titleWidth + gap
     var ruleX = lowX + price + innerGap
     var highX = ruleX + rule + innerGap
-    var factsWidth = 0
-    for (var k = 0; k < shown; k++) factsWidth += gap + facts[k]
-    var xs = []
-    var x = Math.max(highX + price, width - factsWidth)
-    for (var j = 0; j < shown; j++) {
-      xs.push(x + gap)
-      x += gap + facts[j]
-    }
-    return { price: price, rule: rule, lowX: lowX, ruleX: ruleX, highX: highX, factXs: xs }
+    return { price: price, rule: rule, lowX: lowX, ruleX: ruleX, highX: highX, shown: shown }
   }
 
   implicitHeight: lineHeight * 2 + rowGap
@@ -155,37 +149,42 @@ Item {
         font: root.valueFont
       }
 
-      // A fact's slot stays when it is not known; it draws nothing.
-      Repeater {
-        model: row.line ? Math.min(row.line.facts.length, root.layout.factXs.length) : 0
+      // The facts as one run against the right edge, a space apart; one not
+      // known draws nothing and takes no room.
+      Row {
+        anchors.right: parent.right
+        spacing: root.valueWidth(" ")
 
-        Row {
-          id: fact
-          required property int index
-          readonly property var f: row.line.facts[index]
-          visible: f.value !== ""
-          x: root.layout.factXs[index]
-          spacing: root.innerGap
+        Repeater {
+          model: row.line ? Math.min(row.line.facts.length, root.layout.shown) : 0
 
-          Text {
-            visible: text !== ""
-            textFormat: Text.PlainText
-            text: fact.f.label
-            color: root.dim
-            font: root.labelFont
-          }
-          Text {
-            textFormat: Text.PlainText
-            text: fact.f.value
-            color: root.foreground
-            font: root.valueFont
-          }
-          Text {
-            visible: text !== ""
-            textFormat: Text.PlainText
-            text: fact.f.after || ""
-            color: root.dim
-            font: root.labelFont
+          Row {
+            id: fact
+            required property int index
+            readonly property var f: row.line.facts[index]
+            visible: f.value !== ""
+            spacing: root.innerGap
+
+            Text {
+              visible: text !== ""
+              textFormat: Text.PlainText
+              text: fact.f.label
+              color: root.dim
+              font: root.labelFont
+            }
+            Text {
+              textFormat: Text.PlainText
+              text: fact.f.value
+              color: root.foreground
+              font: root.valueFont
+            }
+            Text {
+              visible: text !== ""
+              textFormat: Text.PlainText
+              text: fact.f.after || ""
+              color: root.dim
+              font: root.labelFont
+            }
           }
         }
       }
