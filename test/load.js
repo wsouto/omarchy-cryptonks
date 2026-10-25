@@ -1,5 +1,5 @@
 // Copied from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2, test/load.js.
-// Changes: none.
+// Changes: an import may name a folder ("adapters/bybit.js").
 // Loads the plugin's rule files under bun as QML loads them: a file's
 // `.import "X.js" as X` lines name the files it reads, which load first and
 // are handed in under that name; each loads once, as `.pragma library` has
@@ -13,7 +13,7 @@ const loaded = {}
 export function load(file) {
   if (loaded[file]) return loaded[file]
   const source = readFileSync(join(root, file), "utf8")
-  const imports = [...source.matchAll(/^\.import "(\w+\.js)" as (\w+)\s*$/gm)]
+  const imports = [...source.matchAll(/^\.import "([\w/]+\.js)" as (\w+)\s*$/gm)]
   const body = source.replace(/^\.(import|pragma) .*$/gm, "")
   const names = [...body.matchAll(/^(?:function|var) (\w+)/gm)].map(m => m[1])
   const qualifiers = imports.map(m => m[2])

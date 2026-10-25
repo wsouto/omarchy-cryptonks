@@ -34,6 +34,12 @@ function resultOf(json) {
   return json.result
 }
 
+// What Bybit said when it turned a question down: HTTP 200 with a "retMsg",
+// such as "params error: symbol invalid". "" when the answer holds none.
+function said(json) {
+  return json && json.retMsg ? json.retMsg : ""
+}
+
 // What a refusal means, for the Fetch rules. Bybit allows 600 requests per
 // 5 seconds per IP. Past that it answers
 // HTTP 403 and bans the IP for at least 10 minutes, so a 403 is a refusal

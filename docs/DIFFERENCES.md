@@ -30,6 +30,28 @@ Each entry: **what**, **why**, and a tag.
   "Loading…" about 5 s after a shell restart. `PR?` if the original has the
   same wait.
 
+## Exchanges (step 15)
+
+- **A second exchange, Binance** (`adapters/binance.js`), picked by the
+  `exchange` key of the data file (`"Bybit"` or `"Binance"`, Bybit when
+  missing or unknown); the whole plugin reads one exchange at a time. A
+  symbol the other exchange doesn't list shows its problem line until you
+  switch back (hiding it comes with the exchange pill, step 15c). `crypto`
+- **Binance has no coin names**: a row's name is the base coin ("BTC"), not
+  "Bitcoin". `crypto`
+- **Binance's funding comes in a request of its own** (`premiumIndex`), asked
+  with the price, so a symbol costs two requests there against one on Bybit;
+  a funding that fails leaves the price and shows no funding. It has no
+  funding interval, so that field is `null`. `crypto`
+- **Binance's instrument can't be asked for alone**: each new symbol downloads
+  the whole list (52 KB compressed) once per start, and the run's size cap is
+  raised for it (`runCap`). `crypto`
+- **Each exchange has a symbol list of its own** (`instruments-<exchange>.json`
+  in the cache), and a switch empties the quotes kept, so one exchange's
+  price is never shown as the other's. `crypto`
+- **Rate limits**: Bybit 600 requests per 5 s, Binance 2400 weight per
+  minute, both per IP and free; see [ADAPTERS.md](ADAPTERS.md). `crypto`
+
 ## Ranges (step 9)
 
 - **A range's candles ride the price feed's run** (`Refresh.js`,

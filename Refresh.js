@@ -74,6 +74,12 @@ function plan(adapter, symbol, kept, now, candles, year, range, force) {
   var mine = keptFor(kept, symbol)
   var urls = [adapter.quotesUrl([symbol])]
   var asked = ["quotes"]
+  // An exchange that sends the funding rate apart from the price (the
+  // adapter has `fundingUrl`) is asked for it with the price.
+  if (adapter.fundingUrl) {
+    urls.push(adapter.fundingUrl(symbol))
+    asked.push("funding")
+  }
   if (candles !== false) {
     var count = dailyCount(mine, now, year)
     urls.push(adapter.dailyUrl(symbol, count), adapter.candlesUrl(symbol, dayStart(mine.day, now)))
@@ -103,10 +109,11 @@ function mergeCandles(kept, fresh) {
   return out
 }
 
-// What the exchange itself said when it turned a question down: it answers
-// HTTP 200 with a "retMsg", such as "params error: symbol invalid".
+// What the exchange itself said when it turned a question down, in the
+// adapter's reading of its answer (`adapter.said`).
 function said(adapter, json) {
-  return json && json.retMsg ? adapter.NAME + ": " + json.retMsg : adapter.NAME + " sent no usable answer"
+  var words = adapter.said(json)
+  return words ? adapter.NAME + ": " + words : adapter.NAME + " sent no usable answer"
 }
 
 // The words for how long the exchange asked us to wait.
@@ -184,11 +191,21 @@ function read(all, asked, symbol, kept, adapter) {
   if (json.instrument) {
     var listed = adapter.parseInstruments(json.instrument)
     if (listed === null) trouble = trouble || said(adapter, json.instrument)
-    else if (listed.instruments.length === 0) trouble = trouble || symbol + " is not a " + adapter.QUOTE_COIN + " perpetual that trades on " + adapter.NAME
-    else out.kept.instrument = listed.instruments[0]
+    else {
+      // An exchange that cannot narrow the question answers every contract.
+      var mineListed = listed.instruments.filter(function (i) { return i.symbol === symbol })[0]
+      if (!mineListed) trouble = trouble || symbol + " is not a " + adapter.QUOTE_COIN + " perpetual that trades on " + adapter.NAME
+      else out.kept.instrument = mineListed
+    }
   }
   var quotes = json.quotes ? adapter.parseQuotes(json.quotes) : null
   if (json.quotes && quotes === null) trouble = trouble || said(adapter, json.quotes)
+  // The funding came apart from the price: without it the price still
+  // stands, with no funding.
+  if (quotes !== null && json.funding) {
+    var apart = adapter.parseFunding(json.funding)
+    if (apart !== null) quotes.funding = apart
+  }
   var wanted = asked.filter(function (role) { return role.indexOf("history:") === 0 })[0]
   if (wanted && !json[wanted] && !slip) slip = "The refresh stopped before every answer came"
   if (wanted && json[wanted]) {

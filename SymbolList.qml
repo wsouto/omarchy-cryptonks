@@ -1,7 +1,6 @@
 import QtQuick
 import Quickshell.Io
 import "Fetch.js" as Fetch
-import "adapters/bybit.js" as Bybit
 
 // The symbols you can add: every contract this project follows, as { symbol,
 // name }, which search looks through on this machine, so nothing goes out
@@ -13,8 +12,10 @@ Item {
   id: root
 
   required property string cachePath
+  // The exchange's adapter (`Exchanges.byName`); its list is the one asked for.
+  required property var adapter
 
-  // { symbol, name }, A to Z as Bybit sends them; none until a list is in.
+  // { symbol, name }, A to Z as the exchange sends them; none until a list is in.
   property var instruments: []
   // "loading" while a list is on its way, "failed" when the last one did
   // not come, else "".
@@ -22,7 +23,7 @@ Item {
   // When the list in hand came, in milliseconds; 0 for none.
   property real fetchedAt: 0
   readonly property int maxAge: 24 * 3600 * 1000
-  // Bybit has sent the whole list in one page; a few more are allowed, and
+  // Bybit and Binance send the whole list in one page; a few more are allowed, and
   // a list longer than that is kept as far as it got.
   readonly property int maxPages: 5
 
@@ -32,7 +33,18 @@ Item {
   property int asked: 0
   property string cursor: ""
 
-  Component.onCompleted: {
+  Component.onCompleted: loadCache()
+  // Each exchange has a list file of its own: a new path is a new list.
+  onCachePathChanged: {
+    root.instruments = []
+    root.fetchedAt = 0
+    root.status = ""
+    root.pages = []
+    root.cursor = ""
+    loadCache()
+  }
+
+  function loadCache() {
     try {
       var saved = JSON.parse(cacheFile.text())
       if (saved && saved.version === 1 && Array.isArray(saved.instruments)) {
@@ -61,15 +73,15 @@ Item {
 
   function ask() {
     root.asked += 1
-    proc.command = Fetch.curlCommand([Bybit.instrumentsUrl(root.cursor)], Fetch.LIST_CAP)
+    proc.command = Fetch.curlCommand([root.adapter.instrumentsUrl(root.cursor)], Fetch.LIST_CAP)
     proc.running = true
   }
 
   function receive(text) {
-    var got = Fetch.answers(text, Bybit.limits)
+    var got = Fetch.answers(text, root.adapter.limits)
     var parsed = null
     if (got.length && got[0].kind === "ok") {
-      try { parsed = Bybit.parseInstruments(JSON.parse(got[0].body)) } catch (e) {}
+      try { parsed = root.adapter.parseInstruments(JSON.parse(got[0].body)) } catch (e) {}
     }
     if (!parsed) {
       root.status = "failed"

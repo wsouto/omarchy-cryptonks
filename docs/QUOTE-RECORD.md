@@ -33,6 +33,14 @@ rolling 24-hour figure.
 **Removed from the Stonks record:** `session`, `current`, `clocks`, `gmtoffset`,
 `timezoneName`, `zoneName`, `prevClose` (replaced by `dayOpen`), `crypto`.
 
+**On Binance** (`adapters/binance.js`): `name` is `baseAsset` (`BTC`, Binance
+sends no full name), `priceDigits` is `pricePrecision`, `firstTradeDate` is
+`onboardDate`, `price` is ticker/price `price`, `marketTime` its `time`,
+`fundingRate` and `nextFundingTime` are premiumIndex `lastFundingRate` and
+`nextFundingTime`, the candles are klines (`1d` opens at 00:00 UTC, as
+Bybit's), and `fundingInterval` is `null`: Binance sends it only in a list of
+the contracts that differ from 8 hours, which nothing here reads.
+
 ## Which symbols are in scope
 
 Read from Bybit's [instruments-info page](https://bybit-exchange.github.io/docs/v5/market/instrument) on 2026-10-21:

@@ -1,5 +1,5 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
-// HelpSheet.qml. Changes: the credit line names this project and Bybit;
+// HelpSheet.qml. Changes: the credit line names this project and the exchange;
 // the version joins it with the version watch (roadmap step 12), and the
 // note line shows only when the sheet has a note.
 pragma ComponentBehavior: Bound
@@ -36,8 +36,9 @@ Flickable {
   // The version, as the version watch reads it from the manifest; ""
   // leaves it off the credit line rather than show a blank.
   property string version: ""
+  property string exchange: ""
   readonly property string credit: (version !== "" ? "Cryptonks " + version + " · " : "")
-    + "Prices from Bybit"
+    + "Prices from " + exchange
 
   signal closeRequested()
 

@@ -20,7 +20,6 @@ import "Format.js" as Format
 import "History.js" as History
 import "KeySheet.js" as KeySheet
 import "Tones.js" as Tones
-import "adapters/bybit.js" as Bybit
 
 // What the popup and the window both show. Owns the rows' cursor and what the
 // hero and the rows show at the moment on screen; the chart's motion is
@@ -679,6 +678,7 @@ Item {
         width: parent.width
         height: contentHeight
         sheet: KeySheet.sheet(root.order)
+        exchange: root.service ? root.service.exchange : ""
         retro: root.retro
         foreground: root.foreground
         dim: root.dim
@@ -907,7 +907,7 @@ Item {
       height: desiredHeight
       instruments: root.service ? root.service.symbolList.instruments : []
       listStatus: root.service ? root.service.symbolList.status : ""
-      quoteCoin: Bybit.QUOTE_COIN
+      quoteCoin: root.service ? root.service.adapter.QUOTE_COIN : ""
       members: root.listSymbols
       retro: root.retro
       foreground: root.foreground

@@ -2,12 +2,11 @@ import QtQuick
 import Quickshell.Io
 import "Fetch.js" as Fetch
 import "Refresh.js" as Refresh
-import "adapters/bybit.js" as Bybit
 
-// Fetches the symbols it is handed from Bybit once a minute and holds their
+// Fetches the symbols it is handed from the exchange once a minute and holds their
 // quotes. It is the only part that runs a command: a `Process` for curl,
 // and nothing else does. What to ask, and how to read the answer, is the
-// adapter's (`adapters/bybit.js`); how to run curl and what an HTTP status
+// adapter's (`adapters/`); how to run curl and what an HTTP status
 // means is `Fetch.js`'s; what a run's answers mean for the quotes is
 // `Refresh.js`'s. This file only joins them to a timer.
 //
@@ -16,7 +15,7 @@ import "adapters/bybit.js" as Bybit
 //
 // Every symbol goes in one run, one curl over one connection, each asking
 // for its own price: a request per symbol is under 1 KB, where Bybit's
-// all-tickers answer is 680 KB. A symbol that joins (a preview, an add, an
+// all-tickers answer is 680 KB on Bybit. A symbol that joins (a preview, an add, an
 // undo, the popup's rows as it opens) or becomes featured is asked for in a
 // run of its own, so the rest wait for their minute rather than being asked
 // again. The candles come every 5 minutes for a row,
@@ -25,12 +24,15 @@ import "adapters/bybit.js" as Bybit
 // symbol's price, so a refusal pauses it with the rest. Before each run
 // it asks whether a screen is on (`Screens.qml`): while every one is off,
 // nothing is fetched, and the run goes as soon as one is back. A refusal
-// leaves Bybit alone for as long as it asks, 10 minutes for its 403.
+// leaves the exchange alone for as long as it asks, 10 minutes for Bybit's 403.
 Item {
   id: root
 
   // The symbols to keep fresh, the featured one among them; none until the
   // service has read its settings.
+  // The exchange's adapter (`Exchanges.byName`). A new one empties what is
+  // kept and asks for every symbol again.
+  required property var adapter
   property var symbols: []
   property string featured: ""
   // `Screens.qml`, or null, as in a harness, to fetch whatever the screens.
@@ -57,7 +59,7 @@ Item {
   // of daily candles and today's 5-minute ones (see `Refresh.js`), so each
   // minute asks only for the prices and the candles due.
   property var kept: ({})
-  // The time, in seconds, before which Bybit is left alone.
+  // The time, in seconds, before which the exchange is left alone.
   property real pausedUntil: 0
   // What each URL of the run in flight asks for, in the order sent.
   property var asked: []
@@ -75,6 +77,21 @@ Item {
   // The next run is a refresh you asked for: it asks for the range again
   // even if the one kept is not due.
   property bool forced: false
+
+  // The run in flight began before the exchange changed.
+  property bool discard: false
+
+  onAdapterChanged: {
+    root.kept = {}
+    root.quotes = {}
+    root.problems = {}
+    root.fresh = {}
+    root.histories = {}
+    root.pausedUntil = 0
+    root.discard = proc.running
+    root.whole = true
+    Qt.callLater(request, false)
+  }
 
   // Quotes answered, for the service to save.
   signal answered()
@@ -98,7 +115,7 @@ Item {
   // answer.
   function seed(saved) {
     var next = Object.assign({}, root.quotes)
-    for (var s in saved) if (!next[s]) next[s] = saved[s]
+    for (var s in saved) if (!next[s] && saved[s].exchange === root.adapter.NAME) next[s] = saved[s]
     root.quotes = next
   }
 
@@ -135,20 +152,29 @@ Item {
     root.whole = false
     root.pending = []
     if (list.length === 0) return
-    var next = Refresh.planRun(Bybit, list, featured, kept, nowSeconds(), rowEvery, want, forced)
+    var next = Refresh.planRun(root.adapter, list, featured, kept, nowSeconds(), rowEvery, want, forced)
     root.forced = false
     asked = next.asked
     began = false
     // One curl, all of the URLs over one connection. The largest answer is
-    // a year of daily candles, so its cap is each answer's.
-    proc.command = Fetch.curlCommand(next.urls, Fetch.DAILY_CAP)
+    // a year of daily candles, so its cap is each answer's, unless the
+    // exchange's instrument answer is larger (`runCap`).
+    proc.command = Fetch.curlCommand(next.urls, root.adapter.runCap || Fetch.DAILY_CAP)
     proc.running = true
   }
 
   // A run's output, read by `Refresh.js`; this file only keeps the result.
-  // A refusal's words go to every symbol: Bybit is left alone for all.
+  // A refusal's words go to every symbol: the exchange is left alone for all.
   function receive(text) {
-    var got = Refresh.readRun(Fetch.answers(text, Bybit.limits), asked, kept, Bybit)
+    // The run in flight asked the exchange left behind: its answers are
+    // not read, and every symbol is asked of the new one.
+    if (root.discard) {
+      root.discard = false
+      root.again = false
+      Qt.callLater(request, false)
+      return
+    }
+    var got = Refresh.readRun(Fetch.answers(text, root.adapter.limits), asked, kept, root.adapter)
     root.kept = got.kept
     if (got.wait > 0) root.pausedUntil = nowSeconds() + got.wait
     var quotes = Object.assign({}, root.quotes)

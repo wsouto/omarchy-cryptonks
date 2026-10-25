@@ -41,8 +41,10 @@ only '^import Quickshell\.Io' PriceFeed.qml SymbolList.qml Service.qml IpcTarget
 only '\bIpcHandler\s*\{' IpcTarget.qml
 only '^import Quickshell\.Hyprland' WindowHost.qml Screens.qml
 only '\bPriceFeed\s*\{' Service.qml
-# Only the files that fetch or show the adapter's constants import it.
-only '^import "adapters/' PriceFeed.qml SymbolList.qml Body.qml
+none '^import "adapters/' *.qml
+# Only Exchanges.js imports the adapters; the screens ask it for one.
+hits=$(rg -l '^\.import "adapters/' -- *.js)
+[ "$hits" = "Exchanges.js" ] || fail "only Exchanges.js may import an adapter, found: $hits"
 none 'execDetached|XMLHttpRequest|https?://' *.qml
 # No rule file names an endpoint; only adapters/ does.
 none 'https?://(?!github\.com)' *.js

@@ -11,6 +11,7 @@ const S = load("Settings.js")
 test("a first start shows the five starters, BTCUSDT featured, smooth and in percent", () => {
   expect(S.fileSettings(null)).toEqual({
     version: 1,
+    exchange: "Bybit",
     symbols: ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "DOGEUSDT"],
     featured: "BTCUSDT",
     order: "manual",
@@ -247,4 +248,10 @@ test("removing a row from a named list takes it out of All unless another list h
 test("a list holding all of All leaves them: All keeps a symbol", () => {
   const base = S.fileSettings({ symbols: ["BTCUSDT"], lists: [{ name: "A", symbols: ["BTCUSDT"] }] })
   expect(S.withListDeleted(base, "A").symbols).toEqual(["BTCUSDT"])
+})
+
+test("the exchange is one the plugin knows, else Bybit", () => {
+  expect(S.fileSettings({ exchange: "Binance" }).exchange).toBe("Binance")
+  expect(S.fileSettings({ exchange: "Kraken" }).exchange).toBe("Bybit")
+  expect(S.fileSettings({}).exchange).toBe("Bybit")
 })

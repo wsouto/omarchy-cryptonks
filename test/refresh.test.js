@@ -372,3 +372,56 @@ test("a run reports each symbol's range by symbol and range", () => {
   const got = R.readRun(F.answers(text, B.limits), asked, { BTCUSDT: { ...keep(btc()), candles: [], day: [] } }, B)
   expect(Object.keys(got.histories)).toEqual(["BTCUSDT|5Y"])
 })
+
+// ---- A second exchange: Binance sends the funding apart from the price ----
+
+const N = load("adapters/binance.js")
+const nbody = name => body("binance-" + name)
+const nBtc = () => N.parseInstruments(JSON.parse(nbody("exchangeinfo.json"))).instruments[0]
+const nRun = () =>
+  answer(0, 200, JSON.stringify(JSON.parse(nbody("prices.json"))[0])) + answer(1, 200, JSON.stringify(JSON.parse(nbody("premium.json"))[1]))
+  + answer(2, 200, nbody("kline-btcusdt-d.json")) + answer(3, 200, nbody("kline-btcusdt-5.json"))
+const nRead = (text, asked = ["quotes", "funding", "daily", "day"]) =>
+  R.read(F.answers(text, N.limits), asked, "BTCUSDT", keep(nBtc()), N)
+
+test("an exchange with a funding URL is asked for the funding with the price", () => {
+  const plan = R.plan(N, "BTCUSDT", null, 1792886132, true, false, "", false)
+  expect(plan.asked).toEqual(["quotes", "funding", "daily", "day", "instrument"])
+  expect(plan.urls[1]).toContain("premiumIndex?symbol=BTCUSDT")
+  expect(R.plan(B, "BTCUSDT", null, 1792886132, true, false, "", false).asked).not.toContain("funding")
+})
+
+test("a Binance run gives the quote with the funding that came apart", () => {
+  const got = nRead(nRun())
+  expect(got.problem).toBe("")
+  expect(got.quote.exchange).toBe("Binance")
+  expect(got.quote.price).toBe(80891.4)
+  expect(got.quote.dayOpen).toBe(81159.9)
+  expect(got.quote.fundingRate).toBe(0.00009435)
+})
+
+test("a funding that failed leaves the price, with no funding", () => {
+  const text = answer(0, 200, JSON.stringify(JSON.parse(nbody("prices.json"))[0])) + answer(1, 400, nbody("error.json"))
+    + answer(2, 200, nbody("kline-btcusdt-d.json")) + answer(3, 200, nbody("kline-btcusdt-5.json"))
+  const got = nRead(text)
+  expect(got.quote.price).toBe(80891.4)
+  expect(got.quote.fundingRate).toBeNull()
+})
+
+test("an instrument is picked out of the whole list Binance sends", () => {
+  const eth = R.read(F.answers(answer(0, 200, JSON.stringify(JSON.parse(nbody("prices.json"))[1])) + answer(1, 200, nbody("exchangeinfo.json")), N.limits),
+    ["quotes", "instrument"], "ETHUSDT", null, N)
+  expect(eth.kept.instrument.symbol).toBe("ETHUSDT")
+  const gone = R.read(F.answers(answer(0, 200, nbody("exchangeinfo.json")), N.limits), ["instrument"], "NOPEUSDT", null, N)
+  expect(gone.problem).toBe("NOPEUSDT is not a USDT perpetual that trades on Binance")
+})
+
+test("Binance's own words are shown for a question it refused", () => {
+  const text = answer(0, 200, nbody("error.json")) + answer(1, 200, nbody("error.json"))
+  expect(nRead(text, ["quotes", "funding"]).problem).toBe("Binance: Invalid symbol.")
+})
+
+test("a 451 names both of its causes, as a 403 does for Bybit", () => {
+  const got = nRead(answer(0, 451), ["quotes"])
+  expect(got.problem).toBe("Binance refused us (too many requests from this IP, or Binance is not available where you are): waiting 10 minutes")
+})

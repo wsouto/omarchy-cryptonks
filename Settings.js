@@ -1,6 +1,7 @@
 .pragma library
 .import "Change.js" as Change
 .import "History.js" as History
+.import "Exchanges.js" as Exchanges
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
 // Settings.js. Changes: this project's starter symbols and its two change
 // modes; the featured symbol is always one of All; the refresh interval
@@ -109,7 +110,8 @@ function sortKey(quote, order) {
 // never empty: the pill and the hero need one to show; every named list's
 // symbol is in it. `featured` is the symbol they show, one of All, else
 // All's first. `order` and `reversed` are All's; a named list keeps its own.
-// `list` is the list on show, "" for All. A key this version doesn't know
+// `list` is the list on show, "" for All. `exchange` is the one exchange the
+// whole plugin reads (`Exchanges.js`). A key this version doesn't know
 // stays as it is: a later version's, after a downgrade or from another
 // machine sharing the file.
 function fileSettings(src) {
@@ -121,6 +123,7 @@ function fileSettings(src) {
   var featured = String(from.featured || "").toUpperCase()
   return Object.assign({}, from, {
     version: 1,
+    exchange: Exchanges.normalize(from.exchange),
     symbols: symbols,
     featured: symbols.indexOf(featured) >= 0 ? featured : symbols[0],
     order: normalizeOrder(from.order),

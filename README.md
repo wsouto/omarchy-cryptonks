@@ -6,14 +6,16 @@ lists, and step through the chart to see the price at any moment on it.
 
 <img src="media/popup.png" width="480" alt="The Cryptonks popup: BTCUSDT at 81,507.80, down 1.13%, over a week's chart, the ranges, the low and high lines, and a list of five symbols">
 
-- Bybit USDT perpetual futures, such as BTCUSDT, ETHUSDT, and SOLUSDT.
+- Bybit or Binance USDT perpetual futures, such as BTCUSDT, ETHUSDT, and
+  SOLUSDT. Set `"exchange": "Binance"` in the data file to read Binance; Bybit
+  is the default. One exchange at a time.
 - Charts from one day to all time.
 - The day runs from 00:00 UTC, since crypto never closes.
 - Lists of your own, such as a portfolio or a theme.
 - Two looks, smooth and retro, in your theme's colours.
 - No account and no API key.
 
-It doesn't track holdings, send price alerts, or show other exchanges' prices.
+It doesn't track holdings, send price alerts, or show both exchanges at once.
 
 This is a port of [Stonks](https://github.com/gmchande/omarchy-stonks) by
 Gaurav Chande, which does the same for stocks. See [Credits](#credits).
@@ -98,8 +100,9 @@ does the same for its symbols. The last symbol of All stays.
 
 Click "+ Add a symbol" and type a name or a symbol, such as `eth` or
 `solusdt`. The top result shows in the chart, and Enter or a click adds it.
-Search finds Bybit's USDT perpetuals: not USDC contracts, dated futures, or
-stock-like contracts.
+Search finds the exchange's USDT perpetuals: not USDC contracts, dated
+futures, or stock-like contracts. Binance's coins are named by their ticker
+("BTC"), as it sends no full names.
 
 To remove a row, right-click it, or press `x` on it. The footer then says what
 you removed, such as "Removed ETHUSDT". Click it, or press `u`, to bring the
@@ -198,7 +201,10 @@ same.
   you are".** Bybit answered 403. It does that when an IP sends too many
   requests, and to places it doesn't serve, such as the US. Cryptonks
   leaves Bybit alone for 10 minutes after one, and `r` won't hurry it. If you
-  are somewhere Bybit doesn't serve, there is nothing to do.
+  are somewhere Bybit doesn't serve, there is nothing to do. Binance does the
+  same with 418 (too many requests) or 451 (not available in your country),
+  and its limit is 2400 request weight a minute, which Cryptonks stays far
+  under.
 - **A price looks wrong.** It is Bybit's last traded price for the USDT
   perpetual, not a spot price, and it is never converted. The change runs from
   00:00 UTC. Bybit's own "24h change" is a rolling 24 hours.

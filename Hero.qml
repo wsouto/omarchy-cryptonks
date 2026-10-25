@@ -1,5 +1,5 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
-// Hero.qml. Changes: the listing line says the coin's name, Bybit and USDT;
+// Hero.qml. Changes: the listing line says the coin's name, the exchange and USDT;
 // the change is since 00:00 UTC, and its caption says so at rest, or names
 // the range; there is no extended-hours print; the freshness words have no
 // trading phase.

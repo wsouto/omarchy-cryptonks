@@ -138,8 +138,34 @@ The steps from 5 on follow the original's layers, as drawn in
       `FUNDING ▲0.0073% 3h22m` beside the coin's name. Not done: a baseline
       (0.01% per 8 hours) for an "elevated" state, and funding on the rows.
 
-Not planned yet: portfolio, API keys, a second exchange, WebSocket. They are
-in the design notes and can come after step 13.
+- [ ] **15. More exchanges.** One adapter each in `adapters/` (the only files
+      that name an endpoint or a field), each returning the record in
+      [QUOTE-RECORD.md](QUOTE-RECORD.md) and tested on saved answers. The
+      first one also decides how a symbol or list picks its exchange and
+      where the data file saves it. For each, read the contract list, the
+      24h window and the candle limits (Bybit's UTC day may not match), and
+      add it to [DIFFERENCES.md](DIFFERENCES.md) and `test/boundaries.sh`.
+      One exchange per commit. You see: add a symbol from the exchange and
+      watch it tick.
+  - [x] **15a. Binance.** `adapters/binance.js`, the `exchange` key in the
+        data file and `Exchanges.js`; the funding rate is a second request
+        there, and a symbol is read out of the whole instrument list.
+  - [ ] **15b. OKX.**
+  - [ ] **15c. The exchange pill.** The exchange's name on the hero's listing
+        line (`BITCOIN · Bybit · USDT`) becomes a pill; a click steps to the
+        next exchange, and past the last it returns to the first. Needs two
+        exchanges, so it comes after 15a. The exchange is one setting for the
+        whole plugin: the hero, the rows and the pill all change together. A
+        symbol the new exchange doesn't list is not shown (the lists keep it,
+        so it returns when you switch back); check how the feed already
+        treats a symbol the call doesn't return. Add a key for it to
+        `KeySheet.js` and the pill to [DIFFERENCES.md](DIFFERENCES.md).
+
+Coinbase is left out for now: its perpetuals trade in USDC on Coinbase
+International, so it needs a decision on those or spot first.
+
+Not planned yet: portfolio, API keys, WebSocket. They are in the design notes
+and can come after step 13.
 
 ## Rules for the code
 

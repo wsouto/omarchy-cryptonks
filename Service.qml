@@ -8,6 +8,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "Exchanges.js" as Exchanges
 import "Figures.js" as Figures
 import "Settings.js" as Settings
 
@@ -37,6 +38,9 @@ Item {
     + "/wsouto.cryptonks"
   readonly property string quotesPath: cacheDir + "/quotes.json"
 
+  // The exchange every screen reads, and its adapter.
+  readonly property string exchange: dataSettings.exchange
+  readonly property var adapter: Exchanges.byName(exchange)
   readonly property var library: dataSettings.symbols
   readonly property string featured: ready ? dataSettings.featured : ""
   readonly property string changeMode: dataSettings.changeMode
@@ -194,11 +198,13 @@ Item {
 
   SymbolList {
     id: symbolSource
-    cachePath: root.cacheDir + "/instruments.json"
+    cachePath: root.cacheDir + "/instruments-" + root.exchange.toLowerCase() + ".json"
+    adapter: root.adapter
   }
 
   PriceFeed {
     id: feed
+    adapter: root.adapter
     symbols: !root.ready ? [] : !root.shown ? [root.featured]
       : Settings.normalizeSymbols(root.symbols.concat([root.featured, root.previewSymbol]))
     featured: root.featured
