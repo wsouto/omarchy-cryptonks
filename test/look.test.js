@@ -119,32 +119,35 @@ test("a theme's green is read from colors.toml, then from color2", () => {
   expect(T.themeColor("", ["green", "color2"])).toBe("")
 })
 
-// ---- The day's line ----
+// ---- The 24-hour line ----
 
 const DAY = 86400
 const D0 = 1792627200
 
-test("the line runs across the UTC day by time, ending where the day has got to", () => {
-  const g = Ch.dayGeometry({ dayOpen: 100, points: [{ t: D0, p: 100 }, { t: D0 + DAY / 2, p: 110 }] })
-  expect(g.points.map(p => p.x)).toEqual([0, 0.5])
+test("the line runs across the 24 hours by time and always ends at the right edge", () => {
+  const full = Ch.dayGeometry({ open24h: 100, points: [{ t: D0, p: 100 }, { t: D0 + DAY / 2, p: 105 }, { t: D0 + DAY, p: 110 }] })
+  expect(full.points.map(p => p.x)).toEqual([0, 0.5, 1])
+  // A symbol younger than 24 hours starts partway across.
+  const young = Ch.dayGeometry({ open24h: 100, points: [{ t: D0, p: 100 }, { t: D0 + DAY / 2, p: 110 }] })
+  expect(young.points.map(p => p.x)).toEqual([0.5, 1])
 })
 
 test("the open is the baseline, in view, and a rise draws above it", () => {
-  const g = Ch.dayGeometry({ dayOpen: 100, points: [{ t: D0, p: 101 }, { t: D0 + 300, p: 110 }] })
+  const g = Ch.dayGeometry({ open24h: 100, points: [{ t: D0, p: 101 }, { t: D0 + 300, p: 110 }] })
   expect(g.baselineY).toBeGreaterThan(0)
   expect(g.baselineY).toBeLessThan(1)
   for (const p of g.points) expect(p.y).toBeLessThan(g.baselineY)
 })
 
 test("a day that never moved draws level on its baseline", () => {
-  const g = Ch.dayGeometry({ dayOpen: 0.000005, points: [{ t: D0, p: 0.000005 }] })
+  const g = Ch.dayGeometry({ open24h: 0.000005, points: [{ t: D0, p: 0.000005 }] })
   expect(g.points[0].y).toBe(g.baselineY)
 })
 
 test("with no candles or no open there is no line, never a guessed one", () => {
   expect(Ch.dayGeometry(null)).toBeNull()
-  expect(Ch.dayGeometry({ dayOpen: 100, points: [] })).toBeNull()
-  expect(Ch.dayGeometry({ dayOpen: null, points: [{ t: D0, p: 1 }] })).toBeNull()
+  expect(Ch.dayGeometry({ open24h: 100, points: [] })).toBeNull()
+  expect(Ch.dayGeometry({ open24h: null, points: [{ t: D0, p: 1 }] })).toBeNull()
 })
 
 // ---- The arrow and the animal ----
@@ -187,32 +190,34 @@ test("a side bar's stacked amount splits at its point, and from a thousand reads
 
 // ---- The popup's hero and scrub ----
 
-test("the hero's change is since the day's open, in percent or in money", () => {
-  const q = { price: 84440.8, dayOpen: 82991, priceDigits: 1, points: [] }
+test("the hero's change is against the price 24 hours ago, in percent or in money", () => {
+  const q = { price: 84440.8, open24h: 82991, priceDigits: 1, points: [] }
   expect(Fig.heroView(q, 0, "pct")).toMatchObject({ priceText: "84,440.8", changeText: "+1.75%", sign: 1, daySign: 1, time: null })
   expect(Fig.heroView(q, 0, "abs")).toMatchObject({ changeText: "+1,449.80", sign: 1 })
-  const down = { price: 1.25, dayOpen: 1.5, priceDigits: 4, points: [] }
+  const down = { price: 1.25, open24h: 1.5, priceDigits: 4, points: [] }
   expect(Fig.heroView(down, 0, "abs").changeText).toBe(MINUS + "0.2500")
 })
 
 test("a hero with no open shows a dash and no colour, never a guessed change", () => {
-  const v = Fig.heroView({ price: 100, dayOpen: null, priceDigits: 2, points: [] }, 0, "pct")
+  const v = Fig.heroView({ price: 100, open24h: null, priceDigits: 2, points: [] }, 0, "pct")
   expect(v).toMatchObject({ priceText: "100.00", changeText: "—", sign: 0, daySign: 0 })
 })
 
 test("a scrub shows the close of the candle it is on, and that candle's time", () => {
-  const q = { price: 120, dayOpen: 100, priceDigits: 2,
+  const q = { price: 120, open24h: 100, priceDigits: 2,
     points: [{ t: D0, p: 101 }, { t: D0 + 300, p: 99 }, { t: D0 + 600, p: 110 }] }
   const v = Fig.heroView(q, D0 + 450, "pct")
   expect(v).toMatchObject({ priceText: "99.00", changeText: MINUS + "1.00%", sign: -1, time: D0 + 300 })
   expect(Fmt.utcClock(v.time)).toBe("00:05")
 })
 
-test("the scrub runs across the UTC day and stops at the first and last candle", () => {
+test("the scrub runs across the 24 hours and stops at the first and last candle", () => {
   const q = { points: [{ t: D0 + 600, p: 1 }, { t: D0 + 3600, p: 2 }] }
-  expect(Ch.timeAtFraction(q, 0.5)).toBe(D0 + DAY / 2)
-  expect(Ch.fractionAtTime(q, D0 + DAY / 4)).toBe(0.25)
-  expect(Ch.fractionAtTime(q, D0 + DAY + 1)).toBe(-1)
+  const start = D0 + 3600 - DAY
+  expect(Ch.timeAtFraction(q, 0.5)).toBe(start + DAY / 2)
+  expect(Ch.fractionAtTime(q, start + DAY / 4)).toBe(0.25)
+  expect(Ch.fractionAtTime(q, D0 + 3601)).toBe(-1)
+  expect(Ch.fractionAtTime(q, start - 1)).toBe(-1)
   expect(Ch.stepTime(q, D0 + 3600, 1)).toBe(D0 + 3600)
   expect(Ch.stepTime(q, D0 + 900, -2)).toBe(D0 + 600)
 })

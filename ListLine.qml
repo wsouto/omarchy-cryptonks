@@ -1,6 +1,6 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2, the
-// list line of HeroBand.qml. Changes: its own file; "TODAY" says the UTC
-// day, not a session.
+// list line of HeroBand.qml. Changes: its own file; "TODAY" is "24H", the
+// rolling 24 hours, not a session.
 // The breadth rule rests while the popup is closed.
 import QtQuick
 import qs.Commons
@@ -70,7 +70,7 @@ Item {
     onClicked: root.listClicked()
   }
 
-  // The rows and the rule are the day's on every range, and say so.
+  // The rows and the rule are the 24 hours' on every range, and say so.
   Text {
     id: todayText
     objectName: "todayLabel"
@@ -78,7 +78,7 @@ Item {
     anchors.leftMargin: Style.space(12)
     anchors.verticalCenter: parent.verticalCenter
     textFormat: Text.PlainText
-    text: "TODAY"
+    text: "24H"
     color: root.dim
     font.family: root.fontFamily
     font.pixelSize: Style.font.caption

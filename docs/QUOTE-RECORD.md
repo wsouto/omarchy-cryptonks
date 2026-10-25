@@ -15,27 +15,28 @@ supply is `null`, never a guess.
 | `priceDigits` | decimals every price of this symbol shows | instruments info `priceScale` (a string such as `"2"`) |
 | `price` | latest traded price | ticker `lastPrice` |
 | `marketTime` | when `price` was read, in seconds | response `time` |
-| `dayOpen` | open of today's UTC daily candle; the change baseline | kline `D`, newest candle |
-| `dayHigh`, `dayLow` | high and low of today's UTC day | same candle |
-| `volume` | base-coin volume since 00:00 UTC | same candle |
-| `turnover` | quote-currency volume since 00:00 UTC | same candle |
+| `open24h` | price 24 hours ago; the change baseline | ticker `prevPrice24h` |
+| `high24h`, `low24h` | high and low of the last 24 hours | ticker `highPrice24h`, `lowPrice24h` |
+| `volume24h` | base-coin volume of the last 24 hours | ticker `volume24h` |
+| `turnover24h` | quote-currency volume of the last 24 hours | ticker `turnover24h` |
 | `high52w`, `low52w` | high and low of the last 365 daily candles | kline `D` |
 | `firstTradeDate` | when the symbol launched, so a young symbol's ranges are honest | instruments info `launchTime` (ms; divide by 1000) |
 | `fundingInterval` | minutes between funding payments, such as `480` | instruments info `fundingInterval` |
 | `fundingRate` | estimated rate for the next settlement, a fraction (`0.0001` = 0.01%); positive: longs pay shorts | ticker `fundingRate` |
 | `nextFundingTime` | when that settlement is, in seconds | ticker `nextFundingTime` (ms; divide by 1000) |
-| `points` | the day's line: each 5-minute candle of today's UTC day as `{ t, p }`, its start in seconds and its close; `[]` with none | kline `5` from 00:00 UTC |
+| `points` | the 1D line: each 5-minute candle of the last 24 hours as `{ t, p }`, its start in seconds and its close; `[]` with none | kline `5` from 24 hours ago |
 
-**Change since 00:00 UTC** = `price - dayOpen`, and as a percent of `dayOpen`.
-The screen says "since 00:00 UTC" so it is never mistaken for Bybit's own
-rolling 24-hour figure.
+**The 24-hour change** = `price - open24h`, and as a percent of `open24h`: the
+exchange's own 24-hour change. A figure the ticker doesn't send is `null`.
 
 **Removed from the Stonks record:** `session`, `current`, `clocks`, `gmtoffset`,
-`timezoneName`, `zoneName`, `prevClose` (replaced by `dayOpen`), `crypto`.
+`timezoneName`, `zoneName`, `prevClose` (replaced by `open24h`), `crypto`.
 
 **On Binance** (`adapters/binance.js`): `name` is `baseAsset` (`BTC`, Binance
 sends no full name), `priceDigits` is `pricePrecision`, `firstTradeDate` is
-`onboardDate`, `price` is ticker/price `price`, `marketTime` its `time`,
+`onboardDate`, `price` is ticker/24hr `lastPrice`, `marketTime` its
+`closeTime`, the 24-hour fields its `openPrice`, `highPrice`, `lowPrice`,
+`volume` and `quoteVolume`,
 `fundingRate` and `nextFundingTime` are premiumIndex `lastFundingRate` and
 `nextFundingTime`, the candles are klines (`1d` opens at 00:00 UTC, as
 Bybit's), and `fundingInterval` is `null`: Binance sends it only in a list of
@@ -46,9 +47,10 @@ the contracts that differ from 8 hours, which nothing here reads.
 of `tickSz`, `firstTradeDate` is `listTime`, `price` is ticker `last`,
 `marketTime` its `ts`, `fundingRate` and `nextFundingTime` are funding-rate
 `fundingRate` and `fundingTime` (the settlement to come; OKX's
-`nextFundingTime` is the one after), the candles are `1Dutc` days, `volume` is
-the candle's `volCcy` (base coin) and `turnover` its `volCcyQuote`, and
-`fundingInterval` is `null`.
+`nextFundingTime` is the one after), the candles are `1Dutc` days, the 24-hour
+fields are ticker `open24h`, `high24h`, `low24h` and `volCcy24h` (base coin),
+`turnover24h` is `volCcy24h × last` because OKX sends no quote-coin volume for
+a swap, and `fundingInterval` is `null`.
 
 ## Which symbols are in scope
 

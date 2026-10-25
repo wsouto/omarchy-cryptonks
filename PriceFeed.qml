@@ -67,7 +67,7 @@ Item {
   property var histories: ({})
 
   // What is kept between refreshes, by symbol: its instrument, up to a year
-  // of daily candles and today's 5-minute ones (see `Refresh.js`), so each
+  // of daily candles and the last 24 hours of 5-minute ones (see `Refresh.js`), so each
   // minute asks only for the prices and the candles due.
   property var kept: ({})
   // The time, in seconds, before which the exchange is left alone.

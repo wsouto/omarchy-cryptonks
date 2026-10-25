@@ -123,19 +123,20 @@ function quotesUrl(symbols) {
   return url
 }
 
-// { time, prices, funding }: when Bybit answered, in seconds, the last
-// traded price by symbol, and its funding by symbol as { rate, nextTime }:
+// { time, prices, funding, stats }: when Bybit answered, in seconds, the
+// last traded price by symbol, its funding by symbol as { rate, nextTime }:
 // the estimated rate for the next settlement (a fraction, 0.0001 = 0.01%)
-// and when that is, in seconds; either is null when Bybit sends none. A
-// ticker with no price is left out. The ticker also holds
-// a rolling 24-hour change, which is not used: the day here starts at
-// 00:00 UTC, from the daily candle.
+// and when that is, in seconds, and its rolling 24 hours by symbol as
+// { open, high, low, volume, turnover }: the price 24 hours ago, the high and
+// low since, the volume in the base coin and in the quote coin. Any figure
+// Bybit sends none for is null. A ticker with no price is left out.
 function parseQuotes(json) {
   var r = resultOf(json)
   var time = num(json && json.time)
   if (!r || !Array.isArray(r.list) || time === null) return null
   var prices = {}
   var funding = {}
+  var stats = {}
   for (var i = 0; i < r.list.length; i++) {
     var t = r.list[i]
     var price = num(t && t.lastPrice)
@@ -143,8 +144,9 @@ function parseQuotes(json) {
     prices[t.symbol] = price
     var next = num(t.nextFundingTime)
     funding[t.symbol] = { rate: num(t.fundingRate), nextTime: next !== null && next > 0 ? Math.floor(next / 1000) : null }
+    stats[t.symbol] = { open: num(t.prevPrice24h), high: num(t.highPrice24h), low: num(t.lowPrice24h), volume: num(t.volume24h), turnover: num(t.turnover24h) }
   }
-  return { time: Math.floor(time / 1000), prices: prices, funding: funding }
+  return { time: Math.floor(time / 1000), prices: prices, funding: funding, stats: stats }
 }
 
 // ---- Candles -----------------------------------------------------------
@@ -158,9 +160,9 @@ function dailyUrl(symbol, count) {
 }
 
 // The 5-minute candles of one symbol from `start` (seconds) on: at most 288
-// in a UTC day, so one request holds the whole day. Bybit's first candle
+// in 24 hours, so one request holds the whole line. Bybit's first candle
 // starts at `start` itself when it is on a 5-minute mark (checked on
-// 2026-10-22 with 00:00 UTC).
+// 2026-10-22).
 function candlesUrl(symbol, start) {
   return HOST + "/v5/market/kline?category=linear&symbol=" + encodeURIComponent(symbol)
     + "&interval=5&start=" + Math.floor(start) * 1000 + "&limit=1000"
@@ -193,7 +195,7 @@ function parseCandles(json) {
 // younger than the range simply gets the candles it has. YTD starts at
 // 00:00 UTC on 1 January and All has no start: monthly candles, the newest
 // 1000 of them, are older than any perpetual. A range's name is the
-// project's, in `History.js`; the day is `candlesUrl`'s.
+// project's, in `History.js`; the 24 hours are `candlesUrl`'s.
 var RANGES = {
   "1W": { interval: "15", step: 900, days: 7 },
   "1M": { interval: "60", step: 3600, days: 30 },
@@ -208,7 +210,7 @@ var RANGES = {
 }
 
 // The candles of `range` for one symbol at `now` (seconds), or null for a
-// range this adapter does not serve (the day).
+// range this adapter does not serve (1D).
 function historyUrl(symbol, range, now) {
   var spec = RANGES[range]
   if (!spec) return null
@@ -239,24 +241,20 @@ function buildHistory(symbol, range, candles) {
 
 // The record of docs/QUOTE-RECORD.md for one symbol: its instrument entry
 // (from parseInstruments), its latest `price` and `marketTime` (from
-// parseQuotes), its daily `candles`, and `dayCandles`, its 5-minute candles
-// (both from parseCandles), and its `funding` (from parseQuotes).
+// parseQuotes), its daily `candles`, and `lineCandles`, its 5-minute candles
+// (both from parseCandles), its `funding` and its 24-hour `stats` (from
+// parseQuotes).
 //
-// The day figures belong to today's UTC day, so they come only from a newest
-// candle that starts at today's 00:00 UTC. A newest candle from another day
-// means the candles are not today's, and the day figures are null: not a
-// figure from the wrong day. The year's high and low come from the last 365
-// candles, or fewer for a young symbol, which `firstTradeDate` tells. The
-// day line, `points`, is each 5-minute candle of today's UTC day at its
-// start and close, so a candle of yesterday never draws on today's line.
-function buildQuote(instrument, price, marketTime, candles, dayCandles, funding) {
+// The 24-hour figures are Bybit's own, from the ticker, so the change is the
+// one Bybit shows; with no stats they are null. The year's high and low come
+// from the last 365 daily candles, or fewer for a young symbol, which
+// `firstTradeDate` tells. The line, `points`, is each 5-minute candle of the
+// last 24 hours at its start and close.
+function buildQuote(instrument, price, marketTime, candles, lineCandles, funding, stats) {
   if (!instrument || price === null || marketTime === null) return null
-  var list = candles || []
-  var last = list.length ? list[list.length - 1] : null
-  var today = Math.floor(marketTime / DAY) * DAY
-  var isToday = last !== null && last.t === today
-  var year = list.slice(-365)
-  var points = (dayCandles || []).filter(function (c) { return c.t >= today && c.t < today + DAY })
+  var year = (candles || []).slice(-365)
+  var day = stats || {}
+  var points = (lineCandles || []).filter(function (c) { return c.t > marketTime - DAY && c.t <= marketTime })
     .map(function (c) { return { t: c.t, p: c.close } })
   var high = null
   var low = null
@@ -273,11 +271,11 @@ function buildQuote(instrument, price, marketTime, candles, dayCandles, funding)
     priceDigits: instrument.priceDigits,
     price: price,
     marketTime: marketTime,
-    dayOpen: isToday ? last.open : null,
-    dayHigh: isToday ? last.high : null,
-    dayLow: isToday ? last.low : null,
-    volume: isToday ? last.volume : null,
-    turnover: isToday ? last.turnover : null,
+    open24h: num(day.open),
+    high24h: num(day.high),
+    low24h: num(day.low),
+    volume24h: num(day.volume),
+    turnover24h: num(day.turnover),
     high52w: high,
     low52w: low,
     firstTradeDate: instrument.firstTradeDate,

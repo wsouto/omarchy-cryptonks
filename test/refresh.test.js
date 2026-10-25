@@ -18,9 +18,9 @@ const btc = () => B.parseInstruments(JSON.parse(body("instruments.json"))).instr
 const answer = (index, status, text = "{}", exit = 0, retryAfter = "") =>
   `${text}\n${F.ANSWER_MARK} ${index} ${String(status).padStart(3, "0")} ${exit} ${retryAfter}\n`
 
-// The run of a first refresh: tickers, daily candles, today's 5-minute
+// The run of a first refresh: tickers, daily candles, the 5-minute
 // candles and the instrument. The 5-minute fixture is a day later than the
-// tickers, so its candles are not the tickers' day: tests of the line move
+// tickers, so its candles are outside the tickers' 24 hours: tests of the line move
 // the tickers' time to its own.
 const FIRST = ["quotes", "daily", "day", "instrument"]
 const LATER = ["quotes", "daily", "day"]
@@ -45,7 +45,7 @@ test("a whole run gives the quote and keeps the instrument", () => {
   expect(got.wait).toBe(0)
   expect(got.kept.instrument).toEqual(btc())
   expect(got.quote.price).toBe(84440.8)
-  expect(got.quote.dayOpen).toBe(82991)
+  expect(got.quote.open24h).toBe(83020.1)
 })
 
 test("a later run uses the instrument kept from before", () => {
@@ -134,7 +134,7 @@ test("the featured symbol's first refresh asks for the instrument and a year of 
   expect(plan.urls[3]).toContain("symbol=BTCUSDT")
 })
 
-test("a row's first refresh asks for no daily candles: its day comes from the 5-minute ones", () => {
+test("a row's first refresh asks for no daily candles: its 24 hours come with its price", () => {
   expect(roles(R.plan(B, "BTCUSDT", null, NOW))).toEqual(["quotes", "day", "instrument"])
 })
 
@@ -185,7 +185,7 @@ test("fresh candles replace kept ones that start at the same time, in order", ()
   expect(merged.at(-1).t).toBe(TODAY + DAY)
 })
 
-test("the year's range comes from the kept candles, today's from the fresh ones", () => {
+test("the year's range comes from the kept candles, the 24 hours from the ticker", () => {
   // A year ending today, with its high and low 200 days ago; the fixture's
   // candles are the last three days, so they replace the kept ones.
   const year = days(TODAY - 364 * DAY, 365).map(c => c.t === TODAY - 200 * DAY ? candle(c.t, 99999, 1) : c)
@@ -193,28 +193,31 @@ test("the year's range comes from the kept candles, today's from the fresh ones"
   const got = R.read(F.answers(later(), B.limits), LATER, "BTCUSDT", kept, B)
   expect(got.quote.high52w).toBe(99999)
   expect(got.quote.low52w).toBe(1)
-  expect(got.quote.dayOpen).toBe(82991)
+  expect(got.quote.open24h).toBe(83020.1)
   expect(got.kept.candles.length).toBe(365)
 })
 
-// ---- The day's line ----
+// ---- The 24-hour line ----
 
 const FIVE = 300
 const startOf = plan => Number(plan.urls[plan.asked.indexOf("day")].match(/start=(\d+)/)[1]) / 1000
 const fives = (from, count) => Array.from({ length: count }, (_, i) => candle(from + i * FIVE))
+// The first 5-minute candle of the 24 hours up to NOW.
+const WINDOW = Math.floor((NOW - DAY) / FIVE) * FIVE + FIVE
 
-test("the first refresh asks for today's 5-minute candles from 00:00 UTC", () => {
-  expect(startOf(R.plan(B, "BTCUSDT", null, NOW))).toBe(TODAY)
+test("the first refresh asks for the 288 five-minute candles up to now", () => {
+  expect(startOf(R.plan(B, "BTCUSDT", null, NOW))).toBe(WINDOW)
+  expect((Math.floor(NOW / FIVE) * FIVE - WINDOW) / FIVE + 1).toBe(288)
 })
 
 test("later refreshes ask again from the newest kept candle, still open when it came", () => {
-  const kept = { symbol: "BTCUSDT", instrument: btc(), candles: null, day: fives(TODAY, 10) }
-  expect(startOf(R.plan(B, "BTCUSDT", kept, NOW))).toBe(TODAY + 9 * FIVE)
+  const kept = { symbol: "BTCUSDT", instrument: btc(), candles: null, day: fives(WINDOW, 10) }
+  expect(startOf(R.plan(B, "BTCUSDT", kept, NOW))).toBe(WINDOW + 9 * FIVE)
 })
 
-test("after midnight, yesterday's candles are not asked for again", () => {
-  const kept = { symbol: "BTCUSDT", instrument: btc(), candles: null, day: fives(TODAY - DAY, 288) }
-  expect(startOf(R.plan(B, "BTCUSDT", kept, NOW))).toBe(TODAY)
+test("candles kept more than 24 hours ago are not asked for again", () => {
+  const kept = { symbol: "BTCUSDT", instrument: btc(), candles: null, day: fives(TODAY - 2 * DAY, 288) }
+  expect(startOf(R.plan(B, "BTCUSDT", kept, NOW))).toBe(WINDOW)
 })
 
 // The tickers moved to the 5-minute fixture's own time, so both are of one day.
@@ -225,39 +228,28 @@ const sameDay = () => {
   return { day, text: answer(0, 200, JSON.stringify(tickers)) + answer(1, 200, body("kline-btcusdt-d.json")) + answer(2, 200, JSON.stringify(day)) }
 }
 
-test("the quote's line is today's candles, and only today's are kept", () => {
+test("the quote's line is the last 24 hours, and only those candles are kept", () => {
   const { day, text } = sameDay()
   const today = Math.floor(day.time / 1000 / DAY) * DAY
-  const kept = { symbol: "BTCUSDT", instrument: btc(), candles: null, day: [candle(today - FIVE)] }
+  const time = Math.floor(day.time / 1000)
+  // One candle older than 24 hours, one inside them from before midnight.
+  const kept = { symbol: "BTCUSDT", instrument: btc(), candles: null, day: [candle(time - DAY - FIVE), candle(today - FIVE)] }
   const got = R.read(F.answers(text, B.limits), LATER, "BTCUSDT", kept, B)
   expect(got.problem).toBe("")
-  expect(got.kept.day.length).toBe(day.result.list.length)
-  expect(got.kept.day[0].t).toBe(today)
-  expect(got.quote.points.length).toBe(day.result.list.length)
+  expect(got.kept.day.length).toBe(day.result.list.length + 1)
+  expect(got.kept.day[0].t).toBe(today - FIVE)
+  expect(got.quote.points.length).toBe(day.result.list.length + 1)
 })
 
-test("a row's day is its 5-minute candles folded: open, close, extremes and sums", () => {
+test("a row's 24 hours are the ticker's, with no daily candles asked", () => {
   const day = JSON.parse(body("kline-btcusdt-5.json"))
   const tickers = JSON.parse(body("tickers.json"))
   tickers.time = day.time
-  const today = Math.floor(day.time / 1000 / DAY) * DAY
-  const fives = B.parseCandles(day).filter(c => c.t >= today)
-  const text = answer(0, 200, JSON.stringify(tickers)) + answer(1, 200, JSON.stringify(day))
-  const got = R.read(F.answers(text, B.limits), ["quotes", "day"], "BTCUSDT", keep(btc()), B)
+  const two = answer(0, 200, JSON.stringify(tickers)) + answer(1, 200, JSON.stringify(day))
+  const got = R.read(F.answers(two, B.limits), ["quotes", "day"], "BTCUSDT", keep(btc()), B)
   expect(got.problem).toBe("")
-  expect(got.quote.dayOpen).toBe(fives[0].open)
-  expect(got.quote.dayHigh).toBe(Math.max(...fives.map(c => c.high)))
-  expect(got.quote.dayLow).toBe(Math.min(...fives.map(c => c.low)))
-  expect(got.quote.volume).toBeCloseTo(fives.reduce((a, c) => a + c.volume, 0))
+  expect(got.quote).toMatchObject({ open24h: 83020.1, high24h: 84880, low24h: 82588, volume24h: 64531.325 })
   expect(got.kept.candles).toBeNull()
-})
-
-test("today's folded candle replaces a daily one kept from when the row was featured", () => {
-  const c = (t, open, high, low, close) => ({ t, open, high, low, close, volume: 1, turnover: 2 })
-  expect(R.dayCandle([c(TODAY - FIVE, 1, 1, 1, 1), c(TODAY, 5, 9, 4, 6), c(TODAY + FIVE, 6, 7, 2, 3)], TODAY))
-    .toEqual([{ t: TODAY, open: 5, high: 9, low: 2, close: 3, volume: 2, turnover: 4 }])
-  expect(R.dayCandle([], TODAY)).toEqual([])
-  expect(R.dayCandle(null, TODAY)).toEqual([])
 })
 
 test("an instrument from the exchange's list is not asked for; one not in it still is", () => {
@@ -301,9 +293,9 @@ test("each symbol asks for its own price, never Bybit's 680 KB list of all of th
   expect(prices).toEqual([B.quotesUrl(["BTCUSDT"]), B.quotesUrl(["ETHUSDT"])])
 })
 
-test("a new UTC day asks for candles at once, so the day's open is never missing", () => {
-  expect(R.candlesDue(readyKept("ETHUSDT", TODAY - 60), "ETHUSDT", TODAY + 30, 300)).toBe(true)
-  expect(R.candlesDue(readyKept("ETHUSDT", NOW - 60), "ETHUSDT", NOW, 300)).toBe(false)
+test("midnight UTC is no reason to ask for candles: the 24 hours just move on", () => {
+  expect(R.candlesDue(readyKept("ETHUSDT", TODAY - 60), "ETHUSDT", TODAY + 30, 300)).toBe(false)
+  expect(R.candlesDue(readyKept("ETHUSDT", NOW - 300), "ETHUSDT", NOW, 300)).toBe(true)
 })
 
 test("a price alone builds on the candles kept, and each symbol gets its own quote", () => {
@@ -414,7 +406,7 @@ const N = load("adapters/binance.js")
 const nbody = name => body("binance-" + name)
 const nBtc = () => N.parseInstruments(JSON.parse(nbody("exchangeinfo.json"))).instruments[0]
 const nRun = () =>
-  answer(0, 200, JSON.stringify(JSON.parse(nbody("prices.json"))[0])) + answer(1, 200, JSON.stringify(JSON.parse(nbody("premium.json"))[1]))
+  answer(0, 200, JSON.stringify(JSON.parse(nbody("ticker-24hr.json"))[0])) + answer(1, 200, JSON.stringify(JSON.parse(nbody("premium.json"))[1]))
   + answer(2, 200, nbody("kline-btcusdt-d.json")) + answer(3, 200, nbody("kline-btcusdt-5.json"))
 const nRead = (text, asked = ["quotes", "funding", "daily", "day"]) =>
   R.read(F.answers(text, N.limits), asked, "BTCUSDT", keep(nBtc()), N)
@@ -430,21 +422,21 @@ test("a Binance run gives the quote with the funding that came apart", () => {
   const got = nRead(nRun())
   expect(got.problem).toBe("")
   expect(got.quote.exchange).toBe("Binance")
-  expect(got.quote.price).toBe(80891.4)
-  expect(got.quote.dayOpen).toBe(81159.9)
+  expect(got.quote.price).toBe(80844.2)
+  expect(got.quote.open24h).toBe(80826.4)
   expect(got.quote.fundingRate).toBe(0.00009435)
 })
 
 test("a funding that failed leaves the price, with no funding", () => {
-  const text = answer(0, 200, JSON.stringify(JSON.parse(nbody("prices.json"))[0])) + answer(1, 400, nbody("error.json"))
+  const text = answer(0, 200, JSON.stringify(JSON.parse(nbody("ticker-24hr.json"))[0])) + answer(1, 400, nbody("error.json"))
     + answer(2, 200, nbody("kline-btcusdt-d.json")) + answer(3, 200, nbody("kline-btcusdt-5.json"))
   const got = nRead(text)
-  expect(got.quote.price).toBe(80891.4)
+  expect(got.quote.price).toBe(80844.2)
   expect(got.quote.fundingRate).toBeNull()
 })
 
 test("an instrument is picked out of the whole list Binance sends", () => {
-  const eth = R.read(F.answers(answer(0, 200, JSON.stringify(JSON.parse(nbody("prices.json"))[1])) + answer(1, 200, nbody("exchangeinfo.json")), N.limits),
+  const eth = R.read(F.answers(answer(0, 200, JSON.stringify(JSON.parse(nbody("ticker-24hr.json"))[1])) + answer(1, 200, nbody("exchangeinfo.json")), N.limits),
     ["quotes", "instrument"], "ETHUSDT", null, N)
   expect(eth.kept.instrument.symbol).toBe("ETHUSDT")
   const gone = R.read(F.answers(answer(0, 200, nbody("exchangeinfo.json")), N.limits), ["instrument"], "NOPEUSDT", null, N)

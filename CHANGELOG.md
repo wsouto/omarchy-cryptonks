@@ -23,6 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- 1D is the last 24 hours, as on the exchanges, instead of the UTC day from
+  00:00: the chart always fills, and the change, high, low and volume are the
+  exchange's own 24-hour figures, so they match its app. Labels say "24H"
+  ("TODAY", "SINCE 00:00 UTC" and "OPEN 00:00 UTC" are gone). On OKX the
+  24 hours' worth in USDT is the coin volume at the last price. The quote
+  record's day fields are renamed `open24h`, `high24h`, `low24h`,
+  `volume24h` and `turnover24h`.
 - Switching exchanges is faster: each exchange's prices, candles and charts are
   kept for the session, so switching back asks only for what is due, and the
   last saved prices of the exchange show at once. The saved quotes file
@@ -30,8 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   exchange; a version 1 file is still read.
 - Fewer requests per symbol: the exchange's instrument list (one request, kept
   a day) is read at start and on a switch, so no symbol asks for its own
-  instrument; and a row takes today's open, high, low and volume from its
-  5-minute candles, so only the featured symbol asks for daily candles. The
+  instrument; and a row takes its 24 hours' open, high, low and volume from
+  its price answer, so only the featured symbol asks for daily candles. The
   instrument list file is now version 2 and names its exchange.
 
 ### Fixed

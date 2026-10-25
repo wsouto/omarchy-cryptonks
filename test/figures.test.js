@@ -4,7 +4,7 @@ import { test, expect } from "bun:test"
 import { load } from "./load.js"
 
 const F = load("Figures.js")
-const quote = (price, dayOpen) => ({ price, dayOpen, priceDigits: 2, points: [] })
+const quote = (price, open24h) => ({ price, open24h, priceDigits: 2, points: [] })
 
 test("the breadth counts rows as their change reads, and a row with no figure apart", () => {
   const quotes = { UP: quote(101, 100), DOWN: quote(99, 100), FLAT: quote(100.001, 100), OPENLESS: quote(5, null) }
@@ -26,31 +26,31 @@ test("a range not yet in keeps the live price and has no change to show", () => 
 
 // ---- The info block ----
 
-const full = { symbol: "BTCUSDT", currency: "USDT", turnover: 1.5e9, price: 82, priceDigits: 1, dayOpen: 80, dayLow: 79, dayHigh: 85, volume: 12345.6, low52w: 70, high52w: 90 }
+const full = { symbol: "BTCUSDT", currency: "USDT", turnover24h: 1.5e9, price: 82, priceDigits: 1, open24h: 80, low24h: 79, high24h: 85, volume24h: 12345.6, low52w: 70, high52w: 90 }
 
-test("the day line is the day's range with the price between, then its open", () => {
+test("the 1D line is the 24 hours' range with the price between, then their open", () => {
   const line = F.dayLine(full)
   expect(line.title).toBe("1D")
   expect(line.range).toMatchObject({ low: 79, high: 85, price: 82, lowText: "79.0", highText: "85.0", lowTone: "", highTone: "" })
-  expect(line.facts.map(f => [f.label, f.value])).toEqual([["OPEN", "80.0"]])
+  expect(line.facts.map(f => [f.label, f.value])).toEqual([["24H OPEN", "80.0"]])
   expect(F.dayLine(null)).toBeNull()
 })
 
 test("a day end that is also the year's is toned, and an unknown figure leaves its slot empty", () => {
-  expect(F.dayLine({ ...full, dayHigh: 90 }).range.highTone).toBe("up")
-  expect(F.dayLine({ ...full, dayLow: 70 }).range.lowTone).toBe("down")
-  const open = F.dayLine({ ...full, dayOpen: null, volume: null })
+  expect(F.dayLine({ ...full, high24h: 90 }).range.highTone).toBe("up")
+  expect(F.dayLine({ ...full, low24h: 70 }).range.lowTone).toBe("down")
+  const open = F.dayLine({ ...full, open24h: null, volume24h: null })
   expect(open.facts.map(f => f.value)).toEqual([""])
-  expect(F.yearLine({ ...full, volume: null }).facts.map(f => f.value)).toEqual([""])
-  expect(F.yearLine({ ...full, turnover: null }).facts[0].value).toBe("12K BTC")
+  expect(F.yearLine({ ...full, volume24h: null }).facts.map(f => f.value)).toEqual([""])
+  expect(F.yearLine({ ...full, turnover24h: null }).facts[0].value).toBe("12K BTC")
 })
 
-test("the 52-week line is the year's low and high, toned where today set one, then the volume", () => {
+test("the 52-week line is the year's low and high, toned where the 24 hours set one, then the volume", () => {
   const line = F.yearLine(full)
   expect(line).toMatchObject({ title: "52W" })
   expect(line.facts.map(f => [f.label, f.value])).toEqual([["VOL", "12K BTC ($1.5B)"]])
   expect(line.range).toMatchObject({ low: 70, high: 90, highTone: "", lowTone: "" })
-  expect(F.yearLine({ ...full, dayHigh: 90 }).range.highTone).toBe("up")
+  expect(F.yearLine({ ...full, high24h: 90 }).range.highTone).toBe("up")
   expect(F.yearLine({ ...full, low52w: null }).range.lowText).toBe("")
 })
 

@@ -11,13 +11,14 @@
 // What the feed keeps between refreshes is { symbol, instrument, candles,
 // year, day, candlesAt, histories }: the instrument, up to a year of daily
 // candles, whether a whole year was asked for, and the 5-minute candles of
-// the UTC day the exchange last answered in, each oldest first, the
+// the last 24 hours the exchange answered for, each oldest first, the
 // exchange's time when the candles last came, and the candles of each range
 // asked for, with the time they came ({ range: { candles, at } }). All of it
 // belongs to `symbol`, and is dropped whole when the symbol changes, so one
 // symbol's decimals or year never dress another's price.
 
 var DAY = 86400
+var FIVE = 300
 // The candles kept: the year that `high52w` and `low52w` cover.
 var YEAR = 365
 
@@ -44,31 +45,38 @@ function dailyCount(mine, now, year) {
   return Math.min(YEAR, Math.max(2, missed + 1))
 }
 
+// The first 5-minute candle of the 24 hours up to `now`: the 288 that end
+// with the one still open.
+function windowStart(now) {
+  return Math.floor((now - DAY) / FIVE) * FIVE + FIVE
+}
+
 // Where the next run's 5-minute candles start: at the newest kept one, which
-// was still open when it came, or with none kept from today, at 00:00 UTC.
-function dayStart(day, now) {
-  var today = Math.floor(now / DAY) * DAY
+// was still open when it came, but never before the 24 hours, so candles
+// kept a long time ago (an exchange left for a day) are not asked again.
+function lineStart(day, now) {
+  var start = windowStart(now)
   var newest = day && day.length ? day[day.length - 1].t : 0
-  return newest >= today ? newest : today
+  return newest >= start ? newest : start
 }
 
 // Whether a refresh at `now` asks for candles as well as the price: when
 // none are kept (the daily ones only with `daily`, the featured symbol's),
-// when the kept ones are `every` seconds old or more, and when a new UTC day
-// has begun since, so its open is never missing. A row's line moves little
-// in a minute, so the rows ask every 5 minutes, and the featured symbol,
-// whose line the pill and the hero draw, every minute.
+// and when the kept ones are `every` seconds old or more. A row's line moves
+// little in a minute, so the rows ask every 5 minutes, and the featured
+// symbol, whose line the pill and the hero draw, every minute. The 24-hour
+// figures come with the price, so they never wait for the candles.
 function candlesDue(kept, symbol, now, every, daily) {
   var mine = keptFor(kept, symbol)
   if (!mine.day || !mine.candlesAt || (daily && !mine.candles)) return true
-  return now - mine.candlesAt >= every || Math.floor(now / DAY) > Math.floor(mine.candlesAt / DAY)
+  return now - mine.candlesAt >= every
 }
 
 // { urls, asked }: the URLs of the next run and the role of each, in order.
 // The candles are asked for only with `candles`, and the daily ones only
 // with `year`, the featured symbol's, which needs a year of them for its
-// 52-week high and low (`dailyCount`): a row's day comes from its 5-minute
-// candles (`dayCandle`). The instrument is asked only when none is kept for
+// 52-week high and low (`dailyCount`): a row's 24 hours come with its price.
+// The instrument is asked only when none is kept for
 // this symbol: it does not change by the minute. A year's daily candles are
 // asked as "year", the rest as "daily". A `range` other than the day is asked for
 // as "history:<range>" when none is kept or the kept one is due again
@@ -91,7 +99,7 @@ function plan(adapter, symbol, kept, now, candles, year, range, force) {
       asked.push(base)
       morePages(adapter.dailyMore ? adapter.dailyMore(symbol, count, now) : null, base, urls, asked)
     }
-    urls.push(adapter.candlesUrl(symbol, dayStart(mine.day, now)))
+    urls.push(adapter.candlesUrl(symbol, lineStart(mine.day, now)))
     asked.push("day")
   }
   if (range && range !== "1D" && (force || History.due(range, mine.histories[range] && mine.histories[range].at, now))) {
@@ -140,24 +148,6 @@ function readPages(adapter, json, roles) {
     all = mergeCandles(all, page)
   }
   return { candles: missing || bad !== null ? null : all, bad: bad, missing: missing }
-}
-
-// Today's daily candle, folded from the 5-minute candles of `day` from
-// `today` (00:00 UTC, seconds), as [candle]; [] with none. Its open is the
-// first one's, its close the last one's, its high and low the extremes, and
-// its volume and turnover the sums: the same figures as the exchange's own
-// daily candle, without asking for it.
-function dayCandle(day, today) {
-  var mine = (day || []).filter(function (c) { return c.t >= today && c.t < today + DAY })
-  if (mine.length === 0) return []
-  var out = { t: today, open: mine[0].open, high: mine[0].high, low: mine[0].low, close: mine[mine.length - 1].close, volume: 0, turnover: 0 }
-  for (var i = 0; i < mine.length; i++) {
-    out.high = Math.max(out.high, mine[i].high)
-    out.low = Math.min(out.low, mine[i].low)
-    out.volume += mine[i].volume
-    out.turnover += mine[i].turnover
-  }
-  return [out]
 }
 
 // The kept candles with the fresh ones in, oldest first: a fresh candle
@@ -293,14 +283,14 @@ function read(all, asked, symbol, kept, adapter) {
   if (candles !== null && dailyBase === "year") out.kept.year = true
   var day = json.day ? adapter.parseCandles(json.day) : null
   if (json.day && day === null) trouble = trouble || said(adapter, json.day)
-  // Only the day the exchange answered in is kept: at midnight the line
-  // starts again.
+  // Only the 24 hours up to the exchange's answer are kept: older candles
+  // leave the line as it moves.
   if (day !== null && quotes !== null) {
-    var today = Math.floor(quotes.time / DAY) * DAY
-    out.kept.day = mergeCandles(out.kept.day, day).filter(function (c) { return c.t >= today })
+    var start = windowStart(quotes.time)
+    out.kept.day = mergeCandles(out.kept.day, day).filter(function (c) { return c.t >= start })
   }
   // A run that asked for the price alone builds on the candles kept. A row
-  // asks no daily candles: its day alone is enough.
+  // asks no daily candles: its line alone is enough.
   var askedCandles = asked.indexOf("day") >= 0
   var haveCandles = askedCandles ? (!dailyBase || candles !== null) && day !== null : !!out.kept.day
   if (askedCandles && haveCandles && quotes !== null) out.kept.candlesAt = quotes.time
@@ -309,10 +299,8 @@ function read(all, asked, symbol, kept, adapter) {
     return out
   }
 
-  // Today's daily candle is always the one folded from the 5-minute ones, so
-  // a row that was featured never shows its day as it was then.
-  var daily = mergeCandles(out.kept.candles, dayCandle(out.kept.day, Math.floor(quotes.time / DAY) * DAY))
-  out.quote = adapter.buildQuote(out.kept.instrument, quotes.prices[symbol], quotes.time, daily, out.kept.day, quotes.funding[symbol])
+  out.quote = adapter.buildQuote(out.kept.instrument, quotes.prices[symbol], quotes.time, out.kept.candles, out.kept.day,
+    quotes.funding[symbol], quotes.stats ? quotes.stats[symbol] : null)
   out.problem = slip
   return out
 }

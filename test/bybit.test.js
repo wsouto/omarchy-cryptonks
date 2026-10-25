@@ -121,6 +121,14 @@ test("the last traded price by symbol, and when Bybit answered in seconds", () =
     ["AAPLUSDT", "BTCPERP", "BTCUSDT", "BTCUSDT-06NOV26", "ETHUSDT", "OPENAIUSDT"])
 })
 
+test("the rolling 24 hours by symbol: Bybit's open, high, low and both volumes", () => {
+  const quotes = B.parseQuotes(fixture("tickers.json"))
+  expect(quotes.stats.BTCUSDT).toEqual({ open: 83020.1, high: 84880, low: 82588, volume: 64531.325, turnover: 5416309860.8932 })
+  const json = clone(fixture("tickers.json"))
+  json.result.list.find(x => x.symbol === "ETHUSDT").prevPrice24h = ""
+  expect(B.parseQuotes(json).stats.ETHUSDT.open).toBeNull()
+})
+
 test("funding by symbol: the next rate and when it settles, in seconds", () => {
   const f = B.parseQuotes(fixture("tickers.json")).funding
   expect(f.AAPLUSDT).toEqual({ rate: -0.00019795, nextTime: 1792627200 })
@@ -169,7 +177,7 @@ test("candles come oldest first, in seconds, with numbers", () => {
   })
 })
 
-test("today's 5-minute candles are asked for from a start, in Bybit's milliseconds", () => {
+test("the 5-minute candles are asked for from a start, in Bybit's milliseconds", () => {
   const url = B.candlesUrl("BTCUSDT", 1792627200)
   expect(url).toContain("/v5/market/kline")
   expect(url).toContain("symbol=BTCUSDT")
@@ -177,7 +185,7 @@ test("today's 5-minute candles are asked for from a start, in Bybit's millisecon
   expect(url).toContain("start=1792627200000")
 })
 
-test("a day's 5-minute candles start at 00:00 UTC and come oldest first", () => {
+test("5-minute candles start at the start asked for and come oldest first", () => {
   const day = B.parseCandles(fixture("kline-btcusdt-5.json"))
   expect(day[0].t).toBe(1792627200)
   for (let i = 1; i < day.length; i++) expect(day[i].t - day[i - 1].t).toBe(300)
@@ -197,7 +205,7 @@ const candles = () => B.parseCandles(fixture("kline-btcusdt-d.json"))
 
 test("the record is the one QUOTE-RECORD.md describes", () => {
   const q = quotes()
-  const record = B.buildQuote(btc(), q.prices.BTCUSDT, q.time, candles())
+  const record = B.buildQuote(btc(), q.prices.BTCUSDT, q.time, candles(), [], null, q.stats.BTCUSDT)
   expect(record).toEqual({
     symbol: "BTCUSDT",
     name: "Bitcoin",
@@ -207,11 +215,11 @@ test("the record is the one QUOTE-RECORD.md describes", () => {
     priceDigits: 2,
     price: 84440.8,
     marketTime: 1792623649,
-    dayOpen: 82991,
-    dayHigh: 84880,
-    dayLow: 82588,
-    volume: 63537.726,
-    turnover: 5333887794.4113,
+    open24h: 83020.1,
+    high24h: 84880,
+    low24h: 82588,
+    volume24h: 64531.325,
+    turnover24h: 5416309860.8932,
     high52w: 84880,
     low52w: 81150,
     firstTradeDate: 1584230400,
@@ -222,19 +230,19 @@ test("the record is the one QUOTE-RECORD.md describes", () => {
   })
 })
 
-test("a newest candle from another day gives no day figures, not the wrong day's", () => {
+test("no 24-hour stats give null figures, not a guess", () => {
   const q = quotes()
-  const record = B.buildQuote(btc(), q.prices.BTCUSDT, q.time + 86400, candles())
-  expect(record.dayOpen).toBeNull()
-  expect(record.dayHigh).toBeNull()
-  expect(record.dayLow).toBeNull()
-  expect(record.volume).toBeNull()
-  expect(record.turnover).toBeNull()
+  const record = B.buildQuote(btc(), q.prices.BTCUSDT, q.time, candles())
+  expect(record.open24h).toBeNull()
+  expect(record.high24h).toBeNull()
+  expect(record.low24h).toBeNull()
+  expect(record.volume24h).toBeNull()
+  expect(record.turnover24h).toBeNull()
   expect(record.high52w).toBe(84880)
   expect(record.price).toBe(84440.8)
 })
 
-test("the day line is each 5-minute candle of today at its start and close", () => {
+test("the line is each 5-minute candle of the last 24 hours at its start and close", () => {
   const json = fixture("kline-btcusdt-5.json")
   const day = B.parseCandles(json)
   const time = Math.floor(json.time / 1000)
@@ -244,11 +252,11 @@ test("the day line is each 5-minute candle of today at its start and close", () 
   expect(record.points.at(-1)).toEqual({ t: day.at(-1).t, p: day.at(-1).close })
 })
 
-test("a candle of yesterday never draws on today's line", () => {
+test("a candle older than 24 hours never draws on the line", () => {
   const day = B.parseCandles(fixture("kline-btcusdt-5.json"))
   const time = day.at(-1).t + 60
-  const yesterday = { ...day[0], t: day[0].t - 300 }
-  expect(B.buildQuote(btc(), 1, time, candles(), [yesterday, ...day]).points.length).toBe(day.length)
+  const old = { ...day[0], t: time - 86400 }
+  expect(B.buildQuote(btc(), 1, time, candles(), [old, ...day]).points.length).toBe(day.length)
   expect(B.buildQuote(btc(), 1, time + 86400, candles(), day).points).toEqual([])
 })
 
@@ -256,7 +264,7 @@ test("with no candles, only what is known is in the record", () => {
   const q = quotes()
   const record = B.buildQuote(btc(), q.prices.BTCUSDT, q.time, [])
   expect(record.price).toBe(84440.8)
-  expect(record.dayOpen).toBeNull()
+  expect(record.open24h).toBeNull()
   expect(record.high52w).toBeNull()
   expect(record.low52w).toBeNull()
 })
@@ -276,25 +284,25 @@ test("the year's range is the last 365 candles, so an older high is not in it", 
   expect(record.low52w).toBe(5)
 })
 
-// ---- The change since 00:00 UTC ----
+// ---- The 24-hour change ----
 
-test("the change is the price against the open of today's UTC candle", () => {
+test("the change is the price against Bybit's price 24 hours ago", () => {
   const q = quotes()
-  const record = B.buildQuote(btc(), q.prices.BTCUSDT, q.time, candles())
+  const record = B.buildQuote(btc(), q.prices.BTCUSDT, q.time, candles(), [], null, q.stats.BTCUSDT)
   const move = C.sinceOpen(record)
-  expect(move.abs).toBeCloseTo(84440.8 - 82991, 6)
-  expect(move.pct).toBeCloseTo((84440.8 - 82991) / 82991 * 100, 6)
+  expect(move.abs).toBeCloseTo(84440.8 - 83020.1, 6)
+  expect(move.pct).toBeCloseTo((84440.8 - 83020.1) / 83020.1 * 100, 6)
 })
 
 test("a fall is a negative change", () => {
-  expect(C.sinceOpen({ price: 90, dayOpen: 100 })).toEqual({ abs: -10, pct: -10 })
+  expect(C.sinceOpen({ price: 90, open24h: 100 })).toEqual({ abs: -10, pct: -10 })
 })
 
 test("no change is shown without a price, an open, or an open to divide by", () => {
   expect(C.sinceOpen(null)).toBeNull()
-  expect(C.sinceOpen({ price: 100, dayOpen: null })).toBeNull()
-  expect(C.sinceOpen({ price: null, dayOpen: 100 })).toBeNull()
-  expect(C.sinceOpen({ price: 100, dayOpen: 0 })).toBeNull()
+  expect(C.sinceOpen({ price: 100, open24h: null })).toBeNull()
+  expect(C.sinceOpen({ price: null, open24h: 100 })).toBeNull()
+  expect(C.sinceOpen({ price: 100, open24h: 0 })).toBeNull()
 })
 
 // ---- The fetch rules ----

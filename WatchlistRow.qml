@@ -1,6 +1,6 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
 // WatchlistRow.qml. Changes: the row's figures are the hero's
-// (`Figures.heroView`), since the day is the UTC day for both; the
+// (`Figures.heroView`), since 1D is the same 24 hours for both; the
 // freshness words have no trading phase; there is no draw-in, and no slide
 // but the drag's.
 pragma ComponentBehavior: Bound
@@ -62,7 +62,7 @@ Rectangle {
   // with no candle leaves the cell empty: the hero alone draws its baseline.
   readonly property var geometry: quote && quote.points.length ? Chart.dayGeometry(quote) : null
   // The line's direction: up or down from the open, or none without one.
-  readonly property var dayUp: view && quote && typeof quote.dayOpen === "number" ? view.daySign >= 0 : null
+  readonly property var dayUp: view && quote && typeof quote.open24h === "number" ? view.daySign >= 0 : null
 
   readonly property color trend: !view || view.sign === 0 ? dim : view.sign > 0 ? upColor : downColor
   // What the feed has done for this symbol (`Figures.freshness`). A failed

@@ -5,7 +5,7 @@
 // a new list's name is not kept through a close. The rows are a ListView whose rows
 // a drag shifts in place, so the row under the pointer is never rebuilt
 // mid-drag. An add is featured at once, so there is no landing to wait for.
-// The change has two modes, percent and amount, both since 00:00 UTC. The
+// The change has two modes, percent and amount, both over the last 24 hours. The
 // keys are read by the surface (popup or window) and passed to `textKey`,
 // `moveKeys`, `activate`, `escapeKey` and `deleteKey`.
 
@@ -141,7 +141,7 @@ Item {
     : problem !== "" ? "! " + problem
     : quote ? "Live" : ""
   readonly property string baselineText: !quote ? ""
-    : onDay ? (typeof quote.dayOpen === "number" ? "OPEN 00:00 UTC " + Format.money(quote.dayOpen, quote.priceDigits) : "")
+    : onDay ? (typeof quote.open24h === "number" ? "24H AGO " + Format.money(quote.open24h, quote.priceDigits) : "")
     : history ? "START " + History.momentText(history, history.bars[0].t) + " " + Format.money(history.baseline, quote.priceDigits) : ""
 
 

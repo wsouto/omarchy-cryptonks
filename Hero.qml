@@ -1,8 +1,8 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
 // Hero.qml. Changes: the listing line says the coin's name, the exchange (a pill
 // that steps to the next) and USDT;
-// the change is since 00:00 UTC, and its caption says so at rest, or names
-// the range; there is no extended-hours print; the freshness words have no
+// the change is over the last 24 hours, and its caption says so at rest, or
+// names the range; there is no extended-hours print; the freshness words have no
 // trading phase.
 import QtQuick
 import qs.Commons
@@ -64,10 +64,9 @@ Item {
   readonly property var funding: quote ? Figures.fundingFact(quote) : null
   readonly property real fundingWidth: funding && funding.value !== "" ? fundingRow.implicitWidth + Style.space(12) : 0
   readonly property real listingRoom: Math.max(0, listingRow.width - symbolText.implicitWidth - Style.space(8) - fundingWidth)
-  // The day here starts at 00:00 UTC, and the screen says so, so the change
-  // is never taken for an exchange's rolling 24 hours. A scrub says its own
-  // moment in the header instead.
-  readonly property string changeCaption: view && !scrubbing ? (view.caption || "SINCE 00:00 UTC") : ""
+  // 1D is the last 24 hours, as on the exchange, and the caption says so. A
+  // scrub says its own moment in the header instead.
+  readonly property string changeCaption: view && !scrubbing ? (view.caption || "24H") : ""
 
   readonly property int gap: Style.space(28)
   // The digits' ink at the surface's price size, and the box kept for it: a

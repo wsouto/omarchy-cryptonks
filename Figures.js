@@ -6,8 +6,8 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
 // Figures.js. Changes: only the pill's two rules and the hero's figures are
 // kept; the animal reads the move's sign as drawn, and the hero's figures
-// (`heroView`, the original's `rowModel`) are measured from 00:00 UTC in
-// two modes, percent and amount; the info block's day and 52-week lines
+// (`heroView`, the original's `rowModel`) are measured over the last 24
+// hours in two modes, percent and amount; the info block's day and 52-week lines
 // (`dayLine`, `yearLine`) have no market cap or P/E; freshness has no trading
 // phase and no overdue (see below); a range's (`rangeView`) from the price at
 // its start.
@@ -44,13 +44,13 @@ function listBreadth(symbols, quotes, scrubT, mode) {
 
 // The hero's figures at the moment shown: now with `scrubT` 0, else the
 // candle the scrub reads (`Chart.readingAt`). `mode` is "pct" or "abs", the
-// change's unit; both are measured from the day's open. `sign` is the
+// change's unit; both are measured from the price 24 hours ago. `sign` is the
 // change's as drawn, in the mode shown, and `daySign` the percent's, which
 // the animal reads in either mode. `time` is the moment's, null for now.
 function heroView(quote, scrubT, mode) {
   var read = scrubT ? Chart.readingAt(quote, scrubT) : null
   var price = read ? read.p : quote.price
-  var move = Change.sinceOpen({ price: price, dayOpen: quote.dayOpen })
+  var move = Change.sinceOpen({ price: price, open24h: quote.open24h })
   var sign = !move ? 0 : mode === "abs"
     ? Format.shownSign(move.abs, Format.moveDigits(Math.abs(move.abs), quote.priceDigits))
     : Format.shownSign(move.pct, Format.pctDigits(Math.abs(move.pct)))
@@ -71,7 +71,7 @@ function heroView(quote, scrubT, mode) {
 function rangeView(history, quote, scrubT, range) {
   var bar = history && scrubT ? History.barAt(history, scrubT) : null
   var price = bar ? bar.p : quote.price
-  var move = history ? Change.sinceOpen({ price: price, dayOpen: history.baseline }) : null
+  var move = history ? Change.sinceOpen({ price: price, open24h: history.baseline }) : null
   var sign = move ? Format.shownSign(move.pct, Format.pctDigits(Math.abs(move.pct))) : 0
   return {
     priceText: Format.money(price, quote.priceDigits),
@@ -83,20 +83,21 @@ function rangeView(history, quote, scrubT, range) {
   }
 }
 
-// The info block's first line on the day: its low and high with the price's
-// place between them, then its open. An end that is also the 52 weeks'
-// takes that direction's tone, as the 52-week line's does. OPEN keeps its
-// slot when the day's candle is not in. With no quote there is no line.
+// The info block's first line on 1D: the 24 hours' low and high with the
+// price's place between them, then the price 24 hours ago. An end that is
+// also the 52 weeks' takes that direction's tone, as the 52-week line's
+// does. 24H OPEN keeps its slot when the exchange sent none. With no quote
+// there is no line.
 function dayLine(quote) {
   if (!quote) return null
-  var range = Format.infoRange(quote.dayLow, quote.dayHigh, quote.price, quote.priceDigits)
+  var range = Format.infoRange(quote.low24h, quote.high24h, quote.price, quote.priceDigits)
   if (range.high !== null && Format.isFiniteNumber(quote.high52w) && range.high >= quote.high52w) range.highTone = "up"
   if (range.low !== null && Format.isFiniteNumber(quote.low52w) && range.low <= quote.low52w) range.lowTone = "down"
   return {
     title: "1D",
     range: range,
     facts: [
-      { label: "OPEN", value: Format.isFiniteNumber(quote.dayOpen) ? Format.money(quote.dayOpen, quote.priceDigits) : "", widest: range.widest }
+      { label: "24H OPEN", value: Format.isFiniteNumber(quote.open24h) ? Format.money(quote.open24h, quote.priceDigits) : "", widest: range.widest }
     ]
   }
 }
@@ -118,7 +119,7 @@ function fundingFact(quote) {
 }
 
 // A perpetual has no market cap or P/E, so VOL stands here in their place,
-// under OPEN: the day's volume in the base coin and its worth in the quote
+// under 24H OPEN: the 24 hours' volume in the base coin and its worth in the quote
 // coin, as "51K BTC ($4.2B)". Its slot is as wide as 999.9M and $999.9B.
 function volumeFact(quote) {
   var coin = quote.currency && quote.symbol.slice(-quote.currency.length) === quote.currency
@@ -126,24 +127,24 @@ function volumeFact(quote) {
   var text = function(volume, worth) {
     return Format.compactNumber(volume) + (coin !== "" ? " " + coin : "") + (worth !== null ? " ($" + worth + ")" : "")
   }
-  var known = Format.isFiniteNumber(quote.volume)
-  var worth = Format.isFiniteNumber(quote.turnover)
+  var known = Format.isFiniteNumber(quote.volume24h)
+  var worth = Format.isFiniteNumber(quote.turnover24h)
   return {
     label: "VOL",
-    value: known ? text(quote.volume, worth ? Format.compactNumber(quote.turnover) : null) : "",
+    value: known ? text(quote.volume24h, worth ? Format.compactNumber(quote.turnover24h) : null) : "",
     widest: Format.widest(text(999.9e6, worth ? "999.9B" : null))
   }
 }
 
 // The info block's second line: the last year's low and high, which already
-// hold today's, so an end the day set is the day's own and takes its tone.
+// hold the 24 hours', so an end the 24 hours set is theirs and takes its tone.
 // Its one fact is VOL.
 function yearLine(quote) {
   if (!quote) return null
   var range = Format.infoRange(quote.low52w, quote.high52w, quote.price, quote.priceDigits)
   var both = range.low !== null && range.high !== null
-  if (both && Format.isFiniteNumber(quote.dayHigh) && quote.dayHigh >= quote.high52w) range.highTone = "up"
-  if (both && Format.isFiniteNumber(quote.dayLow) && quote.dayLow <= quote.low52w) range.lowTone = "down"
+  if (both && Format.isFiniteNumber(quote.high24h) && quote.high24h >= quote.high52w) range.highTone = "up"
+  if (both && Format.isFiniteNumber(quote.low24h) && quote.low24h <= quote.low52w) range.lowTone = "down"
   return {
     title: "52W",
     range: range,

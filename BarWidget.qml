@@ -11,8 +11,8 @@ import "Figures.js" as Figures
 import "Format.js" as Format
 import "Tones.js" as Tones
 
-// The bar pill: one symbol and how far it has moved since 00:00 UTC, as the
-// day's line (the default), an arrow, text with the price, or the day's bull
+// The bar pill: one symbol and how far it has moved in 24 hours, as the
+// 24-hour line (the default), an arrow, text with the price, or the day's bull
 // or bear. Left click opens the popup (`Panel.qml`), right-click the window
 // (`WindowHost.qml`), and middle-click cycles the form, which each section of
 // the bar keeps on its own. The data is the service's (`Plugin.qml`,
@@ -42,9 +42,9 @@ BarWidget {
   readonly property var quote: service ? service.quote : null
   readonly property string problem: service ? service.problem : ""
   readonly property bool warns: problem !== ""
-  // How far the price has moved since 00:00 UTC; null while it is not known.
+  // How far the price has moved in 24 hours; null while it is not known.
   readonly property var move: Change.sinceOpen(quote)
-  // The day's line, from 00:00 UTC to the newest candle; null with none.
+  // The 24-hour line, up to the newest candle; null with none.
   readonly property var lineGeometry: Chart.dayGeometry(quote)
 
   // In the bar's right section, among its bare icons, the pill has a form of
@@ -234,7 +234,7 @@ BarWidget {
     // hover also says what the other forms show, the symbol and its change.
     // None while the popup is open: the bubble lands on the card's header.
     tooltipText: root.opened ? "" : (root.iconOnly ? root.symbol + " " + root.changeText + " · " : "")
-      + "Change since 00:00 UTC" + (root.warns ? " · ! " + root.problem : "")
+      + "24h change" + (root.warns ? " · ! " + root.problem : "")
 
     onPressed: function(b) {
       if (b === Qt.RightButton) { if (root.plugin) root.plugin.windowHost.toggle() }

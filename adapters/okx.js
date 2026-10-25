@@ -151,13 +151,19 @@ function quotesUrl(symbols) {
   return HOST + "/api/v5/market/tickers?instType=SWAP"
 }
 
-// { time, prices, funding }: when OKX answered, in seconds (the newest
-// ticker's), the last traded price by symbol, and an empty funding (that is
-// `parseFunding`'s). A ticker with no price is left out.
+// { time, prices, funding, stats }: when OKX answered, in seconds (the
+// newest ticker's), the last traded price by symbol, an empty funding (that
+// is `parseFunding`'s), and the rolling 24 hours by symbol as { open, high,
+// low, volume, turnover }: the price 24 hours ago, the high and low since,
+// and the volume in the base coin (`volCcy24h`; `vol24h` counts contracts).
+// OKX sends no quote-coin volume for a swap, so the turnover is the base
+// volume at the last price: close, not exact. A ticker with no price is
+// left out.
 function parseQuotes(json) {
   var list = dataOf(json)
   if (list === null) return null
   var prices = {}
+  var stats = {}
   var time = null
   for (var i = 0; i < list.length; i++) {
     var t = list[i]
@@ -166,10 +172,12 @@ function parseQuotes(json) {
     var at = num(t && t.ts)
     if (symbol === null || price === null || at === null) continue
     prices[symbol] = price
+    var volume = num(t.volCcy24h)
+    stats[symbol] = { open: num(t.open24h), high: num(t.high24h), low: num(t.low24h), volume: volume, turnover: volume === null ? null : volume * price }
     if (time === null || at > time) time = at
   }
   if (time === null) return null
-  return { time: Math.floor(time / 1000), prices: prices, funding: {} }
+  return { time: Math.floor(time / 1000), prices: prices, funding: {}, stats: stats }
 }
 
 // The funding of `symbol`, asked for apart from the price.
@@ -232,7 +240,7 @@ function dailyMore(symbol, count, now) {
 }
 
 // The 5-minute candles of one symbol from `start` (seconds) on: at most 288
-// in a UTC day, so one request holds the whole day. `before` is exclusive, so
+// in 24 hours, so one request holds the whole line. `before` is exclusive, so
 // it is a millisecond short of `start`, and the candle at `start` is in.
 function candlesUrl(symbol, start) {
   return HOST + "/api/v5/market/candles?instId=" + encodeURIComponent(instId(symbol))
@@ -323,22 +331,19 @@ function buildHistory(symbol, range, candles) {
 
 // The record of docs/QUOTE-RECORD.md for one symbol: its instrument entry
 // (from parseInstruments), its latest `price` and `marketTime` (from
-// parseQuotes), its daily `candles`, and `dayCandles`, its 5-minute candles
-// (both from parseCandles), and its `funding` (from parseFunding).
+// parseQuotes), its daily `candles`, and `lineCandles`, its 5-minute candles
+// (both from parseCandles), its `funding` (from parseFunding) and its
+// 24-hour `stats` (from parseQuotes).
 //
-// The day figures belong to today's UTC day, so they come only from a newest
-// candle that starts at today's 00:00 UTC; a newest candle from another day
-// leaves them null. The year's high and low come from the last 365 candles.
-// The day line, `points`, is each 5-minute candle of today's UTC day at its
-// start and close.
-function buildQuote(instrument, price, marketTime, candles, dayCandles, funding) {
+// The 24-hour figures are OKX's own, from the ticker; with no stats they are
+// null. The year's high and low come from the last 365 daily candles. The
+// line, `points`, is each 5-minute candle of the last 24 hours at its start
+// and close.
+function buildQuote(instrument, price, marketTime, candles, lineCandles, funding, stats) {
   if (!instrument || price === null || marketTime === null) return null
-  var list = candles || []
-  var last = list.length ? list[list.length - 1] : null
-  var today = Math.floor(marketTime / DAY) * DAY
-  var isToday = last !== null && last.t === today
-  var year = list.slice(-365)
-  var points = (dayCandles || []).filter(function (c) { return c.t >= today && c.t < today + DAY })
+  var year = (candles || []).slice(-365)
+  var day = stats || {}
+  var points = (lineCandles || []).filter(function (c) { return c.t > marketTime - DAY && c.t <= marketTime })
     .map(function (c) { return { t: c.t, p: c.close } })
   var high = null
   var low = null
@@ -355,11 +360,11 @@ function buildQuote(instrument, price, marketTime, candles, dayCandles, funding)
     priceDigits: instrument.priceDigits,
     price: price,
     marketTime: marketTime,
-    dayOpen: isToday ? last.open : null,
-    dayHigh: isToday ? last.high : null,
-    dayLow: isToday ? last.low : null,
-    volume: isToday ? last.volume : null,
-    turnover: isToday ? last.turnover : null,
+    open24h: num(day.open),
+    high24h: num(day.high),
+    low24h: num(day.low),
+    volume24h: num(day.volume),
+    turnover24h: num(day.turnover),
     high52w: high,
     low52w: low,
     firstTradeDate: instrument.firstTradeDate,

@@ -1,7 +1,7 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
-// DayChart.qml. Changes: the day is the UTC day, so the extended hours, the
-// ticks at the bell and a day's breaks are gone; the dashed baseline is the
-// day's open, and the dot sits on the newest candle. Only the day is drawn
+// DayChart.qml. Changes: 1D is the last 24 hours, so the extended hours,
+// the ticks at the bell and a day's breaks are gone; the dashed baseline is
+// the price 24 hours ago, and the dot sits on the newest candle. Only the day is drawn
 // until the ranges come (roadmap step 9).
 import QtQuick
 import qs.Commons as Commons
@@ -49,7 +49,7 @@ Item {
   readonly property int pad: 3
   readonly property var lastPoint: drawable ? geometry.points[geometry.points.length - 1] : null
   readonly property color dotColor: lastPoint && lastPoint.y > geometry.baselineY ? belowColor : aboveColor
-  // One print draws: the first print after midnight is a dot on its day.
+  // One print draws: a symbol's first is a dot.
   readonly property bool drawable: !!geometry && !!geometry.points && geometry.points.length >= 1
   // The baseline draws whenever there is a geometry.
   readonly property bool hasBaseline: !!geometry && typeof geometry.baselineY === "number" && isFinite(geometry.baselineY)

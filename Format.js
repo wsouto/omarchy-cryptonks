@@ -92,8 +92,8 @@ function pad2(n) {
   return n < 10 ? "0" + n : String(n)
 }
 
-// A time of the UTC day, "14:35": the day here is the UTC day, so its
-// moments are said in UTC whatever the machine's zone.
+// A time of day in UTC, "14:35": every moment here is said in UTC whatever
+// the machine's zone, as the exchanges' candles are.
 function utcClock(t) {
   var d = new Date(t * 1000)
   return pad2(d.getUTCHours()) + ":" + pad2(d.getUTCMinutes())

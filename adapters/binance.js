@@ -14,7 +14,7 @@
 //
 // Free, no key. Limit: 2400 request weight per minute per IP (checked
 // 2026-10-24 in exchangeInfo's rateLimits). Weights measured that day:
-// ticker/price 1, premiumIndex 1, exchangeInfo 1, klines 2 for 100 to 499
+// ticker/24hr 1, premiumIndex 1, exchangeInfo 1, klines 2 for 100 to 499
 // rows and 5 for 500 to 1000. Past the limit Binance answers 429 with
 // Retry-After, and an IP that keeps going gets 418 for 2 minutes up to 3
 // days. 451 means Binance is not available where you are.
@@ -109,11 +109,11 @@ function parseInstruments(json) {
 
 // ---- The latest price --------------------------------------------------
 
-// The last prices of `symbols` in one request. Omit `symbol` and Binance
-// sends all of them (10 KB), so a long list costs one request. For a single
-// symbol it answers with just that one.
+// The 24-hour tickers of `symbols`: for a single symbol Binance answers with
+// just that one (weight 1). Omit `symbol` and it sends all of them (weight
+// 40), which Refresh never asks for.
 function quotesUrl(symbols) {
-  var url = HOST + "/fapi/v1/ticker/price"
+  var url = HOST + "/fapi/v1/ticker/24hr"
   if (symbols && symbols.length === 1) url += "?symbol=" + encodeURIComponent(symbols[0])
   return url
 }
@@ -123,24 +123,29 @@ function listOf(json) {
   return Array.isArray(json) ? json : json && typeof json === "object" && json.symbol ? [json] : null
 }
 
-// { time, prices, funding }: when Binance answered, in seconds (the newest
-// ticker's), the last traded price by symbol, and an empty funding (that is
-// `parseFunding`'s). A ticker with no price is left out.
+// { time, prices, funding, stats }: when the newest ticker was read, in
+// seconds (its `closeTime`, the end of its 24 hours), the last traded price
+// by symbol, an empty funding (that is `parseFunding`'s), and the rolling 24
+// hours by symbol as { open, high, low, volume, turnover }: the price 24
+// hours ago, the high and low since, the volume in the base coin and in the
+// quote coin. A ticker with no price is left out.
 function parseQuotes(json) {
   var list = listOf(json)
   if (!list) return null
   var prices = {}
+  var stats = {}
   var time = null
   for (var i = 0; i < list.length; i++) {
     var t = list[i]
-    var price = num(t && t.price)
-    var at = num(t && t.time)
+    var price = num(t && t.lastPrice)
+    var at = num(t && t.closeTime)
     if (!t || !t.symbol || price === null || at === null) continue
     prices[t.symbol] = price
+    stats[t.symbol] = { open: num(t.openPrice), high: num(t.highPrice), low: num(t.lowPrice), volume: num(t.volume), turnover: num(t.quoteVolume) }
     if (time === null || at > time) time = at
   }
   if (time === null) return null
-  return { time: Math.floor(time / 1000), prices: prices, funding: {} }
+  return { time: Math.floor(time / 1000), prices: prices, funding: {}, stats: stats }
 }
 
 // The funding of `symbol`, asked for apart from the price.
@@ -174,7 +179,7 @@ function dailyUrl(symbol, count) {
 }
 
 // The 5-minute candles of one symbol from `start` (seconds) on: at most 288
-// in a UTC day, so one request holds the whole day.
+// in 24 hours, so one request holds the whole line.
 function candlesUrl(symbol, start) {
   return HOST + "/fapi/v1/klines?symbol=" + encodeURIComponent(symbol)
     + "&interval=5m&startTime=" + Math.floor(start) * 1000 + "&limit=288"
@@ -249,22 +254,19 @@ function buildHistory(symbol, range, candles) {
 
 // The record of docs/QUOTE-RECORD.md for one symbol: its instrument entry
 // (from parseInstruments), its latest `price` and `marketTime` (from
-// parseQuotes), its daily `candles`, and `dayCandles`, its 5-minute candles
-// (both from parseCandles), and its `funding` (from parseFunding).
+// parseQuotes), its daily `candles`, and `lineCandles`, its 5-minute candles
+// (both from parseCandles), its `funding` (from parseFunding) and its
+// 24-hour `stats` (from parseQuotes).
 //
-// The day figures belong to today's UTC day, so they come only from a newest
-// candle that starts at today's 00:00 UTC; a newest candle from another day
-// leaves them null. The year's high and low come from the last 365 candles.
-// The day line, `points`, is each 5-minute candle of today's UTC day at its
+// The 24-hour figures are Binance's own, from the ticker; with no stats they
+// are null. The year's high and low come from the last 365 daily candles.
+// The line, `points`, is each 5-minute candle of the last 24 hours at its
 // start and close.
-function buildQuote(instrument, price, marketTime, candles, dayCandles, funding) {
+function buildQuote(instrument, price, marketTime, candles, lineCandles, funding, stats) {
   if (!instrument || price === null || marketTime === null) return null
-  var list = candles || []
-  var last = list.length ? list[list.length - 1] : null
-  var today = Math.floor(marketTime / DAY) * DAY
-  var isToday = last !== null && last.t === today
-  var year = list.slice(-365)
-  var points = (dayCandles || []).filter(function (c) { return c.t >= today && c.t < today + DAY })
+  var year = (candles || []).slice(-365)
+  var day = stats || {}
+  var points = (lineCandles || []).filter(function (c) { return c.t > marketTime - DAY && c.t <= marketTime })
     .map(function (c) { return { t: c.t, p: c.close } })
   var high = null
   var low = null
@@ -281,11 +283,11 @@ function buildQuote(instrument, price, marketTime, candles, dayCandles, funding)
     priceDigits: instrument.priceDigits,
     price: price,
     marketTime: marketTime,
-    dayOpen: isToday ? last.open : null,
-    dayHigh: isToday ? last.high : null,
-    dayLow: isToday ? last.low : null,
-    volume: isToday ? last.volume : null,
-    turnover: isToday ? last.turnover : null,
+    open24h: num(day.open),
+    high24h: num(day.high),
+    low24h: num(day.low),
+    volume24h: num(day.volume),
+    turnover24h: num(day.turnover),
     high52w: high,
     low52w: low,
     firstTradeDate: instrument.firstTradeDate,

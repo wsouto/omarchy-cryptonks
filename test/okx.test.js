@@ -102,6 +102,7 @@ test("the last price by symbol, and when OKX answered in seconds", () => {
   expect(one.time).toBe(1792887309)
   expect(one.prices).toEqual({ BTCUSDT: 80744.5 })
   expect(one.funding).toEqual({})
+  expect(one.stats.BTCUSDT).toMatchObject({ open: 80888.8, high: 81061.4, low: 79168, volume: 59810.7146 })
   const all = O.parseQuotes(fixture("okx-tickers.json"))
   expect(Object.keys(all.prices).sort()).toEqual(["BTCUSDT", "ETHUSDT"])
 })
@@ -221,24 +222,26 @@ test("a range's line has a bar per candle and the first open as its baseline", (
 
 // ---- The quote record ----
 
-const record = (dayCandles, marketTime) => {
+const record = (lineCandles, marketTime) => {
   const instrument = O.parseInstruments(fixture("okx-instruments.json")).instruments[0]
   const quotes = O.parseQuotes(fixture("okx-ticker-btc.json"))
   const funding = O.parseFunding(fixture("okx-funding-btc.json"))
   const candles = O.parseCandles(fixture("okx-candles-btc-d.json"))
   return O.buildQuote(instrument, quotes.prices.BTCUSDT, marketTime === undefined ? quotes.time : marketTime, candles,
-    dayCandles, funding.BTCUSDT)
+    lineCandles, funding.BTCUSDT, quotes.stats.BTCUSDT)
 }
 
-test("the record has the day's figures from today's candle, and funding", () => {
+test("the record has OKX's own 24-hour figures, and funding", () => {
   const q = record(O.parseCandles(fixture("okx-candles-btc-5.json")))
   expect(q.exchange).toBe("OKX")
   expect(q.symbol).toBe("BTCUSDT")
   expect(q.price).toBe(80744.5)
-  expect(q.dayOpen).toBe(80850.1)
-  expect(q.dayHigh).toBe(80850.1)
-  expect(q.dayLow).toBe(80739.1)
-  expect(q.volume).toBe(510.661)
+  expect(q.open24h).toBe(80888.8)
+  expect(q.high24h).toBe(81061.4)
+  expect(q.low24h).toBe(79168)
+  expect(q.volume24h).toBe(59810.7146)
+  // OKX sends no quote-coin volume for a swap: the base volume at the last price.
+  expect(q.turnover24h).toBeCloseTo(59810.7146 * 80744.5, 4)
   expect(q.high52w).toBe(82047.6)
   expect(q.low52w).toBe(79168)
   expect(q.fundingRate).toBe(0.0000244791294062)
@@ -248,11 +251,16 @@ test("the record has the day's figures from today's candle, and funding", () => 
   expect(q.points[0]).toEqual({ t: 1792886400, p: 80779.8 })
 })
 
-test("candles from another day give no day figures, not figures from the wrong day", () => {
-  const q = record([], 1792887309 + DAY)
-  expect(q.dayOpen).toBeNull()
-  expect(q.volume).toBeNull()
+test("the line is the last 24 hours: candles older than that are left out", () => {
+  const q = record(O.parseCandles(fixture("okx-candles-btc-5.json")), 1792887309 + DAY)
+  expect(q.points).toEqual([])
   expect(q.high52w).toBe(82047.6)
+})
+
+test("no 24-hour stats give null figures, not a guess", () => {
+  const q = O.buildQuote({ symbol: "X", name: "X" }, 1, 1792887309, [], [], null)
+  expect(q.open24h).toBeNull()
+  expect(q.turnover24h).toBeNull()
 })
 
 test("no price, no time or no instrument gives no record; no funding gives nulls", () => {

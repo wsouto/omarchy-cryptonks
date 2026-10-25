@@ -1,7 +1,7 @@
 // Adapted from Stonks by Gaurav Chande (MIT), omarchy-stonks v1.0.2,
-// PixelChart.qml. Changes: the day is the UTC day, so the extended hours,
+// PixelChart.qml. Changes: 1D is the last 24 hours, so the extended hours,
 // the bell and the night's edges, and a day's breaks are gone; the baseline
-// row is the day's open, and the lit cap sits on the newest candle.
+// row is the price 24 hours ago, and the lit cap sits on the newest candle.
 pragma ComponentBehavior: Bound
 
 import QtQuick
@@ -56,7 +56,7 @@ Item {
   readonly property bool directionKnown: typeof up === "boolean"
   readonly property color aboveColor: directionKnown ? upColor : baselineColor
   readonly property color belowColor: directionKnown ? downColor : baselineColor
-  // One print draws: the first print after midnight is a cell on its day.
+  // One print draws: a symbol's first is a cell.
   readonly property bool drawable: !!geometry && !!geometry.points && geometry.points.length >= 1
   // The baseline draws whenever there is a geometry.
   readonly property bool hasBaseline: !!geometry && typeof geometry.baselineY === "number" && isFinite(geometry.baselineY)

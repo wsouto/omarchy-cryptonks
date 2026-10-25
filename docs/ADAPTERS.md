@@ -20,10 +20,10 @@ change it)
 | Function | Gives |
 | --- | --- |
 | `instrumentUrl(symbol)` and `parseInstruments(json)` | one of the symbols you can add, or (from step 6, with `instrumentsUrl()`) all of them for search: `{ instruments, truncated }` |
-| `quotesUrl(symbols)` and `parseQuotes(json)` | the latest price of the symbols asked for (every symbol if not one): `{ time, prices }` |
+| `quotesUrl(symbols)` and `parseQuotes(json)` | the latest price and 24 hours of the symbols asked for (every symbol if not one): `{ time, prices, funding, stats }` |
 | `dailyUrl(symbol, count)` and `parseCandles(json)` | daily candles, oldest first |
-| `candlesUrl(symbol, start)` and `parseCandles(json)` | 5-minute candles from `start` (seconds), the day's line, oldest first |
-| `buildQuote(instrument, price, marketTime, candles, dayCandles)` | the record of [QUOTE-RECORD.md](QUOTE-RECORD.md) |
+| `candlesUrl(symbol, start)` and `parseCandles(json)` | 5-minute candles from `start` (seconds), the 24-hour line, oldest first |
+| `buildQuote(instrument, price, marketTime, candles, lineCandles, funding, stats)` | the record of [QUOTE-RECORD.md](QUOTE-RECORD.md); `stats` are `parseQuotes`'s 24-hour figures |
 | `said(json)` | the words an exchange gave when it turned a question down, "" if none |
 | `fundingUrl(symbol)` and `parseFunding(json)` | optional: for an exchange that sends the funding rate apart from the price, `{ symbol: { rate, nextTime } }` |
 | `dailyMore(symbol, count, now)` and `historyMore(symbol, range, now)` | optional: for an exchange that answers only a page of candles at a time, the URLs of the older pages, newest first, asked as `year#1`, `daily#1`, `history:<range>#1` and read with the first page; a page that fails fails the whole question |
@@ -52,7 +52,7 @@ USDT perpetuals (`https://fapi.binance.com`, no key):
 | Need | Endpoint | Weight |
 | --- | --- | --- |
 | Symbol list, tick size, launch time | `GET /fapi/v1/exchangeInfo` (about 930 contracts, 1.1 MB, 52 KB compressed on 2026-10-24; it cannot be narrowed to one symbol, `?symbol=` is ignored) | 1 |
-| Last price | `GET /fapi/v1/ticker/price?symbol=` | 1 |
+| Last price and 24 hours | `GET /fapi/v1/ticker/24hr?symbol=` | 1 |
 | Funding rate and next settlement | `GET /fapi/v1/premiumIndex?symbol=` | 1 |
 | Daily, range and 5-minute candles | `GET /fapi/v1/klines` (up to 1500 per request, oldest first) | 2 for 100 to 499 rows, 5 for 500 to 1000 |
 

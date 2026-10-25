@@ -6,7 +6,7 @@
 // Settings.js. Changes: this project's starter symbols and its two change
 // modes; the featured symbol is always one of All; the refresh interval
 // comes back with the screen that changes it, and the first-run hint is gone with the hint; the change sorted by is
-// since 00:00 UTC; there is no order by the amount; deleting a list takes its
+// over the last 24 hours; there is no order by the amount; deleting a list takes its
 // symbols out of All; nothing is read from the
 // bar entry, which never held this project's symbols.
 //

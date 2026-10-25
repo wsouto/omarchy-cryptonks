@@ -6,18 +6,25 @@ ideas worth sending back. Add an entry in the commit that makes the difference.
 
 Each entry: **what**, **why**, and a tag.
 
-- `crypto`: the market forces it (24/7, UTC day, Bybit). Not for the original.
+- `crypto`: the market forces it (24/7, rolling 24 hours, Bybit). Not for the original.
 - `left out`: the original has it, we do not yet. Bring back on request.
 - `PR?`: could be an improvement for the original too. Check it first.
 
 ## Market
 
-- **The day is the UTC day, 00:00 to 24:00.** No sessions, extended hours or
+- **1D is the last 24 hours, as on the exchanges.** The line runs from 24
+  hours before the newest candle to it, so it always fills the chart, and
+  the change, high, low and volume are the exchange's own 24-hour figures
+  from its ticker, so they match its app. No sessions, extended hours or
   breaks, so `DayChart`, `PixelChart`, `Chart.js` and `Sparkline` lose that
-  logic and the pen never lifts. `crypto`
+  logic and the pen never lifts. The original's closed market shows the last
+  whole session; a market that never closes has no such moment, and a day
+  from 00:00 UTC (tried until 2026-10-25) looked empty after midnight.
+  `crypto`
 - **The animal never sleeps** (`HeaderStatus`, `BarAnimal`): a perpetual market
   is never closed, so the lids are gone. `crypto`
-- **"TODAY" label in `ListLine`** says the UTC day, not a session. `crypto`
+- **"TODAY" label in `ListLine`** is "24H", and the hero's caption says
+  "24H" where the original names nothing. `crypto`
 
 ## Data
 
@@ -46,9 +53,8 @@ Each entry: **what**, **why**, and a tag.
 - **Fewer requests per symbol**: the exchange's instrument list, fetched at
   start, on a switch and when search opens (once a day, saved per
   exchange), gives each symbol its instrument, so none is asked for alone.
-  A row's day (open, high, low, volume) is folded from its 5-minute
-  candles; only the featured symbol asks for daily candles, for its 52-week
-  range. `crypto`
+  A row's 24 hours (open, high, low, volume) come with its price; only the
+  featured symbol asks for daily candles, for its 52-week range. `crypto`
 - **The exchange pill**: the exchange's name on the hero's listing line is a
   pill; a click, or `e`, steps to the next exchange and wraps to the first.
   The setting is saved in the data file. A symbol the new exchange doesn't
@@ -77,8 +83,10 @@ Each entry: **what**, **why**, and a tag.
   300 and 10Y are several requests, the older ones from OKX's history
   endpoint (`dailyMore`, `historyMore`, `Refresh.js`). A page that fails
   fails the whole question, so a range is never drawn short. `crypto`
-- **OKX's volume is read in the base coin** (`volCcy`), as its own `vol`
-  counts contracts of a size that differs by coin. `crypto`
+- **OKX's volume is read in the base coin** (`volCcy`, `volCcy24h`), as its
+  own `vol` counts contracts of a size that differs by coin. Its ticker
+  sends no quote-coin volume for a swap, so the 24 hours' worth in USDT is
+  the base volume at the last price: close, not exact. `crypto`
 - **Rate limits**: Bybit 600 requests per 5 s, Binance 2400 weight per
   minute, OKX 10 to 40 requests per 2 seconds for each instrument, all per IP and free; see [ADAPTERS.md](ADAPTERS.md). `crypto`
 
@@ -97,13 +105,13 @@ Each entry: **what**, **why**, and a tag.
   1W", then it draws in. A range that failed says "1W unavailable" with
   RETRY, which asks again as `r` does. `left out`
 - **The info block has no market cap or P/E**: VOL stands in their place, on
-  the 52-week line under OPEN, where the original has MKT CAP and P/E. Funding
+  the 52-week line under 24H OPEN, where the original has MKT CAP and P/E. Funding
   rate or open interest could take the other slot later. `crypto`
-- **VOL is the base coin's volume since 00:00 UTC** (BTC for BTCUSDT), under
+- **VOL is the base coin's volume over 24 hours** (BTC for BTCUSDT), under
   1,000 to four digits, and its worth in the quote coin: "51K BTC ($4.2B)".
   The coin is the symbol without its quote currency. The labels of a column
   pad to the widest on show (`InfoTable`), so VOL's value starts under
-  OPEN's. `crypto`
+  24H OPEN's. `crypto`
 
 ## Lists
 

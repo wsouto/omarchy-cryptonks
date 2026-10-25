@@ -85,7 +85,7 @@ test("an undo puts the symbol back at its place, and the hero back if nothing mo
 
 // ---- Order ----
 
-const quote = (symbol, name, price, dayOpen) => ({ symbol, name, price, dayOpen })
+const quote = (symbol, name, price, open24h) => ({ symbol, name, price, open24h })
 const quotes = {
   BTCUSDT: quote("BTCUSDT", "Bitcoin", 101, 100),
   ETHUSDT: quote("ETHUSDT", "Ethereum", 95, 100),
