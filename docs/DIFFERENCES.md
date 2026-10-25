@@ -37,6 +37,12 @@ Each entry: **what**, **why**, and a tag.
   missing or unknown); the whole plugin reads one exchange at a time. A
   symbol the other exchange doesn't list shows its problem line until you
   switch back. `crypto`
+- **Each exchange keeps its own data**: a switch puts the feed's instruments,
+  candles, quotes and charts aside for the exchange left, for the session,
+  so switching back asks only what is due. The saved quotes file holds each
+  exchange's last quotes (version 2, `{ exchange: { symbol: quote } }`;
+  version 1 is still read), so a first switch shows that exchange's last
+  prices at once. Candles are not saved. `crypto`
 - **The exchange pill**: the exchange's name on the hero's listing line is a
   pill; a click, or `e`, steps to the next exchange and wraps to the first.
   The setting is saved in the data file. A symbol the new exchange doesn't

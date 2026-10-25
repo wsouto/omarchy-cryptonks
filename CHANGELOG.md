@@ -16,10 +16,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   read in several pages.
 - Binance USDT perpetuals as a second exchange, picked by the `exchange` key of
   the data file (`"Bybit"` or `"Binance"`; Bybit stays the default). Each
-  exchange keeps its own symbol list, and a switch clears the quotes kept.
+  exchange keeps its own symbol list.
 - The hero's listing line shows the perpetual's funding rate for the next
   settlement, signed and toned by its sign (green positive, red negative),
   with the time left to it, such as `FUNDING ▲0.0073% 3h22m`.
+
+### Changed
+
+- Switching exchanges is faster: each exchange's prices, candles and charts are
+  kept for the session, so switching back asks only for what is due, and the
+  last saved prices of the exchange show at once. The saved quotes file
+  (`~/.cache/wsouto.cryptonks/quotes.json`) is now version 2, one map per
+  exchange; a version 1 file is still read.
 
 ## [0.1.0]
 

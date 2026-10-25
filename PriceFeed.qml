@@ -30,9 +30,14 @@ Item {
 
   // The symbols to keep fresh, the featured one among them; none until the
   // service has read its settings.
-  // The exchange's adapter (`Exchanges.byName`). A new one empties what is
-  // kept and asks for every symbol again.
+  // The exchange's adapter (`Exchanges.byName`). A new one puts what is kept
+  // aside for the exchange left, brings back the new one's from earlier in
+  // the session, or its saved quotes, and asks for every symbol again: only
+  // what is due goes out.
   required property var adapter
+  // The last quotes saved, { exchange: { symbol: quote } }, each shown until
+  // its first answer.
+  property var saved: ({})
   property var symbols: []
   property string featured: ""
   // `Screens.qml`, or null, as in a harness, to fetch whatever the screens.
@@ -81,12 +86,24 @@ Item {
   // The run in flight began before the exchange changed.
   property bool discard: false
 
+  // By exchange, what was kept for it when it was left: { kept, quotes,
+  // histories }; and the exchange the state in hand belongs to.
+  property var stash: ({})
+  property string current: ""
+  Component.onCompleted: root.current = root.adapter.NAME
+
   onAdapterChanged: {
-    root.kept = {}
-    root.quotes = {}
+    var stash = Object.assign({}, root.stash)
+    if (root.current !== "") stash[root.current] = { kept: root.kept, quotes: root.quotes, histories: root.histories }
+    var back = stash[root.adapter.NAME] || { kept: {}, quotes: {}, histories: {} }
+    root.stash = stash
+    root.current = root.adapter.NAME
+    root.kept = back.kept
+    root.quotes = back.quotes
+    root.histories = back.histories
+    seed()
     root.problems = {}
     root.fresh = {}
-    root.histories = {}
     root.pausedUntil = 0
     root.discard = proc.running
     root.whole = true
@@ -111,9 +128,9 @@ Item {
     Qt.callLater(request, false)
   }
 
-  // The last quotes saved, { symbol: quote }, each shown until its first
-  // answer.
-  function seed(saved) {
+  // The exchange's saved quotes, where none is in hand.
+  function seed() {
+    var saved = root.saved[root.adapter.NAME] || {}
     var next = Object.assign({}, root.quotes)
     for (var s in saved) if (!next[s] && saved[s].exchange === root.adapter.NAME) next[s] = saved[s]
     root.quotes = next

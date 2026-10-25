@@ -9,6 +9,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "Exchanges.js" as Exchanges
+import "SavedQuotes.js" as SavedQuotes
 import "Figures.js" as Figures
 import "Settings.js" as Settings
 
@@ -156,6 +157,8 @@ Item {
   }
 
   function stepExchange() {
+    // The quotes still waiting to be saved belong to the exchange left.
+    root.flushQuotes()
     root.persist({ exchange: Exchanges.next(root.exchange) })
   }
 
@@ -212,6 +215,7 @@ Item {
     symbols: !root.ready ? [] : !root.shown ? [root.featured]
       : Settings.normalizeSymbols(root.symbols.concat([root.featured, root.previewSymbol]))
     featured: root.featured
+    saved: root.savedQuotes
     // Only the popup and the window show a range, and it shows the hero's symbol.
     want: root.ready && root.shown && root.range !== "1D" ? { symbol: root.previewSymbol || root.featured, range: root.range } : null
     screens: screenWatch
@@ -284,7 +288,7 @@ Item {
     root.dataSettings = Settings.fileSettings(settings)
     if (!root.ready) {
       root.ready = true
-      feed.seed(root.savedQuotes)
+      feed.seed()
     }
   }
 
@@ -339,12 +343,11 @@ Item {
     printErrors: false
   }
 
-  // { symbol: quote }, read once at start; none when the file is missing or
-  // unreadable.
-  readonly property var savedQuotes: {
+  // { exchange: { symbol: quote } }, read once at start, then kept as
+  // written; none when the file is missing or unreadable.
+  property var savedQuotes: {
     try {
-      var parsed = JSON.parse(quotesFile.text())
-      return parsed && parsed.version === 1 && parsed.quotes ? parsed.quotes : {}
+      return SavedQuotes.byExchange(JSON.parse(quotesFile.text()))
     } catch (e) {
       return {}
     }
@@ -362,7 +365,8 @@ Item {
     root.quotesUnsaved = false
     var saved = {}
     root.library.forEach(function(s) { if (feed.quotes[s]) saved[s] = feed.quotes[s] })
-    quotesFile.setText(JSON.stringify({ version: 1, quotes: saved }) + "\n")
+    root.savedQuotes = SavedQuotes.withExchange(root.savedQuotes, root.exchange, saved)
+    quotesFile.setText(JSON.stringify({ version: SavedQuotes.VERSION, quotes: root.savedQuotes }) + "\n")
     quotesWait.restart()
   }
 
